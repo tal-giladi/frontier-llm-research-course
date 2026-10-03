@@ -1,0 +1,18 @@
+{
+  "_about": "config.json snapshots fetched 2026-10-03 from https://huggingface.co/<repo>/raw/<sha>/config.json. hf_param_count = sum of parameter numels of AutoModelForCausalLM.from_config(config) on the meta device, transformers 5.18.0 (quantization_config removed; MTP layers are not built by Transformers and are not included).",
+  "fetched": "2026-10-03",
+  "models": {
+    "deepseek-ai/DeepSeek-V3": {"sha": "e815299b0bcbac849fa540c768ef21845365c9eb", "hf_param_count": 671026404352},
+    "moonshotai/Kimi-K2-Instruct": {"sha": "fd1984e2b7a3350dbf7305fe73a4ede25c14de50", "hf_param_count": 1026408209408},
+    "Qwen/Qwen3-8B": {"sha": "b968826d9c46dd6066d109eabc6255188de91218", "hf_param_count": 8190735360},
+    "Qwen/Qwen3-30B-A3B": {"sha": "ad44e777bcd18fa416d9da3bd8f70d33ebb85d39", "hf_param_count": 30532122624},
+    "Qwen/Qwen3-235B-A22B": {"sha": "8efa61729e24bd65b1d152b5ab5409052aa80e65", "hf_param_count": 235093634560},
+    "Qwen/Qwen3-Next-80B-A3B-Instruct": {"sha": "9c7f2fbe84465e40164a94cc16cd30b6999b0cc7", "hf_param_count": 79674391296},
+    "openai/gpt-oss-120b": {"sha": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a", "hf_param_count": 116829156672},
+    "openai/gpt-oss-20b": {"sha": "6cee5e81ee83917806bbde320786a8fb61efebee", "hf_param_count": 20914757184},
+    "unsloth/gemma-3-27b-pt": {"sha": "eb493e07419db4938e915c619689bb513181aebb", "hf_param_count": 27009346304, "note": "unofficial mirror of the gated google/gemma-3-27b-pt (HTTP 401 without accepting the licence); text_config only is counted"},
+    "allenai/OLMo-2-1124-7B": {"sha": "7df9a82518afdecae4e8c026b27adccc8c1f0032", "hf_param_count": 7298617344},
+    "zai-org/GLM-4.5": {"sha": "cbb2c7cfb52fa128a9660cb1a7a78e017899e115", "hf_param_count": 352797814784},
+    "MiniMaxAI/MiniMax-M2": {"sha": "757303d492a50514c312788b5247a4f696a4c6a3", "hf_param_count": 228689748992}
+  }
+}

@@ -1,0 +1,72 @@
+- id: q1
+  question: >-
+    Two runs have the same `budget.tokens`, the same seed and the same config except the attention
+    kind, which is the declared change. The run-card diff also shows a different
+    `data_files.val.bin_sha256`. What do you do?
+  options:
+    - >-
+      Accept the comparison, because matching token budgets make the training data equivalent.
+    - >-
+      Accept it with a warning, because only the validation file changed, not the training data.
+    - >-
+      Re-score both runs on one validation file before comparing, since their scores cover different tokens.
+    - >-
+      Retrain both runs from scratch, because any hash mismatch means the checkpoints are corrupted.
+  correct: 2
+  explanation: >-
+    The training data may be identical, but the reported numbers come from different evaluation
+    tokens, so they cannot be compared or paired. Re-scoring both checkpoints on the same file fixes
+    the comparison without retraining.
+
+- id: q2
+  question: >-
+    An inference service runs one prompt at temperature 0 a thousand times and returns dozens of
+    different completions. The model, weights and software are fixed. According to the Thinking
+    Machines analysis, what is the most likely main cause?
+  options:
+    - >-
+      Random sampling inside the decoder, since temperature 0 still draws from the softmax.
+    - >-
+      Kernels whose results depend on the batch size, while the batch a request joins depends on load.
+    - >-
+      Atomic additions inside every forward pass, which make each run nondeterministic by itself.
+    - >-
+      Different GPUs in the cluster, since each GPU model rounds floating-point numbers differently.
+  correct: 1
+  explanation: >-
+    The post finds the forward pass run-to-run deterministic for a fixed batch; what varies is the
+    batch composition, and kernels lacking batch invariance return different bits for the same
+    request in different batch sizes.
+
+- id: q3
+  question: >-
+    You rerun a CPU training command and the checkpoints differ in every tensor, although seed, code,
+    data and config are identical. The run cards differ only in `hardware.cpu_threads` (16 vs 8). What
+    is the best reading?
+  options:
+    - The data loader is broken, because the seed should fix every tensor regardless of threads.
+    - The exact-resume logic failed, because only checkpoint state can make two runs differ.
+    - The difference is a bug in the optimizer, since AdamW is deterministic on any hardware.
+    - The thread count changed the order of reductions, so the bits differ while the run is still valid.
+  correct: 3
+  explanation: >-
+    A seed fixes random numbers, not the order of floating-point additions. A different thread
+    split reorders sums, so bitwise identity is lost; statistically the run is the same recipe.
+
+- id: q4
+  question: >-
+    You claim "bitwise identical rerun" and check it with `torch.equal` on every tensor. Which case
+    can make that check report something false?
+  options:
+    - >-
+      Two runs that differ only in a tensor holding −0.0 where the other holds 0.0.
+    - >-
+      Two runs whose optimizer states differ in their step counters by one.
+    - >-
+      Two runs whose weights differ by one unit in the last place in a single element.
+    - >-
+      Two runs whose checkpoints were saved with different file names.
+  correct: 0
+  explanation: >-
+    `torch.equal` compares values, and −0.0 equals 0.0 although the bits differ (it also calls NaN
+    unequal to itself). A bitwise claim needs a comparison of raw bytes, as in `frontierlab.record.state_diff`.

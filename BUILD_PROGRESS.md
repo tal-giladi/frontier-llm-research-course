@@ -31,13 +31,13 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 ## Units
 
 - [x] Plan revision 2.1 and all decisions (plan section 15)
-- [ ] Phase 0: repo spine (git, .gitignore, .gitattributes, .venv)
-- [ ] Phase 0: `labs/common/frontierlab` foundation (Baseline-0 model, data prep, training loop with exact resume, run cards, correctness suite, stats helpers) with tests
-- [ ] Phase 0: shared docs (README, _sidebar, glossary, templates, references, course-details, AGENT-BRIEF)
+- [x] Phase 0: repo spine (git, .gitignore, .gitattributes, .venv) — commit 6c54917
+- [x] Phase 0: `labs/common/frontierlab` foundation (Baseline-0 model, data prep, training loop with exact resume, run cards, correctness suite, stats helpers) with tests — 13 tests pass; Data-v0 CPU slice prepared (20k docs, vocab 8192, 24.1M train tokens)
+- [x] Phase 0: shared docs (README, _sidebar, glossary, templates, references, course-details, AGENT-BRIEF)
 - [ ] Phase 0: Colab pilot notebook(s) for Tal (`curriculum/pilots/`)
 - [ ] Phase 0: pilot results received (`curriculum/pilots/RESULTS.md`) and projections updated
-- [ ] Module 1 — How do we know a change helped?
-- [ ] Module 2 — Where does the time go?
+- [ ] Module 1 — How do we know a change helped? (01.1 done by main session as the exemplar; 01.2–01.5 + project + quiz: sub-agent A)
+- [ ] Module 2 — Where does the time go? (sub-agent B)
 - [ ] Module 3 — How should attention spend KV memory?
 - [ ] Module 4 — Does the model use its context?
 - [ ] Module 5 — When is sub-quadratic attention worth it?
@@ -62,7 +62,9 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 
 ## Who is working on what
 
-- Main session: Phase 0 foundation.
+- Sub-agent A: Module 1 lessons 01.2–01.5, project, module quiz (owns lessons/module-01 except 01.1, labs/module-01, frontierlab/calc, frontierlab/evals/suite_v0.py, frontierlab/record).
+- Sub-agent B: Module 2 (owns lessons/module-02, labs/module-02, frontierlab/perf).
+- Main session: waiting; then integrates, writes the Colab pilot notebook from both agents' GPU command lists, commits.
 
 ## Decisions and open questions
 

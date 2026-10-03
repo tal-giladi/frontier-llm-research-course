@@ -16,7 +16,7 @@ from __future__ import annotations
 from frontierlab.model.config import ModelConfig, param_counts
 
 # Dense BF16 tensor-core peak, FLOP/s (vendor datasheets; check the exact SKU you rent).
-PEAK_BF16 = {"H100-SXM": 989e12, "H100-PCIe": 756e12, "A100": 312e12, "L4": 121e12, "T4-FP16": 65e12,
+PEAK_BF16 = {"H100-SXM": 989e12, "H100-NVL": 835e12, "A100": 312e12, "L4": 121e12, "T4-FP16": 65e12,
              "L40S": 362e12}
 
 

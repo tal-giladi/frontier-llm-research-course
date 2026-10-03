@@ -1,0 +1,77 @@
+- id: q1
+  question: >-
+    A GPU profile of one step shows 48 ms of summed kernel time inside an 80 ms step, and the timeline
+    has many short gaps between small kernels. CPU-side launch work is 70 ms. What is the most
+    useful next change to try?
+  options:
+    - >-
+      Use a faster GEMM library, since the 48 ms of kernel time must be dominated by matmuls.
+    - >-
+      Raise the learning rate, because fewer steps reduce the time lost to gaps.
+    - >-
+      Reduce kernel count and launch cost with fusion and CUDA graphs, e.g. torch.compile.
+    - >-
+      Enable activation checkpointing, since idle gaps usually come from memory pressure.
+  correct: 2
+  explanation: >-
+    The GPU is busy only 60% of the step while the CPU spends 70 ms launching: the step is
+    launch-bound. Fewer, larger kernels (fusion) and replaying the step as a CUDA graph attack that
+    directly; checkpointing would add kernels.
+
+- id: q2
+  question: >-
+    You switch Baseline-0's loss to the chunked cross-entropy at micro-batch B = 1, T = 1024 and the
+    saved activation memory barely changes (1,080 to 1,048 MiB). A colleague concludes the chunked
+    loss is not worth it. What is the better reading?
+  options:
+    - >-
+      Correct, because the chunked loss still builds the full logits during the backward pass.
+    - >-
+      At this N the 128 MiB saved is offset by a fixed 96 MiB buffer; at B = 32 it saves ~4 GiB.
+    - >-
+      The measurement is wrong, because a chunked loss should remove all activation memory.
+    - >-
+      The saving only appears in bf16, because fp32 logits are stored in a compressed form.
+  correct: 1
+  explanation: >-
+    The chunked loss removes N × V fp32 logits but keeps a V × C fp32 gradient buffer for the head.
+    The saving grows with N = B·T while the cost is fixed, so it pays at training batch sizes.
+
+- id: q3
+  question: >-
+    Your run fits micro-batch 8 but not 16. With full activation checkpointing, 16 fits. Throughput
+    in tokens per second at batch 8 without checkpointing is your baseline. What do you expect at
+    batch 16 with checkpointing, and what decides it?
+  options:
+    - >-
+      About 2x higher, because twice the tokens per step always doubles throughput.
+    - >-
+      Lower in every case, because recomputation can never be paid back by a larger batch.
+    - >-
+      Unchanged, because checkpointing and batch size cancel exactly by construction.
+    - >-
+      About a quarter less work per token unless larger GEMMs gain efficiency; measure both.
+  correct: 3
+  explanation: >-
+    Checkpointing adds about one forward per step (roughly 4/3 of the FLOPs), so tokens per second
+    drop unless the bigger batch raises GEMM efficiency or removes accumulation overhead by more.
+    Which effect wins is shape-dependent, so it is measured.
+
+- id: q4
+  question: >-
+    You count saved tensors with saved_tensors_hooks during a Baseline-0 forward under bf16 autocast
+    and find several hundred MiB of bf16 tensors shaped like the weight matrices. What are they?
+  options:
+    - >-
+      The bf16 copies of the weights that autocast makes for the matmuls and that the linear ops save.
+    - >-
+      Gradient buffers that autograd preallocates during the forward pass for every parameter.
+    - >-
+      AdamW moment estimates, which autocast stores in bf16 next to the activations.
+    - >-
+      A leak, because parameters are never saved for backward by a linear layer.
+  correct: 0
+  explanation: >-
+    Autocast casts fp32 weights to bf16 once per forward, and the matmul saves its (bf16) weight
+    input for the backward. The copy is a new storage, so it is counted; its size does not grow with
+    the batch.

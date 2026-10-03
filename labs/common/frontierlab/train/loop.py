@@ -74,6 +74,13 @@ def build_parser():
     ap.add_argument("--data-seed", type=int, default=None, help="data order only (default: --seed)")
     ap.add_argument("--dtype", choices=["fp32", "bf16"], default="fp32", help="autocast dtype on GPU")
     ap.add_argument("--compile", action="store_true")
+    ap.add_argument("--loss", choices=["plain", "chunked"], default="plain",
+                    help="chunked = frontierlab.perf.chunked_ce, no (B,T,V) logits (lessons 02.2, 02.4)")
+    ap.add_argument("--ce-chunk", type=int, default=4096, help="rows per chunk for --loss chunked")
+    ap.add_argument("--profile-steps", type=int, default=0,
+                    help="after 3 warm-up steps, profile this many steps -> <run>/trace.json, profile.txt (02.2)")
+    ap.add_argument("--memory-snapshot", action="store_true",
+                    help="CUDA only: record allocations during the profiled steps -> <run>/mem.pickle (02.2)")
     ap.add_argument("--log-every", type=int, default=20)
     ap.add_argument("--eval-every", type=int, default=200)
     ap.add_argument("--eval-windows", type=int, default=64)
@@ -142,22 +149,47 @@ def main(argv=None):
     t_start = t_last = time.perf_counter()
     tokens_since = 0
     stop = min(a.steps, a.stop_after or a.steps)
+    prof_start, prof, snap = step + 3, None, None
     while step < stop:
+        if a.profile_steps and step == prof_start:
+            acts = [torch.profiler.ProfilerActivity.CPU]
+            if a.device.startswith("cuda"):
+                acts.append(torch.profiler.ProfilerActivity.CUDA)
+            prof = torch.profiler.profile(activities=acts)
+            prof.__enter__()
+            if a.memory_snapshot:
+                from frontierlab.perf.memory import memory_snapshot
+                snap = memory_snapshot(str(a.run / "mem.pickle"))
+                snap.__enter__()
         for g in opt.param_groups:
             g["lr"] = lr_at(step, a.steps, a.lr, a.warmup, a.schedule)
         opt.zero_grad(set_to_none=True)
-        loss_sum = 0.0
+        loss_acc = torch.zeros((), device=a.device)
         for _ in range(a.grad_accum):
             x = train.batch(a.batch, a.seq, gen, a.device)
             with torch.autocast(device_type=x.device.type, dtype=autocast, enabled=autocast is not None):
-                out = fwd(x, labels=x)
-            (out.loss / a.grad_accum).backward()
-            loss_sum += out.loss.item() / a.grad_accum
+                if a.loss == "chunked":
+                    from frontierlab.perf.chunked_ce import lm_loss_chunked
+                    loss = lm_loss_chunked(model, x, a.ce_chunk)      # eager even with --compile
+                else:
+                    loss = fwd(x, labels=x).loss
+            (loss / a.grad_accum).backward()
+            loss_acc += loss.detach() / a.grad_accum              # stays on device: no sync per micro-batch
         gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), a.clip)
         opt.step()
         step += 1
         tokens_since += tokens_per_step
+        if prof is not None and step == prof_start + a.profile_steps:
+            if snap is not None:
+                snap.__exit__(None, None, None)
+            prof.__exit__(None, None, None)
+            from frontierlab.perf.profiling import format_summary, summarize
+            prof.export_chrome_trace(str(a.run / "trace.json"))
+            (a.run / "profile.txt").write_text(format_summary(summarize(prof)))
+            prof = snap = None
+            t_last, tokens_since = time.perf_counter(), 0
         if step % a.log_every == 0 or step == a.steps:
+            loss_sum = loss_acc.item()
             if a.device.startswith("cuda"):
                 torch.cuda.synchronize()
             dt = time.perf_counter() - t_last

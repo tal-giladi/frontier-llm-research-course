@@ -1,0 +1,172 @@
+- id: q1
+  question: >-
+    You are asked to estimate the per-token training cost of an open MoE model for a budget memo. The
+    model card says "about 3B active". What is the most reliable way to get the number you need?
+  options:
+    - >-
+      Multiply the card's active count by 6, because cards report active parameters in one standard way.
+    - >-
+      Multiply the total parameter count by 6, since every expert is trained on every token.
+    - >-
+      Use the card's number plus 10% for attention, since attention is a fixed share of every model.
+    - >-
+      Recompute active parameters from config.json with one stated convention, then add the attention-score FLOPs.
+  correct: 3
+  explanation: >-
+    Labs differ on whether the embedding, head or MTP layers count as active, and 6 × active omits
+    the attention-score term, which grows with context. The config gives the exact shapes to apply
+    one convention.
+
+- id: q2
+  question: >-
+    A paper reports that its new attention variant is better because the released model, which uses
+    it, beats a competitor on most benchmarks. What kind of evidence is that for the variant itself?
+  options:
+    - >-
+      Weak: the models differ in data, size, recipe and evaluation, so the gap cannot be attributed to attention.
+    - >-
+      Strong: a benchmark win at full scale is better evidence than any small-scale ablation could be.
+    - >-
+      Decisive if the benchmarks are public, because public benchmarks cannot be gamed or contaminated.
+    - >-
+      Irrelevant: benchmark results never carry information about architecture choices.
+  correct: 0
+  explanation: >-
+    Evaluation tables compare whole systems. Attribution to one component needs an ablation that
+    changes only that component; the full-model comparison is still informative, but not about the
+    variant alone.
+
+- id: q3
+  question: >-
+    Your team must choose between two architectures for a run on a fixed cluster that starts in two
+    weeks with the current kernels. One saves 30% FLOPs per token but its kernels are immature. Which
+    comparison should the contract specify?
+  options:
+    - Equal training FLOPs, because FLOPs are the only hardware-independent measure of cost.
+    - Equal wall-clock on that cluster and software, with FLOPs reported as a secondary number.
+    - Equal tokens, because it is the cheapest comparison and isolates the architecture.
+    - Equal parameters, because both models must fit the same GPUs.
+  correct: 1
+  explanation: >-
+    The decision is about what this cluster delivers in the available time with today's kernels, so
+    equal wall-clock answers it. Equal FLOPs would credit a saving the current kernels do not deliver.
+
+- id: q4
+  question: >-
+    A colleague sweeps 8 learning rates for their new norm layer and compares the best with a
+    Baseline-0 run trained at the default learning rate. Both are evaluated once on test. Which two
+    changes make the comparison sound?
+  options:
+    - Use more seeds for the new method and report the median instead of the best.
+    - Report the result on validation instead of test, and keep the baseline at its default.
+    - Give the baseline the same 8-point sweep, and select both on validation before reading test once.
+    - Use the same learning rate for both arms, and select the best checkpoint of each on test.
+  correct: 2
+  explanation: >-
+    The tuning budget must be equal, and selection must happen on validation so that test gives an
+    unbiased final number. A shared learning rate would be fair only if it were good for both arms.
+
+- id: q5
+  question: >-
+    Baseline-0's seed std on held-out loss is 0.008 nats. A Stage B change shows −0.015 with one seed
+    per arm. Your contract's rule is "adopt if the 95% interval lies below −0.01". What should you do?
+  options:
+    - >-
+      Adopt it, since 0.015 is almost twice the seed std and therefore clearly real.
+    - >-
+      Reject it, since a single-seed result can never support adoption under any rule.
+    - >-
+      Adopt it if a paired window bootstrap for the two runs excludes zero.
+    - >-
+      Run more seeds first: with one seed per arm there is no interval to apply the rule to.
+  correct: 3
+  explanation: >-
+    With one seed per arm the difference has a standard error near 0.008 × √2 ≈ 0.011, and no interval
+    over seeds exists. A window bootstrap ignores seed noise, so the rule has to wait for replicates.
+
+- id: q6
+  question: >-
+    You compare Baseline-0 against three variants on two metrics each, and plan to report every
+    comparison whose bootstrap p-value is below 0.05. What is the problem, and the fix?
+  options:
+    - Six tests inflate false positives; adjust all six p-values with Holm before reporting.
+    - Bootstrap p-values are invalid for losses; use a t-test on each metric instead.
+    - Two metrics cannot both be used; pick the better-looking one after seeing results.
+    - The problem is only the number of variants; correct across variants but not across metrics.
+  correct: 0
+  explanation: >-
+    Every claim from the same experiment counts: three variants times two metrics is six tests, so
+    the family-wise error rate is far above 5% without correction. Holm controls it.
+
+- id: q7
+  question: >-
+    Seeds 0 and 1 of Baseline-0 (same recipe) are compared with a paired bootstrap over 256 fixed
+    windows, and the CI excludes zero. What does this tell you about using one seed per arm in Stage B?
+  options:
+    - That the bootstrap is broken, since two runs of the same recipe can never differ.
+    - Nothing, because A/A tests only check the evaluation code.
+    - That window-level intervals can flag seed noise as an effect, so single-seed comparisons are unsafe.
+    - That 256 windows are too many, since more items make the bootstrap overconfident in general.
+  correct: 2
+  explanation: >-
+    The two models really do differ on these windows, so the paired interval is correct for them; but
+    the difference comes from the seed, not from a method. A method claim needs seed replicates.
+
+- id: q8
+  question: >-
+    A resumed main-path run and its uninterrupted twin have identical losses for 6,000 steps, then
+    small differences appear. The run cards differ only in `hardware.gpu` (both H100, different
+    nodes) and `args.max_minutes`. What is the most reasonable reading?
+  options:
+    - >-
+      The resume lost the data RNG state, because data-order changes always appear immediately.
+    - >-
+      Different nodes reordered some reductions: the same recipe, no longer bitwise equal.
+    - >-
+      The max-minutes flag changed the learning-rate schedule, which explains the divergence.
+    - >-
+      The runs cannot be compared, since any hardware difference invalidates every comparison.
+  correct: 1
+  explanation: >-
+    Exact resume restores RNG and data order, and `--max-minutes` only adds a checkpoint. Different
+    hardware or library state can reorder floating-point reductions, so bits drift while the run stays
+    the same recipe; it matters only for bitwise or wall-clock claims.
+
+- id: q9
+  question: >-
+    Eval v0 reports LAMBADA accuracy and LAMBADA target log-probability. For deciding between two
+    ~100M-parameter variants, why does the course use the log-probability as the LAMBADA decision metric?
+  options:
+    - >-
+      Because accuracy is undefined when a target word spans several tokens.
+    - >-
+      Because log-probability cannot be affected by the tokenizer, so it compares across models.
+    - >-
+      Because accuracy is near the floor at this scale, and the continuous score has a smaller noise floor.
+    - >-
+      Because lm-evaluation-harness does not report accuracy for LAMBADA.
+  correct: 2
+  explanation: >-
+    A binary score near the floor has a large variance per item relative to the differences between
+    small models; the per-passage log-probability changes smoothly and gives tighter paired intervals.
+    It still depends on the tokenizer, so it compares only models sharing one.
+
+- id: q10
+  question: >-
+    The run-card diff between your Baseline-0 run and an MLA branch flags `args.seq` (1024 → 2048) and
+    `args.batch` (32 → 16) as INVALIDATES, while `budget.tokens` is equal. The colleague who ran it
+    says tokens are matched, so it is fine. What is your response?
+  options:
+    - >-
+      Agree, because on the equal-tokens axis only the token budget has to match.
+    - >-
+      Ask for the MLA run at seq 1024 and batch 32, or a contract that declares seq as a second factor.
+    - >-
+      Agree only if the learning rate was also adjusted for the smaller batch.
+    - >-
+      Discard both runs, since the diff tool flags differences that cannot be fixed afterwards.
+  correct: 1
+  explanation: >-
+    Matching tokens does not make the runs equal: context length changes attention cost and what the
+    model learns, and batch size changes optimisation. Either remove the extra changes or declare
+    them as factors with their own cells.

@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    You compare a linear-attention hybrid with Baseline-0. The hybrid needs 25% fewer FLOPs per token
+    at 8K context, but your pinned kernel for it is still slow. Your team has a fixed FLOP budget from
+    a compute grant and two months to decide the architecture for a long run on future kernels. Which
+    axis fits the decision?
+  options:
+    - >-
+      Equal wall-clock, since the current kernel speed is what the team will pay for in the long run.
+    - >-
+      Equal tokens, since that isolates the architecture from every cost consideration.
+    - >-
+      Equal parameters, since it fixes the model size and the run length follows from it.
+    - >-
+      Equal training FLOPs, with today's wall-clock reported as a stated limit of the result.
+  correct: 3
+  explanation: >-
+    The constraint is compute, and the kernels will change, so equal FLOPs matches the decision.
+    Equal wall-clock would penalise the hybrid for today's implementation; equal tokens ignores the
+    25% saving; equal parameters does not fix a training budget at all.
+
+- id: q2
+  question: >-
+    A colleague swept six learning rates for a new optimizer and compared the best one with Baseline-0
+    at its usual learning rate. The new optimizer is 0.03 nats better. What is the main problem?
+  options:
+    - >-
+      The baseline did not get the same tuning budget, so part of the gap may come from tuning alone.
+    - >-
+      Six learning rates is too few to find the optimum for any optimizer.
+    - >-
+      Optimizers cannot be compared on held-out loss, only on downstream tasks.
+    - >-
+      The learning rate is a scientific hyperparameter, so it must be held fixed across arms.
+  correct: 0
+  explanation: >-
+    The learning rate is a nuisance hyperparameter here: it must be re-optimised for each arm with the
+    same budget. Re-tuned baselines have closed many reported gaps (Melis et al. 2017).
+
+- id: q3
+  question: >-
+    You try four warmup lengths, choose the one with the lowest test loss, and report that test loss as
+    the result of your method. What is wrong?
+  options:
+    - >-
+      Nothing, as long as the same test set is used for the baseline too.
+    - >-
+      Warmup must never be tuned, because it changes the training length.
+    - >-
+      Choosing on test biases the number low; choose on validation and read test once.
+    - >-
+      The test split is too small to measure warmup effects, so a larger one would fix it.
+  correct: 2
+  explanation: >-
+    Selecting among configurations on a split turns it into a validation split; the minimum of four
+    noisy estimates is optimistically biased. Select on validation and read test once for the
+    chosen configuration.
+
+- id: q4
+  question: >-
+    Your contract says: adopt if the 95% CI of (new − baseline) loss lies below −0.02. You get a CI of
+    [−0.035, −0.005]. What do you report?
+  options:
+    - >-
+      Adopt, because the whole interval is below zero, so the method is better.
+    - >-
+      Inconclusive, because the interval contains −0.02, the stated minimum gain.
+    - >-
+      Reject, because the lower bound is not below −0.04, twice the minimum gain.
+    - >-
+      Adopt, because the midpoint −0.02 meets the threshold exactly.
+  correct: 1
+  explanation: >-
+    The rule asks whether the gain is at least 0.02, not whether it is above zero. The interval
+    includes gains both above and below 0.02, so the pre-stated rule says inconclusive; changing the
+    rule now would make it a post-hoc rule.

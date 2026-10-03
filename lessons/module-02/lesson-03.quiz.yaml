@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    On 8 GPUs, an all-reduce of a 1 GB buffer takes 10 ms; on 2 GPUs of the same kind it takes
+    6.7 ms. A teammate says the 8-GPU setup uses the links worse. What do the bus bandwidths say?
+  options:
+    - >-
+      They are about equal (175 vs 149 GB/s), so the 8-GPU links are used at least as well.
+    - >-
+      The teammate is right, because the algorithm bandwidth fell from 149 to 100 GB/s.
+    - >-
+      Neither number is meaningful, because all-reduce time does not depend on the rank count.
+    - >-
+      The 2-GPU setup is 3x better, because it moves a quarter as much data per rank.
+  correct: 0
+  explanation: >-
+    Bus bandwidth multiplies S/t by 2(n−1)/n: 1.75 × 100 = 175 GB/s for 8 ranks and 1.0 × 149 =
+    149 GB/s for 2. Algorithm bandwidth falls with n for the same hardware, so it misleads here.
+
+- id: q2
+  question: >-
+    You raise DDP's bucket_cap_mb so that all of a model's gradients fit in a single bucket, to
+    launch fewer collectives. Step time goes up. What is the most likely reason?
+  options:
+    - >-
+      Larger buckets are summed in lower precision, which forces an extra conversion pass.
+    - >-
+      The single all-reduce can only start after the whole backward, so none of it overlaps.
+    - >-
+      A larger bucket makes NCCL fall back to a tree algorithm that has lower bandwidth.
+    - >-
+      DDP copies every bucket to the CPU before the all-reduce once it exceeds 25 MiB.
+  correct: 1
+  explanation: >-
+    A bucket's all-reduce starts when all its gradients are ready. With one bucket that is the end
+    of backward, so all communication is exposed; smaller buckets start early and overlap with the
+    remaining backward.
+
+- id: q3
+  question: >-
+    For an FSDP2 run you time steps with set_requires_gradient_sync(False) and with normal
+    synchronisation; the difference is 4 ms. A report states "FSDP2 communication costs only 4 ms
+    per step". What is wrong with that statement?
+  options:
+    - >-
+      Nothing, because the unsynchronised arm performs no collectives at all.
+    - >-
+      It double-counts, because the reduce-scatter also happens in the unsynchronised arm.
+    - >-
+      It should be 8 ms, because FSDP2 always repeats every collective in backward.
+    - >-
+      The unsynchronised arm still all-gathers parameters, so 4 ms is the exposed reduce-scatter only.
+  correct: 3
+  explanation: >-
+    No rank holds the full parameters, so FSDP2 must all-gather them for forward and backward in
+    both arms. Turning off gradient sync removes only the reduce-scatter; the 4 ms is that part's
+    exposed time.
+
+- id: q4
+  question: >-
+    Exposed communication measured over 10 steps per arm is 35 ms with a 95% interval of −65 to
+    141 ms for 1 MiB buckets, and 172 ms (93 to 239) for 25 MiB buckets. Your pre-stated rule calls
+    one setting better only if its interval lies entirely below the other's. What do you report?
+  options:
+    - >-
+      1 MiB buckets are better, because their median exposed time is five times lower.
+    - >-
+      25 MiB buckets are better, because their interval is narrower and so more reliable.
+    - >-
+      Not distinguishable at 10 steps; run more steps or state the result as not shown.
+    - >-
+      Communication is fully hidden with 1 MiB buckets, because the interval contains zero.
+  correct: 2
+  explanation: >-
+    The intervals overlap (93–141 ms), so the rule does not separate them. An interval that contains
+    zero is consistent with full overlap but does not prove it; more steps narrow both intervals.

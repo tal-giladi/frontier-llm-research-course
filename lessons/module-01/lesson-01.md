@@ -104,7 +104,7 @@ KV cache per token in BF16 (2 bytes): $2 \text{ (K and V)} \cdot L \cdot K \cdot
 | cached keys / values (per layer) | (B, 4, S, 64), S = tokens so far | same | same |
 | logits | (B, T, 32768) | fp32 (cast before the loss) | same |
 
-The logits tensor dominates activation memory at small width: at B = 32, T = 1024 it is $32 \cdot 1024 \cdot 32768 \cdot 4$ bytes ≈ 4 GiB in fp32. Module 2 measures this and shows how to reduce it.
+The logits tensor is the largest single activation at small width: at B = 32, T = 1024 it is $32 \cdot 1024 \cdot 32768 \cdot 4$ bytes ≈ 4 GiB in fp32, and the loss keeps a second copy of the same size. Module 2 measures this and shows how to avoid both.
 
 ## Build it
 

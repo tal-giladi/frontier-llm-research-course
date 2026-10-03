@@ -1,0 +1,175 @@
+- id: q1
+  question: >-
+    You must budget a 2.5B-token Baseline-0 run on rented A100 80 GB GPUs (312 TFLOP/s dense BF16).
+    Training costs 788 MFLOP per token. You have no measurement yet. Which budget line is most
+    defensible for the contract?
+  options:
+    - >-
+      1.8 hours, computed from the H100 projection in lesson 01.1 and scaled by memory bandwidth.
+    - >-
+      1.75 hours, the time at 100% MFU, since the per-op roofline bound is the realistic target.
+    - >-
+      About 4.4 hours at an assumed 40% MFU, labelled PROJECTED, to be corrected by a short pilot.
+    - >-
+      No estimate is possible until the full run has finished and its wall-clock is known.
+  correct: 2
+  explanation: >-
+    2.5e9 × 788e6 = 1.97e18 FLOPs; at 312e12 × 0.4 that is about 15,800 s, roughly 4.4 h. MFU 1.0 is
+    a floor no real step reaches, and an H100 figure does not transfer by bandwidth alone. State the
+    assumption and replace it with a measured MFU.
+
+- id: q2
+  question: >-
+    At decode you serve Baseline-0 to 64 users, each with 8K cached tokens. Raising the batch from 1
+    to 64 made the MLP GEMMs efficient but attention time per token did not improve at all. Why?
+  options:
+    - >-
+      Each sequence reads its own KV cache, so attention stays at H/K = 3 FLOP per byte at any batch.
+    - >-
+      Batching raises the intensity of attention, but the softmax becomes the new bottleneck.
+    - >-
+      The GEMMs and attention share tensor cores, so speeding one up must slow the other down.
+    - >-
+      Attention at decode is compute-bound, so only a higher FLOP rate would make it faster.
+  correct: 0
+  explanation: >-
+    Batching shares the weights across sequences, which raises GEMM intensity, but every sequence
+    has a different cache, so bytes grow with the batch as fast as FLOPs. Only fewer cache bytes
+    (fewer KV heads, MLA, quantisation) help.
+
+- id: q3
+  question: >-
+    A profile of Baseline-0 on one GPU shows the step at 120 ms with the GPU busy 95% of the time.
+    Kernel time is dominated by a long tail of elementwise kernels around the norms and SwiGLU. What
+    is the best first optimisation?
+  options:
+    - >-
+      CUDA graphs alone, because a 95% busy GPU is the signature of launch overhead.
+    - >-
+      A larger DDP bucket size, because elementwise kernels wait for gradient communication.
+    - >-
+      Activation checkpointing, because elementwise kernels are expensive to recompute.
+    - >-
+      Fusing those elementwise chains (torch.compile), which removes HBM round trips.
+  correct: 3
+  explanation: >-
+    The GPU is busy, so launch overhead is not the problem; the time is in memory-bound kernels that
+    each read and write HBM. Fusion cuts the bytes moved. Checkpointing would add work.
+
+- id: q4
+  question: >-
+    You account Baseline-0's saved activations at B = 1, T = 1024 and find the fp32 logits are 12% of
+    the total. A teammate says the chunked loss therefore cannot matter for memory at the main-path
+    micro-batch B = 32. What is wrong with the argument?
+  options:
+    - >-
+      Nothing, because every activation, including the logits, scales linearly with the batch.
+    - >-
+      The returned logits are a second copy of the same size, and the fixed buffer is amortised at B = 32.
+    - >-
+      The logits are stored in bf16 under autocast, so their share at B = 32 is half of 12%.
+    - >-
+      At B = 32 the logits are recomputed in backward, so they do not count as saved memory.
+  correct: 1
+  explanation: >-
+    The 12% counts only the saved log-softmax; the model also returns an N × V fp32 logits tensor
+    that stays alive. Together that is about a quarter of activation memory, about 8 GiB at B = 32,
+    while the chunked loss's own V × C buffer stays at about 96 MiB.
+
+- id: q5
+  question: >-
+    Your run fits micro-batch 4 with gradient accumulation 8. Checkpointing every block would let
+    micro-batch 16 fit with accumulation 2. The pre-stated goal is the most tokens per second. What
+    is the sound way to decide?
+  options:
+    - >-
+      Choose checkpointing, since larger micro-batches always outweigh recomputation.
+    - >-
+      Choose no checkpointing, since recomputation adds about a third of the FLOPs per step.
+    - >-
+      Measure tokens/s for both at equal tokens per step, with intervals, and apply the rule.
+    - >-
+      Choose the setting with the higher HFU, since it shows better hardware use.
+  correct: 2
+  explanation: >-
+    Checkpointing costs about 4/3 of the FLOPs, while the larger micro-batch may raise GEMM
+    efficiency and cut accumulation overhead; which wins depends on shapes. Both arms do the same
+    tokens per optimizer step, so measured tokens/s decides. HFU rewards the recomputation itself.
+
+- id: q6
+  question: >-
+    On an 8-GPU node, DDP steps take 212 ms with gradient sync and 205 ms inside no_sync(). The
+    gradient all-reduce alone takes 30 ms at the measured bus bandwidth. What is the overlap
+    fraction, and what does it tell you?
+  options:
+    - >-
+      About 77%: most of the all-reduce runs under the backward pass; 7 ms is exposed.
+    - >-
+      About 3%: the communication is a small share of the step and so it is not overlapped.
+    - >-
+      About 23%: only the exposed part of the communication was hidden by computation.
+    - >-
+      100%: any difference under 10 ms is measurement noise and should be read as zero.
+  correct: 0
+  explanation: >-
+    Exposed = 212 − 205 = 7 ms; overlap = 1 − 7/30 ≈ 77%. Whether 7 ms differs from zero is a
+    question for the interval, not a rule of thumb.
+
+- id: q7
+  question: >-
+    You move Baseline-0 from DDP to FSDP2 with BF16 parameters on one 8-GPU node, keeping 8
+    micro-batches of gradient accumulation per step. Per-rank memory drops a lot, but step time rises.
+    Which explanation fits the mechanism?
+  options:
+    - >-
+      FSDP2 all-reduces gradients in fp32 on every micro-batch, doubling DDP's traffic.
+    - >-
+      FSDP2 disables overlap between communication and computation for the root module.
+    - >-
+      FSDP2 recomputes every block's forward pass in backward by default to save memory.
+    - >-
+      FSDP2 all-gathers parameters for every micro-batch's forward and backward, unlike DDP.
+  correct: 3
+  explanation: >-
+    No rank holds full parameters, so each micro-batch gathers them for forward and again for
+    backward (with reshard after forward), while DDP communicates once per optimizer step under
+    no_sync(). Skipping the reduce-scatter on early micro-batches does not remove the all-gathers.
+
+- id: q8
+  question: >-
+    A colleague reports that torch.compile with mode "reduce-overhead" makes a 1-layer microbenchmark
+    2.5x faster at batch 1, and proposes enabling it for the training run, whose loop calls
+    loss.item() after every micro-batch. What is the main risk in the claim?
+  options:
+    - >-
+      reduce-overhead lowers numerical precision, so the training loss will differ from eager.
+    - >-
+      The gain is mostly launch overhead at a tiny shape; real shapes and syncs may remove it.
+    - >-
+      Compiled models cannot be trained, so the microbenchmark measured inference only.
+    - >-
+      CUDA graphs require fp32, so the BF16 training run would fall back to eager mode.
+  correct: 1
+  explanation: >-
+    CUDA graphs remove per-kernel launch cost, which dominates a tiny launch-bound shape. At training
+    shapes the step is mostly kernel time, and per-micro-batch syncs or graph breaks limit what
+    replay can remove; measure the real step after warm-up.
+
+- id: q9
+  question: >-
+    An optimisation passes float64 gradient agreement, and its paired speed-up over 30 interleaved
+    rounds is 1.04 with a 95% interval of [1.01, 1.07]. Memory is unchanged. The contract's rule
+    adopts a change if the interval's lower end exceeds 1.0. What should the report say?
+  options:
+    - >-
+      Adopt: a small but resolved speed-up on this setup, with limits stated for other GPUs and shapes.
+    - >-
+      Inconclusive, because a 4% effect is too small to matter for a training run.
+    - >-
+      Reject, because an optimisation that does not save memory is not worth the added code.
+    - >-
+      Adopt, and state that it will also be about 4% faster at frontier scale.
+  correct: 0
+  explanation: >-
+    The pre-stated rule is met: correct and the interval excludes 1.0. The conclusion stays scoped to
+    the measured hardware and shapes; transfer to other scales needs its own arithmetic or measurement.

@@ -9,7 +9,7 @@ Block (pre-norm):
     h = x + Attention(RMSNorm(x))        attention kind chosen by cfg.attention
     y = h + SwiGLU(RMSNorm(h))
 
-Shapes: idx (B, T) long -> logits (B, T, V) float32. ``loss`` is the mean next-token cross-entropy
+Shapes: idx (B, T) long -> logits (B, T, V) float32 (float64 for a float64 model). ``loss`` is the mean next-token cross-entropy
 over positions 0..T-2 predicting 1..T-1 (labels default to idx, shifted inside).
 """
 
@@ -107,7 +107,9 @@ class LM(nn.Module):
             x = layer(x, positions, cache.layers[i] if cache is not None else None)
         if cache is not None:
             cache.length += T
-        logits = self.lm_head(self.model.norm(x)).float()
+        logits = self.lm_head(self.model.norm(x))
+        if logits.dtype in (torch.float16, torch.bfloat16):
+            logits = logits.float()                     # upcast for the loss; float64 stays float64
         if labels is None:
             return LMOutput(logits)
         tok = F.cross_entropy(logits[:, :-1].reshape(-1, logits.size(-1)), labels[:, 1:].reshape(-1),

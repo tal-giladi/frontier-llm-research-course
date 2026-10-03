@@ -6,3 +6,14 @@
 - Stage A — Research foundations
 - **Module 1 — How do we know a change helped?**
   - [01 · Diagnostic and map](lessons/module-01/lesson-01.md)
+  - [02 · Reading reports and configs as evidence](lessons/module-01/lesson-02.md)
+  - [03 · Designing an experiment](lessons/module-01/lesson-03.md)
+  - [04 · Uncertainty](lessons/module-01/lesson-04.md)
+  - [05 · Reproducibility and the experiment record](lessons/module-01/lesson-05.md)
+  - [Module 1 quiz](assessments/module-01-quiz.md)
+- **Module 2 — Where does the time go?**
+  - [06 · From FLOPs to time](lessons/module-02/lesson-01.md)
+  - [07 · Profiling a training step](lessons/module-02/lesson-02.md)
+  - [08 · Communication and overlap](lessons/module-02/lesson-03.md)
+  - [09 · Validating a performance claim](lessons/module-02/lesson-04.md)
+  - [Module 2 quiz](assessments/module-02-quiz.md)

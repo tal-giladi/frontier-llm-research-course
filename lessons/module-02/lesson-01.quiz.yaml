@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    You profile Baseline-0's decode on an H100 SXM with 1 sequence and 32K cached tokens. Attention
+    takes most of the time per token. A teammate proposes switching that attention to a kernel that
+    does the query-key products in FP8 to double the arithmetic rate. What should you expect?
+  options:
+    - >-
+      Close to a 2x speed-up, because FP8 tensor cores have twice the BF16 peak on an H100.
+    - >-
+      A speed-up only after the batch is raised to 64, because larger batches raise the intensity.
+    - >-
+      Little gain, since at about 3 FLOP per byte the op is limited by reading the KV cache.
+    - >-
+      A slow-down, because FP8 GEMMs are always memory-bound on Hopper GPUs at any shape.
+  correct: 2
+  explanation: >-
+    Decode attention does $4HSd$ FLOPs for $4KSd$ bytes, so its intensity is $H/K = 3$, far below the
+    ridge of about 295. Time is set by bytes moved, and batching does not help because each sequence
+    reads its own cache; shrinking or quantising the cache would.
+
+- id: q2
+  question: >-
+    A vendor blog reports "1,979 TFLOP/s BF16" for the H100 SXM, and your run computes MFU against
+    that number and gets 21%. What is the more accurate statement of your run's MFU?
+  options:
+    - >-
+      About 42%, because the headline figure assumes 2:4 sparsity and the dense peak is 989.
+    - >-
+      About 21%, because MFU is defined against the headline datasheet figure whatever it assumes.
+    - >-
+      About 10%, because HBM bandwidth halves the usable compute rate during training.
+    - >-
+      About 28%, because HFU must be converted to MFU with the 4/3 recomputation factor.
+  correct: 0
+  explanation: >-
+    NVIDIA lists tensor-core FLOPs with sparsity; dense training can reach at most half of that
+    (989 TFLOP/s). Dividing by the sparse figure halves the reported MFU.
+
+- id: q3
+  question: >-
+    Your per-op roofline model says Baseline-0's step on an H100 needs at least 0.201 s of GEMM time
+    and 0.146 s of memory-bound elementwise time, while the FLOPs-only bound at MFU 1.0 is 0.209 s.
+    Which change is the model most clearly saying is worth trying first?
+  options:
+    - >-
+      Raising the batch size, because a bigger batch moves every op above the ridge point.
+    - >-
+      Switching to an FP8 GEMM recipe, because GEMMs are the larger share of the time.
+    - >-
+      Increasing the learning rate, because fewer steps would reduce the 0.146 s term.
+    - >-
+      Fusing the norms, RoPE and SiLU·mul into fewer kernels, which cuts the memory-bound term.
+  correct: 3
+  explanation: >-
+    The 0.146 s comes from elementwise ops that each read and write HBM; fusion removes those
+    round trips, while their intensity does not change with batch size. The GEMM term is already
+    close to its own floor at MFU 1.
+
+- id: q4
+  question: >-
+    Run A uses full activation checkpointing and reports 52% hardware FLOPs utilization. Run B has no
+    checkpointing and reports 41% MFU. Both train the same model on the same GPUs. Which run is
+    getting through training tokens faster?
+  options:
+    - >-
+      Run A, because 52% is higher and both numbers measure utilisation of the same peak.
+    - >-
+      Run B, because A's MFU is about 52% × 3/4 = 39%, below B's 41%.
+    - >-
+      Run A, because checkpointing frees memory and always raises tokens per second.
+    - >-
+      Neither can be compared, because MFU and HFU use different peak FLOP numbers.
+  correct: 1
+  explanation: >-
+    Full recomputation runs the forward twice, so hardware FLOPs are about 4/3 of model FLOPs and
+    MFU ≈ HFU × 3/4 = 39%. MFU tracks tokens per second at a fixed model, so B is faster.

@@ -466,6 +466,7 @@ Front-matter per the binding guide. Fixed `##` sections in every lesson:
 7. `## Lab` (experiment contract, main path, free GPU, free CPU, pass checks; hints in `<details>`)
 8. `## Common mistakes`
 9. `## References`
+10. `## Next` (link to the following lesson)
 
 ## 12. Build phases
 

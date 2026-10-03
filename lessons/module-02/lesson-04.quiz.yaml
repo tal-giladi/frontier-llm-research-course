@@ -1,0 +1,77 @@
+- id: q1
+  question: >-
+    A pull request claims a new RMSNorm kernel makes training 30% faster. The benchmark wraps one
+    call of the kernel in time.perf_counter() on an H100, after a warm-up loop, with 100 repeats.
+    What is the first thing to fix before believing any number?
+  options:
+    - >-
+      Raise the repeats to 1,000, because 100 samples cannot produce a confidence interval.
+    - >-
+      Synchronise the GPU before reading the clock, then convert the op result to the step with Amdahl.
+    - >-
+      Switch to fp32 for the benchmark, because BF16 timings are not reproducible across runs.
+    - >-
+      Remove the warm-up loop, because it hides the real cost the training loop pays.
+  correct: 1
+  explanation: >-
+    Without synchronisation the timer measures kernel queueing, not execution. Even a correct op
+    time says little about training: RMSNorm is a small share of the step, so a 30% step claim needs
+    an end-to-end measurement.
+
+- id: q2
+  question: >-
+    You benchmark arm A for 30 steps, then arm B for 30 steps, on a shared cloud GPU. B is 6% faster
+    with non-overlapping intervals. A colleague reruns it in the order B then A and finds A 3%
+    faster. What change to the method addresses this?
+  options:
+    - >-
+      Report the faster of the two runs, since the slower one was disturbed by other tenants.
+    - >-
+      Average the two runs and report a 1.5% speed-up for B with the pooled interval.
+    - >-
+      Interleave the arms round by round on the same inputs and use the paired speed-up interval.
+    - >-
+      Use the minimum step time of each arm, which is the least affected by background load.
+  correct: 2
+  explanation: >-
+    The order effect shows drift (load, clocks) that hit one arm more than the other. Alternating
+    arms within each round exposes both to the same conditions, and pairing removes the shared part
+    from the comparison.
+
+- id: q3
+  question: >-
+    The output head plus loss are 20% of a step. A fused kernel makes them 3x faster. What is the
+    largest end-to-end speed-up to expect, and what else must the comparison check?
+  options:
+    - >-
+      3x, and the check is whether the fused kernel runs at the datasheet peak FLOP rate.
+    - >-
+      About 1.6x, and the check is that the batch size was doubled to use the freed memory.
+    - >-
+      About 1.06x, and the check is only that the loss value at step 0 is unchanged.
+    - >-
+      About 1.15x, and loss and gradients must match the baseline on the same inputs.
+  correct: 3
+  explanation: >-
+    Amdahl: 0.8 + 0.2/3 = 0.867 of the old time, about 1.15x. A faster kernel must also be correct:
+    the float64 loss and gradient agreement catches errors a loss curve hides.
+
+- id: q4
+  question: >-
+    Your contract's rule is: adopt if correct, the speed-up interval's lower end is at least 0.95,
+    and memory is at most 80% of baseline (or the lower end exceeds 1.0). You measure: correctness
+    passes, speed-up 1.02 with interval [0.91, 1.14], memory 62% of baseline. What do you report?
+  options:
+    - >-
+      Inconclusive, since the lower end is below 0.95 and a slowdown is not ruled out.
+    - >-
+      Adopt, because memory fell by 38 percent and the median speed-up is above 1.0.
+    - >-
+      Reject, because part of the speed-up interval lies below 0.95.
+    - >-
+      Adopt, after relaxing the threshold to 0.90 since the memory gain is large.
+  correct: 0
+  explanation: >-
+    Reject needs the whole interval below 0.95; adopt needs its lower end at or above 0.95. Neither
+    holds, so the rule says inconclusive. Changing the threshold after seeing the data is exactly
+    what a pre-stated rule prevents.

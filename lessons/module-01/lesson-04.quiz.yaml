@@ -1,0 +1,62 @@
+- id: q1
+  question: >-
+    You train Baseline-0 and a variant with seed 0 each and score both on the same 256 windows. The
+    paired bootstrap 95% CI of the loss difference is [−0.012, −0.006]. A colleague says the variant
+    is better. What is the main gap in that argument?
+  options:
+    - >-
+      The interval should have been computed without pairing, which is the more conservative choice.
+    - >-
+      The interval covers evaluation noise for two trained models, not seed-to-seed training noise.
+    - >-
+      256 windows is too few for a bootstrap, which needs thousands of items to be valid.
+    - >-
+      A negative difference means the variant has higher loss, so the claim has the wrong sign.
+  correct: 1
+  explanation: >-
+    Pairing over windows treats both models as fixed; another seed would give different models. A
+    claim about the method needs seed replicates, and the seed noise can easily exceed a 0.01 gap.
+
+- id: q2
+  question: >-
+    Your measured seed std on held-out loss is 0.015 nats. You want to detect a 0.02-nat improvement
+    with 80% power at α = 0.05, two arms with independent seeds. About how many seeds per arm do you
+    need?
+  options:
+    - 3, because the MDE with 3 seeds is about 0.02 nats.
+    - 5, because five seeds is the standard for ablations.
+    - 9, because the MDE with n seeds is 2.8 × 0.015 × √(2/n).
+    - 18, because the effect must be at least twice the seed std.
+  correct: 2
+  explanation: >-
+    Solve 2.8 × 0.015 × √(2/n) ≤ 0.02: n ≥ 2 × (2.8 × 0.015 / 0.02)² = 8.8, so 9 per arm. With 3
+    seeds the MDE is 0.034, too large for the effect you care about.
+
+- id: q3
+  question: >-
+    You test five learning-rate schedules against the baseline and get raw p-values 0.004, 0.02,
+    0.03, 0.04 and 0.6. Using Holm at α = 0.05, which schedules can you report as better?
+  options:
+    - All four with p below 0.05, since each was tested at the 0.05 level.
+    - Only the first, since Holm multiplies the smallest p-value by 5 and the next by 4.
+    - None of them, since Bonferroni requires every p-value to be below 0.01.
+    - The first two, since Holm compares each p-value with 0.05 divided by its rank.
+  correct: 1
+  explanation: >-
+    Holm: 0.004 × 5 = 0.02 (reject), 0.02 × 4 = 0.08 (stop). Once one adjusted value exceeds α,
+    every larger p-value is retained too, so only the first schedule is a claim.
+
+- id: q4
+  question: >-
+    Evaluation SE within one run is 0.002 nats (256 windows) and the seed std is 0.012. Your next
+    ablation has budget for either 4× more evaluation windows or 2 more seeds per arm. Which helps
+    the decision more?
+  options:
+    - The windows, because quadrupling items halves the standard error of every run.
+    - The windows, because evaluation is cheaper, so it is always the first thing to increase.
+    - Neither, because the noise floor cannot be reduced once the recipe is fixed.
+    - The seeds, because seed noise is six times the evaluation noise and only more runs reduce it.
+  correct: 3
+  explanation: >-
+    Halving a 0.002 SE barely changes the total noise, which is dominated by the 0.012 seed std.
+    Extra seeds shrink the seed-level standard error, which is what limits the method comparison.

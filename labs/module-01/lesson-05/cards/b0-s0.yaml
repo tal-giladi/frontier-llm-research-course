@@ -1,0 +1,89 @@
+# EXAMPLE run card for lab 01.5 (hashes are placeholders, not real files).
+run: b0-s0
+question: Baseline-0 noise floor on Eval v0 (seed 0)
+parent_run: null
+git:
+  commit: 3f2c1e0a9d4b7c55e1f0aa21b6c3d9e8f7a6b5c4
+  dirty: false
+hardware:
+  python: 3.12.10
+  torch: 2.14.1+cu128
+  platform: Linux-6.8.0-x86_64-with-glibc2.39
+  cpu_threads: 26
+  gpu: NVIDIA H100 80GB HBM3
+  gpu_count: 1
+  cuda: '12.8'
+config:
+  vocab_size: 32768
+  hidden_size: 768
+  num_hidden_layers: 12
+  num_attention_heads: 12
+  num_key_value_heads: 4
+  head_dim: 64
+  intermediate_size: 2816
+  rms_norm_eps: 1.0e-06
+  rope_theta: 10000.0
+  max_position_embeddings: 2048
+  tie_word_embeddings: true
+  qk_norm: true
+  initializer_range: 0.02
+  attention: gqa
+  extra: {}
+args:
+  run: runs/b0-s0
+  preset: baseline0
+  attention: null
+  steps: 9500
+  stop_after: null
+  max_minutes: null
+  batch: 32
+  grad_accum: 8
+  seq: 1024
+  lr: 0.003
+  schedule: cosine
+  warmup: 200
+  weight_decay: 0.1
+  clip: 1.0
+  seed: 0
+  data_seed: null
+  dtype: bf16
+  compile: true
+  log_every: 20
+  eval_every: 500
+  eval_windows: 256
+  ckpt_every: 500
+  data: null
+  device: cuda
+  peak: H100-SXM
+  question: Baseline-0 noise floor on Eval v0 (seed 0)
+  parent: null
+data:
+  name: Data-v0
+  dataset: HuggingFaceFW/fineweb-edu
+  revision: 87f09149ef4734204d70ed1d046ddc9ca3f2b8f9
+  vocab_size: 32768
+  tokenizer_sha256: EXAMPLE-main-path-tokenizer-sha256
+data_files:
+  train:
+    documents: 2547000
+    tokens: 2611000000
+    bin_sha256: 8ac79b-EXAMPLE-train
+  val:
+    documents: 26100
+    tokens: 26400000
+    bin_sha256: 3ca73e-EXAMPLE-val
+  test:
+    documents: 26000
+    tokens: 26300000
+    bin_sha256: 5a1200-EXAMPLE-test
+budget:
+  steps: 9500
+  tokens: 2490368000
+  train_flops: 1962731938775040000
+params:
+  total: 121917696
+  non_embedding: 96751872
+  embedding: 25165824
+  per_layer: 8062592
+  attention_per_layer: 1572992
+  mlp_per_layer: 6488064

@@ -17,3 +17,4 @@ curriculum/pilots/**/runs/
 *.pt
 *.safetensors
 *.gguf
+/runs/

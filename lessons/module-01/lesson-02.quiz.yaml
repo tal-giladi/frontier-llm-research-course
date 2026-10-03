@@ -1,0 +1,73 @@
+- id: q1
+  question: >-
+    A colleague's slide says: "DeepSeek-V3 uses MLA, Kimi K2 copied it, so MLA beats GQA." Which part
+    of a technical report would you need before accepting the last three words?
+  options:
+    - >-
+      The architecture section and config.json, since they document that both models use MLA in
+      every layer.
+    - >-
+      A controlled ablation comparing MLA with GQA at matched budget, at a stated scale and context.
+    - >-
+      The evaluation tables, since a higher benchmark score shows the attention design was better.
+    - >-
+      The infrastructure section, since a smaller KV cache proves the architecture is better overall.
+  correct: 1
+  explanation: >-
+    Architecture sections and configs show what a model is, not that one choice beat another. Only an
+    ablation with the other variables held fixed supports "better", and only at its own scale and
+    context; evaluation tables mix many differences at once.
+
+- id: q2
+  question: >-
+    Two open MoE models are both advertised with "about 3B active parameters". One card counts
+    embedding and output head; the other counts neither. Both have about 0.31B in each of those
+    matrices. You need per-token training FLOPs. What should you do?
+  options:
+    - >-
+      Use 6 × 3B for both, because the advertised number already includes everything that costs FLOPs.
+    - >-
+      Use the second number as is, because embeddings and heads never cost matmul FLOPs.
+    - >-
+      Recompute both from their configs with one rule: head counted, input embedding left out.
+    - >-
+      Add 0.62B to both numbers, because every card leaves out the embedding and the head.
+  correct: 2
+  explanation: >-
+    The embedding is a lookup and costs no matmul FLOPs, while the output head is a matmul of 2·V·C
+    per token. The two cards use different conventions, so the only safe step is to recompute both
+    from their configs with one rule.
+
+- id: q3
+  question: >-
+    gpt-oss-120b has 18 full-attention layers and 18 sliding layers with a 128-token window, 8 KV heads
+    of dim 64. You serve one 100,000-token conversation in BF16. Roughly how much KV cache does it use?
+  options:
+    - About 3.4 GiB, since only the 18 full layers grow with the context.
+    - About 6.9 GiB, since all 36 layers keep every token's keys and values.
+    - About 0.004 GiB, since the sliding layers bound the cache to 128 tokens per layer.
+    - About 54 GiB, since all 64 query heads store their own keys and values.
+  correct: 0
+  explanation: >-
+    Per full layer and token: 8 × (64 + 64) = 1,024 elements, 2,048 bytes; 18 layers × 100,000 tokens
+    ≈ 3.4 GiB. The 18 sliding layers hold only 128 tokens each (about 4.5 MiB in total), so they add
+    almost nothing.
+
+- id: q4
+  question: >-
+    Your team lead asks for a table row "GPT-5: MoE, ~1.8T parameters" next to open models. What can
+    you actually support from OpenAI's GPT-5 system card?
+  options:
+    - >-
+      The MoE label, since the card describes several models and a router choosing between them.
+    - >-
+      The parameter count, since system cards report size whenever they report safety evaluations.
+    - >-
+      Neither the size nor MoE, but the card describes a fast model and a reasoning model behind a router.
+    - >-
+      Both, because a router between models is the same mechanism as an MoE router between experts.
+  correct: 2
+  explanation: >-
+    Section 1 of the card documents a system of a fast model, a reasoning model and a real-time
+    router; it discloses no architecture, parameter count or compute. A router between whole models is
+    a product-level choice, not evidence of expert routing inside a model.
