@@ -1,0 +1,13 @@
+# Free CPU path. Checked 2026-10-03 on Windows 11 and Python 3.12.
+# Install:  pip install -r requirements-cpu.txt --extra-index-url https://download.pytorch.org/whl/cpu
+#           pip install -e .
+torch==2.14.1
+numpy==2.5.3
+scipy
+transformers==5.18.0
+safetensors
+tokenizers==0.23.2
+datasets==5.0.1
+matplotlib==3.11.2
+pytest==9.1.1
+pyyaml==6.0.3

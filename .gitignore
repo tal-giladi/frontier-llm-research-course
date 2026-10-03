@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.env
+.ipynb_checkpoints/
+# data, checkpoints and run outputs are produced by the lab scripts, never committed
+/labs/common/data/
+labs/module-*/**/data/
+labs/**/runs/
+labs/**/checkpoints/
+curriculum/pilots/**/runs/
+*.bin
+*.pt
+*.safetensors
+*.gguf

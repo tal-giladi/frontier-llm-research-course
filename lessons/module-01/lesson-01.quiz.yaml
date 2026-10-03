@@ -1,0 +1,87 @@
+- id: q1
+  question: >-
+    A teammate says: "DeepSeek, Kimi and Qwen all published strong models, so we should copy the
+    DeepSeek-V3.2 block for our next 1B model." What is the best response, given what the reports
+    actually show?
+  options:
+    - >-
+      Agree, because the newest published block is by construction the best one available at every
+      scale and context length.
+    - >-
+      Treat each choice as DeepSeek's answer under its constraints, and test the ones that matter
+      for our context, hardware and budget.
+    - >-
+      Disagree, because sparse attention has been shown to lose quality relative to dense attention
+      in every published comparison.
+    - >-
+      Copy it only if we also use the same data, since architecture choices do not interact with
+      model size or hardware.
+  correct: 1
+  explanation: >-
+    Open reports document what worked for one lab under its constraints; they rarely claim a choice
+    is best in general, and labs disagree (MiniMax-M2 returned to full attention). Choices also
+    interact with scale and hardware, so the transferable step is to test the relevant ones.
+
+- id: q2
+  question: >-
+    You estimate training compute for Baseline-0 as $6 \cdot N \cdot D$ and plug in the total
+    parameter count (122M) instead of the non-embedding count (97M). Roughly how far off is the
+    estimate of the matmul term, and in which direction?
+  options:
+    - About 26% too high, because the embedding lookup is not a matrix multiply in the forward pass.
+    - About 26% too low, because the embedding parameters are used twice when the head is tied.
+    - Exact, since tied embeddings make the two parameter counts equal for FLOP purposes.
+    - About 2% too high, because the embedding is a negligible share of a 122M model.
+  correct: 0
+  explanation: >-
+    122/97 is about 1.26. The embedding lookup costs no matmul FLOPs; the tied head does cost
+    $2VC$ per token, but that is a separate term, not 6 FLOPs per embedding weight. Mixing the two
+    conventions inflates every estimate.
+
+- id: q3
+  question: >-
+    A new attention module trains well: loss curves match the baseline. But generated text becomes
+    repetitive nonsense after the first token. Which check from the course correctness suite is most
+    likely to fail?
+  options:
+    - The gradient check, because generation uses the backward pass to pick tokens.
+    - The causal check, because a future-token leak only appears when sampling.
+    - The cached-decode agreement check, because training never runs the cached path.
+    - The parameter-count check, because generation allocates extra weights for the cache.
+  correct: 2
+  explanation: >-
+    Training uses full sequences, so a bug confined to the cached path (for example a top-left causal
+    mask with more keys than queries) leaves the loss unchanged. Comparing full-forward logits with
+    token-by-token cached decoding exposes it.
+
+- id: q4
+  question: >-
+    Your Colab session dies at step 6,200 of a 9,500-step run. You restart with the same command, but
+    the checkpoint format you wrote saved only model and optimizer state. What is the main problem
+    for your experiment?
+  options:
+    - The learning-rate schedule restarts from warmup, so the run diverges immediately.
+    - The model weights are lost, because optimizer state cannot be restored without the RNG state.
+    - Nothing important, since data order has no measurable effect on a run of this length.
+    - The run continues with a different data order, so it is no longer the run your contract describes.
+  correct: 3
+  explanation: >-
+    Without the data-sampler RNG the resumed run sees different batches (repeating some, skipping
+    others). It still trains, but it is a different run, which breaks seed-matched comparisons; the
+    schedule depends on the saved step, not the RNG.
+
+- id: q5
+  question: >-
+    Baseline-0 caches $2 \cdot L \cdot K \cdot d$ values per token (L = 12 layers, K = 4 key/value
+    heads, d = 64) in BF16. A colleague proposes going from 4 to 2 key/value heads. What happens to
+    decode KV memory at 32K tokens, per sequence?
+  options:
+    - It halves, from 384 MiB to 192 MiB, and the quality cost has to be measured.
+    - It halves, and quality is unaffected because query heads are unchanged.
+    - It drops by a quarter, because only the key cache depends on the number of heads.
+    - It stays the same, because the cache size depends on query heads, not key/value heads.
+  correct: 0
+  explanation: >-
+    12,288 bytes per token × 32,768 tokens is 384 MiB; KV memory is linear in the number of
+    key/value heads, so it halves. Whether quality suffers is an empirical question for a controlled
+    comparison (Module 3), not something to assume.

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frontierlab"
+version = "0.1.0"
+description = "Frontier LLM Research Engineering course: the lab code, grown module by module."
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+dependencies = ["torch>=2.14,<2.15", "numpy>=2.0", "pyyaml>=6.0"]
+
+[project.optional-dependencies]
+hf = ["transformers==5.18.0", "safetensors"]
+data = ["datasets==5.0.1", "tokenizers==0.23.2"]
+dev = ["pytest==9.1.1", "matplotlib==3.11.2", "scipy"]
+
+[tool.setuptools.packages.find]
+include = ["frontierlab*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
