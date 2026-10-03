@@ -34,12 +34,12 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Phase 0: repo spine (git, .gitignore, .gitattributes, .venv) — commit 6c54917
 - [x] Phase 0: `labs/common/frontierlab` foundation (Baseline-0 model, data prep, training loop with exact resume, run cards, correctness suite, stats helpers) with tests — 13 tests pass; Data-v0 CPU slice prepared (20k docs, vocab 8192, 24.1M train tokens)
 - [x] Phase 0: shared docs (README, _sidebar, glossary, templates, references, course-details, AGENT-BRIEF)
-- [ ] Phase 0: Colab pilot notebook(s) for Tal (`curriculum/pilots/`)
+- [x] Phase 0: Colab pilot notebook for Tal (`curriculum/pilots/pilot_phase0.ipynb`, built by `build_notebook.py`; P1 noise floor, P2 Module 2). Add later modules' pilots there.
 - [ ] Phase 0: pilot results received (`curriculum/pilots/RESULTS.md`) and projections updated
-- [ ] Module 1 — How do we know a change helped? (01.1 done by main session as the exemplar; 01.2–01.5 + project + quiz: sub-agent A)
-- [ ] Module 2 — Where does the time go? (sub-agent B)
-- [ ] Module 3 — How should attention spend KV memory?
-- [ ] Module 4 — Does the model use its context?
+- [x] Module 1 — How do we know a change helped? — commit f83216e; dry-run import 0 problems
+- [x] Module 2 — Where does the time go? — commit f83216e; dry-run import 0 problems
+- [x] Module 3 — How should attention spend KV memory? (sub-agent C, integrated)
+- [x] Module 4 — Does the model use its context? (sub-agent D, integrated)
 - [ ] Module 5 — When is sub-quadratic attention worth it?
 - [ ] Module 6 — Which other block changes earn their complexity?
 - [ ] Module 7 — Which optimizer and parametrization?
@@ -62,13 +62,14 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 
 ## Who is working on what
 
-- Sub-agent A: Module 1 lessons 01.2–01.5, project, module quiz (owns lessons/module-01 except 01.1, labs/module-01, frontierlab/calc, frontierlab/evals/suite_v0.py, frontierlab/record).
-- Sub-agent B: Module 2 (owns lessons/module-02, labs/module-02, frontierlab/perf).
-- Main session: waiting; then integrates, writes the Colab pilot notebook from both agents' GPU command lists, commits.
+- Main session: Modules 1–4 integrated; next Modules 5 and 6 (two sub-agents), then Stage C.
 
 ## Decisions and open questions
 
 | Date | Decision |
 |---|---|
 | 2026-10-03 | See plan section 15 (name, free, rented-GPU main path, one course, publishing warning, budget accepted, Colab scaled pilots, Hugging Face hosting, multimodal later) |
+| 2026-10-03 | Root `pytest.ini` uses `--import-mode=importlib` so every lab folder can keep `test_lab.py` |
 | 2026-10-03 | Reuse the MoE course's quiz checker and labkit pattern; lab package `frontierlab` copies from `llmre`/`moelab`, imports neither |
+| 2026-10-04 | Continued training from a checkpoint goes through `frontierlab.longctx.extend` (wraps the loop); the native `--init-from` loop change proposed in `curriculum/inbox/module-04-loop-changes.md` is deferred until a later module needs it |
+| 2026-10-04 | RMSNorm keeps float64 as float64 (Module 3 finding); float32/bf16 behaviour unchanged |

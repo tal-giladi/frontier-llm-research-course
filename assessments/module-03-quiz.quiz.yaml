@@ -1,0 +1,205 @@
+- id: q1
+  question: >-
+    You must serve 256 concurrent 32K-token sequences of a Baseline-0-sized model on one 80 GB GPU,
+    with about 280 MB of cache per sequence available. Baseline-0 caches 384 MiB per sequence. Which
+    next step is the most defensible?
+  options:
+    - >-
+      Adopt MLA immediately, because DeepSeek-V2 reports a 93.3% smaller cache and better quality
+      than multi-head attention.
+    - >-
+      Halve the number of query heads, because the GQA cache grows with the number of query heads.
+    - >-
+      Compare the designs that fit (2 KV heads, MLA, local/global) on quality and decode latency.
+    - >-
+      Quantise the weights to 4 bits, because the weights are what limits the number of sequences.
+  correct: 2
+  explanation: >-
+    Several designs fit (about 201, 226 and 70 MB per sequence); the decision is which loses least
+    quality and decodes fastest. DeepSeek's numbers compare against a dense MHA model at its scale,
+    and query heads do not set the GQA cache. Weights are only 244 MB here.
+
+- id: q2
+  question: >-
+    A pull request adds MLA. Its tests show training loss identical to the naive implementation, and
+    the cached-decode agreement check passes. The decode benchmark shows MLA slower than GQA at every
+    context, by a factor that grows with context. What do you check first?
+  options:
+    - >-
+      Whether the softmax scale uses $d_c + d_r$ instead of $d_n + d_r$, since a wrong scale slows
+      the kernel down.
+    - >-
+      Whether decoding uses the naive path, re-expanding every cached latent into per-head keys and
+      values at every step.
+    - >-
+      Whether the decoupled RoPE key is cached, since recomputing it from scratch dominates decode
+      time at long context.
+    - >-
+      Whether the latent RMSNorm is applied twice, since that doubles the cost of each cached token.
+  correct: 1
+  explanation: >-
+    The naive path costs about $2 d_c H (d_n + d_v)$ FLOPs per cached token per layer at every
+    step, so its decode time grows with context far faster than GQA's. The absorbed path attends over
+    the latent directly. A wrong scale would change outputs and fail the equivalence check.
+
+- id: q3
+  question: >-
+    You compare MLA against Baseline-0 at equal tokens and MLA wins by 0.015 nats. MLA has 6.4% more
+    non-embedding parameters and different FLOPs per token. A reviewer objects. Which redesign best
+    answers the objection?
+  options:
+    - >-
+      Repeat the same comparison with three seeds, since the objection is only about noise.
+    - >-
+      Report the result at equal wall-clock instead, because time is what the team pays for.
+    - >-
+      Report the result as is, but add the parameter count to the table so readers can judge.
+    - >-
+      Add an equal-parameters arm (narrower SwiGLU for MLA) and an equal-FLOPs arm, each with seeds.
+  correct: 3
+  explanation: >-
+    At equal tokens a larger model can win by size alone. Matching parameters asks which design uses
+    capacity better; matching training FLOPs asks which is best for a fixed budget. Seeds address
+    noise but not the confound; wall-clock adds implementation effects.
+
+- id: q4
+  question: >-
+    Your rolling-cache sliding-window layer passes the causal check and the cached-decode check with
+    one token per step after a one-token prefix. In production, a 2,000-token prompt prefilled in one
+    call gives wrong answers. Which test would have caught this?
+  options:
+    - >-
+      Cached decoding with a long prefill and chunks longer than the window, against the full forward.
+    - >-
+      A float64 gradient check of the attention module with respect to its input and parameters.
+    - >-
+      A causal check with the split point moved to the very last token of a long sequence.
+    - >-
+      A comparison of training loss against Baseline-0 over 1,000 steps on the same data.
+  correct: 0
+  explanation: >-
+    The likely bug is trimming the cache before attending, which only hurts steps with more new
+    tokens than the window. Training and one-token decoding never exercise it; a chunked cached-decode
+    check does.
+
+- id: q5
+  question: >-
+    A report says a model with 5 local layers per global layer and a 1,024-token window "uses 20 KiB
+    of KV cache per token". You want to know the memory for 8K-token chats. What should you do?
+  options:
+    - >-
+      Multiply 20 KiB by 8,192, because KV bytes per token are a property of the architecture.
+    - >-
+      Ignore the local layers and count only the global ones, because local layers keep no cache.
+    - >-
+      Recompute it at 8K from the layout, since the per-token figure depends on the context.
+    - >-
+      Use the all-global figure, because at 8K tokens the window no longer limits anything at all.
+  correct: 2
+  explanation: >-
+    Bytes are $b \cdot e \cdot \sum_\ell \min(S, w_\ell)$; the average per token falls as $S$
+    grows, so a figure quoted at, say, 128K understates the per-token cost at 8K. Local layers keep
+    up to $w$ tokens each, which is small but not zero.
+
+- id: q6
+  question: >-
+    In your project, the local/global arm is non-inferior to Baseline-0 on Eval v0 at both axes and
+    has the smallest cache. The product needs answers that depend on text 20K tokens back. What
+    should the memo say?
+  options:
+    - >-
+      Recommend it, because non-inferiority on Eval v0 at two comparison axes is strong evidence.
+    - >-
+      Recommend it provisionally, pending a long-context evaluation that Eval v0 cannot replace.
+    - >-
+      Reject it, because local layers cannot use information beyond their window in any way.
+    - >-
+      Recommend MLA instead, because MLA never loses long-range information.
+  correct: 1
+  explanation: >-
+    Eval v0 scores short windows, so parity there says little about use of far context; global
+    layers still see everything, so rejection is not justified either. The memo should state the
+    gap and the test that closes it (Module 4's evaluation).
+
+- id: q7
+  question: >-
+    You remove QK-norm from Baseline-0 and train at a 3.3× higher learning rate. The maximum attention
+    logit reaches 40, against 9 with QK-norm. Your head width is 64. What does this observation
+    support?
+  options:
+    - >-
+      That QK-norm bounds logits as designed (about 8 times the gain product) while raw logits grow.
+    - >-
+      That removing QK-norm will cause loss spikes at frontier scale, since logit growth always
+      leads to instability.
+    - >-
+      That the QK-norm gains must have grown far above 1, since otherwise the logit could not reach 9.
+    - >-
+      Nothing, because maximum logits are not affected at all by normalising queries and keys.
+  correct: 0
+  explanation: >-
+    With RMS-normalised $q, k$ of norm 8 the logit is at most $8 \cdot g_q g_k$, so 9 means gain
+    products slightly above 1. The observation shows the mechanism; whether growth causes
+    instability at scale is a separate hypothesis this run cannot test.
+
+- id: q8
+  question: >-
+    A colleague implements gpt-oss-style sinks and, to be safe, renormalises every attention row to
+    sum to one after dropping the sink column. The correctness suite passes. What is wrong?
+  options:
+    - >-
+      Nothing, because renormalising only changes rows by a constant and attention is invariant to
+      that.
+    - >-
+      The causal check should have failed, because renormalising lets future tokens leak into the
+      row sum.
+    - >-
+      The renormalisation removes the sink's effect, since the head can no longer put weight on
+      nothing.
+    - >-
+      Renormalising doubles the memory of the logits tensor, which makes decoding infeasible.
+  correct: 2
+  explanation: >-
+    With a sink, rows sum to $1 - p_{\text{sink}}$ and the head's output shrinks when it attends to
+    nothing; renormalising turns it back into ordinary softmax. The suite checks internal
+    consistency, not that the mechanism matches the design, so add the limit test against the
+    intended formula.
+
+- id: q9
+  question: >-
+    You add the Qwen elementwise output gate to Baseline-0 and train it against Baseline-0 at equal
+    tokens. Held-out loss improves by 0.03 nats over three seeds, beyond the noise floor. What is the
+    main weakness of attributing the gain to gating?
+  options:
+    - >-
+      Three seeds are too few to detect any effect, so the improvement must be noise.
+    - >-
+      The gate changes FLOPs per token by 50%, so the equal-tokens comparison is meaningless.
+    - >-
+      The gated model cannot be evaluated on Eval v0, because its attention rows do not sum to one.
+    - >-
+      The gate adds about 7M parameters, so capacity alone could explain the gain.
+  correct: 3
+  explanation: >-
+    The elementwise gate adds $C \cdot H d$ parameters per layer. To attribute the gain to the
+    mechanism, compare at equal parameters (headwise gate or a narrower FFN). The FLOP increase is
+    small, and gated rows still sum to one before the gate.
+
+- id: q10
+  question: >-
+    Your CPU measurement shows absorbed MLA 1.7× slower per decode step than GQA, with a 95% interval
+    of [1.5, 2.0]. The memo is for H100 serving. How should the memo use this number?
+  options:
+    - >-
+      As the measured decode cost of MLA, since the interval is narrow and excludes 1.
+    - >-
+      As a CPU-only result; give the H100 figure as a labelled projection and measure it there.
+    - >-
+      Discard it and report MLA as faster, because MLA always reads fewer bytes than GQA.
+    - >-
+      As evidence that MLA should be rejected, because a slower decode on any hardware is decisive.
+  correct: 1
+  explanation: >-
+    A sound measurement holds for the machine it was taken on. CPU decode at toy size is bound by
+    arithmetic and overheads, while H100 decode is memory-bound; the memo must label the GPU number as
+    projected until the pilot measures it.

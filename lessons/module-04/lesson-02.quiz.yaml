@@ -1,0 +1,80 @@
+- id: q1
+  question: >-
+    A model with RoPE base 10,000 and 64 rotated channels per head was trained at 1,024 tokens. Run
+    unchanged at 8,192 tokens, its loss rises on late positions. Which channel pairs are responsible?
+  options:
+    - >-
+      The fastest pairs, because their many rotations make neighbouring positions ambiguous at 8K.
+    - >-
+      All pairs equally, since every angle grows linearly with the distance between tokens.
+    - >-
+      The slowest pairs, which never completed a turn within 1,024 tokens and now see unseen angles.
+    - >-
+      None of them; the rise comes from the softmax spreading over more keys, not from positions.
+  correct: 2
+  explanation: >-
+    A pair with wavelength above 1,024 tokens made less than one rotation in training, so distances
+    beyond 1,024 give it angles it never saw. Fast pairs wrapped many times and saw every angle. The
+    flatter softmax is a real second effect (YaRN's temperature), but it is not about which pairs break.
+
+- id: q2
+  question: >-
+    You must serve a model trained at 4K at 16K tomorrow, with no time to fine-tune. Your measurement
+    on held-out documents shows PI lowers far-position loss but raises loss at positions below 4K by
+    0.2 nats. What is the most likely reason, and the better zero-shot option?
+  options:
+    - >-
+      PI divides every frequency by 4, blurring the fast pairs that encode local order; use YaRN, which
+      leaves pairs with many rotations unchanged.
+    - >-
+      PI changes the base, which shifts every attention score; use NTK-aware scaling, which leaves the
+      base unchanged and divides positions.
+    - >-
+      PI adds an attention temperature that over-sharpens short contexts; switch it off and keep PI.
+    - >-
+      PI needs a larger factor than 4 to work; use PI with factor 8 so that short contexts are untouched.
+  correct: 0
+  explanation: >-
+    PI slows every clock, including those that already covered all angles, so neighbouring tokens look
+    closer than in training. YaRN interpolates only the slow pairs and blends the middle ones; it is PI
+    that leaves the base alone and NTK that changes it.
+
+- id: q3
+  question: >-
+    A colleague's YaRN implementation gives frequencies that differ from Transformers' by up to 40% on
+    a few middle pairs, but agree on the fastest and slowest pairs. Their code follows the paper's
+    equations exactly. What explains it?
+  options:
+    - >-
+      Their code must have the wrong attention factor, since the frequencies would otherwise agree.
+    - >-
+      They used beta_fast = 1 and beta_slow = 32, which swaps which pairs are interpolated.
+    - >-
+      Transformers computes in float32, which loses up to 40% precision on middle frequencies.
+    - >-
+      The reference code ramps linearly in the pair index between rounded bounds, not linearly in rotations.
+  correct: 3
+  explanation: >-
+    Both ramps agree at the ends (keep above beta, interpolate below alpha) but differ in between. The
+    attention factor does not change frequencies, swapped betas would change the ends too, and float32
+    error is about 1e-7 relative.
+
+- id: q4
+  question: >-
+    To extend a trained 8K checkpoint to 64K, an engineer proposes switching to partial RoPE (rotating
+    only a quarter of each head) during continued training, since Qwen3-Next uses it for long context.
+    What is the main objection?
+  options:
+    - >-
+      Partial RoPE is only defined for MoE models, so it cannot be used with a dense checkpoint.
+    - >-
+      It changes which channels carry position, so the trained weights no longer fit; it needs retraining.
+    - >-
+      It multiplies the KV cache by four, because unrotated channels must be stored separately.
+    - >-
+      Partial RoPE removes the fastest frequencies, which would destroy local word order at any length.
+  correct: 1
+  explanation: >-
+    The checkpoint learned to use position signals in every channel; turning rotation off in three
+    quarters of them changes the function the weights compute. Neither partial RoPE convention drops
+    the fastest pairs, and the cache size is unchanged.

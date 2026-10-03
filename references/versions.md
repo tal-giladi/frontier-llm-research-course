@@ -50,3 +50,7 @@ re-checked when its module is written and pilot-tested.
 | transformer-lens | 4.0.0 | 2026-09-21 | Module 17 |
 | nnsight | 0.7.0 | 2026-05-05 | Module 17 |
 | circuit-tracer | 0.5.0 | 2026-03-29 | Module 17.3 |
+
+## Notes on reference implementations
+
+- Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.

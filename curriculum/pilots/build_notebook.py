@@ -76,6 +76,8 @@ DATA = f'{PILOT_DIR}/data-v0-32k'
 import os
 if not os.path.exists(f'{DATA}/meta.json'):
     !python -m frontierlab.data.prepare --docs 800000 --vocab 32768 --out "$DATA"
+# Lab scripts look for labs/common/data/v0 by default: point it at the Drive copy.
+!mkdir -p labs/common/data && rm -rf labs/common/data/v0 && ln -sfn "$DATA" labs/common/data/v0
 !cat "$DATA/meta.json" | head -40
 """),
 ]
@@ -171,7 +173,73 @@ session is available, run there:
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P2}
+# ---------------------------------------------------------------------------------------------
+# P1b — Module 1 lesson labs on GPU (cheap; after P1).
+# ---------------------------------------------------------------------------------------------
+P1B = [
+    md("""
+## P1b — Module 1 lesson labs on GPU (about 30 minutes)
+
+01.3 comparison axes, 01.4 seeds, 01.5 batch invariance and bitwise reruns. Record what each script
+prints; outputs go to Drive.
+"""),
+    code("""
+os.environ['LAB_TARGET'] = 'solution'
+O1 = f'{PILOT_DIR}/p1b'; os.makedirs(O1, exist_ok=True)
+!python labs/module-01/lesson-03/compare_axes.py --device cuda --batch 64 --seq 512 --steps 2000 2>&1 | tee "$O1/01-3-axes.txt"
+!python labs/module-01/lesson-04/run_seeds.py --preset pilot-10m --device cuda --batch 64 --seq 512 --steps 2000 --out "$O1/l14-gpu" 2>&1 | tail -20
+!python labs/module-01/lesson-04/analyze.py --out "$O1/l14-gpu" 2>&1 | tee "$O1/01-4-analyze.txt"
+!python labs/module-01/lesson-05/batch_invariance.py --device cuda 2>&1 | tee "$O1/01-5-batch-invariance.txt"
+"""),
+]
+
+# ---------------------------------------------------------------------------------------------
+# P3 — Module 3: decode memory/latency (random weights) and the logit-control arms.
+# The 21-run project (~39 H100-hours PROJECTED) is not piloted; its cost stays PROJECTED.
+# ---------------------------------------------------------------------------------------------
+P3 = [
+    md("""
+## P3 — Module 3: KV memory, decode latency, logit control (about 1.5 hours on an A100)
+
+Decode comparisons use random weights (memory and time only). `train_arms.py --variant main`
+trains the four logit-control arms; then `probe.py` measures max logits, sink mass and massive
+activations. The sink arm materialises full attention logits in fp32: expect high memory.
+"""),
+    code("""
+O3 = f'{PILOT_DIR}/p3'; os.makedirs(O3, exist_ok=True)
+!python labs/module-03/decode_compare.py --device cuda --dtype bf16 --preset baseline0 --vocab 32768 --arms b0 gqa-kv mla-naive mla-absorbed --contexts 8192 16384 32768 --rounds 30 --out "$O3/l31-decode.json" 2>&1 | tail -40
+!python labs/module-03/decode_compare.py --device cuda --dtype bf16 --preset baseline0 --vocab 32768 --train-seq 1024 --arms b0 local-global sliding --contexts 8192 16384 32768 --rounds 30 --out "$O3/l32-decode.json" 2>&1 | tail -40
+"""),
+    code("""
+!python labs/module-03/lesson-03/train_arms.py --variant main --out "$O3/l33" 2>&1 | tail -30
+!python labs/module-03/lesson-03/probe.py "$O3/l33" --device cuda 2>&1 | tee "$O3/l33-probe.txt"
+"""),
+]
+
+# ---------------------------------------------------------------------------------------------
+# P4 — Module 4: long held-out documents and Eval v1 on a P1 checkpoint.
+# ---------------------------------------------------------------------------------------------
+P4 = [
+    md("""
+## P4 — Module 4: long held-out documents, Eval v1, zero-shot RoPE rules (about 1–2 hours)
+
+Streams long FineWeb-Edu documents past the Data-v0 slice (CPU and network; can run on a CPU
+runtime), then evaluates the P1 `pilot-70m` seed-0 checkpoint (trained at 1,024 tokens) at
+1K–8K with Eval v1 and with zero-shot RoPE rules.
+"""),
+    code("""
+O4 = f'{PILOT_DIR}/p4'; os.makedirs(O4, exist_ok=True)
+LONG = f'{PILOT_DIR}/data-v0-long'
+if not os.path.exists(f'{LONG}/meta.json'):
+    !python -m frontierlab.longctx.prepare_long --skip 2600000 --docs 2000000 --min-tokens 8192 --splits val test --out "$LONG"
+!mkdir -p labs/common/data && ln -sfn "$LONG" labs/common/data/v0-long
+B0 = f'{PILOT_DIR}/p1/pilot-70m-s0'
+!python -m frontierlab.evals.suite_v1 run "$B0" --train-len 1024 --lengths 1024 2048 4096 8192 --n 100 --data "$LONG" --device cuda --bf16 --out "$O4/eval_v1.json" 2>&1 | tail -30
+!python labs/module-04/lesson-02/zero_shot.py --run "$B0" --train-len 1024 --eval-len 8192 --device cuda --bf16 --data "$LONG" --out "$O4/zero-shot-8192.json" 2>&1 | tail -30
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4}
 
 
 def build():

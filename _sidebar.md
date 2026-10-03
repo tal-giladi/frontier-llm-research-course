@@ -17,3 +17,16 @@
   - [08 · Communication and overlap](lessons/module-02/lesson-03.md)
   - [09 · Validating a performance claim](lessons/module-02/lesson-04.md)
   - [Module 2 quiz](assessments/module-02-quiz.md)
+
+- Stage B — Architecture questions
+- **Module 3 — How should attention spend KV memory?**
+  - [10 · Multi-head Latent Attention](lessons/module-03/lesson-01.md)
+  - [11 · Local/global attention and KV arithmetic](lessons/module-03/lesson-02.md)
+  - [12 · Logit control, sinks and gating](lessons/module-03/lesson-03.md)
+  - [13 · Head count and head dimension](lessons/module-03/lesson-04.md)
+  - [Module 3 quiz](assessments/module-03-quiz.md)
+- **Module 4 — Does the model use its context?**
+  - [14 · Long-context evaluation that means something](lessons/module-04/lesson-01.md)
+  - [15 · Position at long range](lessons/module-04/lesson-02.md)
+  - [16 · Extending context by continued training](lessons/module-04/lesson-03.md)
+  - [Module 4 quiz](assessments/module-04-quiz.md)

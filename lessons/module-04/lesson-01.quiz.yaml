@@ -1,0 +1,79 @@
+- id: q1
+  question: >-
+    A vendor's model scores 100% on needle-in-a-haystack at 128K, where the needle sentence and the
+    question share most of their words. Your team must decide whether it can answer questions that
+    combine two facts from a 100K-token contract. What does the NIAH result tell you?
+  options:
+    - >-
+      That the model can locate a literal string at that length, not that it can combine what it finds.
+    - >-
+      That the model's effective length is 128K for every task, because retrieval is the hardest part.
+    - >-
+      That multi-hop questions will also pass, since a model that retrieves one fact retrieves two.
+    - >-
+      Nothing at all, because synthetic evaluations never correlate with any real-world behaviour.
+  correct: 0
+  explanation: >-
+    With word overlap, NIAH can be solved by matching and copying. RULER and NoLiMa show large drops
+    once tasks need multi-hop tracing or remove the lexical overlap; the result is real evidence, but
+    only about retrieval.
+
+- id: q2
+  question: >-
+    On 40 retrieval items with 5 candidates, your model scores 15% accuracy, below the 20% chance level,
+    and 15% on the evidence-ablated twins as well. Its evidence effect is +0.07 nats with a 95% interval
+    of [+0.02, +0.12]. What is the best reading?
+  options:
+    - >-
+      The model is worse than random at retrieval, so its handling of context is actively broken.
+    - >-
+      Both numbers are noise, because the accuracy and the evidence effect use the same 40 items.
+    - >-
+      The statements move probability toward the answer, but too weakly to beat the word prior.
+    - >-
+      The evaluation is invalid, because a valid task must give above-chance accuracy on any model.
+  correct: 2
+  explanation: >-
+    Accuracy below chance is usually the prior over candidate tokens, which is identical in the twin.
+    The paired evidence effect cancels that prior, and its interval excludes zero, so the evidence is
+    read, just weakly.
+
+- id: q3
+  question: >-
+    A colleague reports that extending a model from 4K to 16K "improved long-context quality": its mean
+    loss over full 16K windows fell by 0.01 nats. Which additional measurement most directly shows whether
+    the model now uses tokens more than 4K back?
+  options:
+    - >-
+      The mean loss over full 16K windows on a second validation set, to show the 0.01 is not noise.
+    - >-
+      Loss on late targets with the context cut to the last 4K tokens, minus full-context loss, paired.
+    - >-
+      The perplexity at 4K before and after extension, since a better short-context model will
+      also use long context better.
+    - >-
+      The needle-in-a-haystack score at 16K, because loss cannot measure the use of far context.
+  correct: 1
+  explanation: >-
+    The mean over a window is dominated by near-context predictions. The context gain holds the target
+    tokens fixed and removes only the far context, so a positive paired difference is direct evidence
+    that the far tokens are used.
+
+- id: q4
+  question: >-
+    You plan to show that a new RoPE rule raises two-hop accuracy from about 25% (chance, 4 candidates)
+    to 35%. The CPU suite uses 40 items per cell. What should the contract say before any run?
+  options:
+    - >-
+      Use 40 items, then add items until the interval excludes chance, so the budget is not wasted.
+    - >-
+      Use 40 items, because the paired bootstrap removes enough noise to detect a 10-point difference.
+    - >-
+      Use 20 items per cell and more lengths, since the length sweep provides the replication.
+    - >-
+      Use about 160 items per cell, since 40 items can detect only much larger effects.
+  correct: 3
+  explanation: >-
+    With p0 = 0.25 and p1 = 0.35 the normal approximation needs about 157 items for 80% power; 40 items
+    detect only effects of roughly 25 points. Adding items until significance is optional stopping and
+    inflates false positives.

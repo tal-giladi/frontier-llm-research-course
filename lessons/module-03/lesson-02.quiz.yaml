@@ -1,0 +1,87 @@
+- id: q1
+  question: >-
+    Your sliding-window layer passes the cached-decode test when the prefix is one token and every
+    later step decodes one token. With an 8-token prefill and a window of 4, the logits of the
+    prefill are wrong. What is the most likely bug?
+  options:
+    - >-
+      The RoPE angles are computed from positions relative to the window start instead of absolute
+      positions.
+    - >-
+      The cache is trimmed to the last 4 keys before the step attends, so early prefill queries lose
+      their keys.
+    - >-
+      The window keeps 4 keys before each query instead of 4 including it, an off-by-one in the mask.
+    - >-
+      The mask is built from row and column indices, which is only wrong for one-token decode steps.
+  correct: 1
+  explanation: >-
+    Trimming before attending only hurts steps with more new tokens than the window, such as a
+    prefill. The fix is to attend over stored plus new keys and trim afterwards; an off-by-one window
+    would also break one-token steps.
+
+- id: q2
+  question: >-
+    A vendor slide says Gemma 3 27B "caches about 80 KiB per token". Your service runs it at 32K
+    context. Which statement is the most accurate?
+  options:
+    - >-
+      The figure holds at every context length, because KV bytes per token are a fixed property of
+      the architecture.
+    - >-
+      The figure is too low at every context, because local layers cache as much per token as global
+      layers.
+    - >-
+      At 32K it is about 93 KiB per token; the per-token figure falls toward 80 KiB only at very long
+      context.
+    - >-
+      At 32K it is about 8 KiB per token, because 52 of the 62 layers are local and keep no cache.
+  correct: 2
+  explanation: >-
+    Ten global layers keep all S tokens; 52 local layers keep 1,024 each. The average per token is
+    $8\,\text{KiB} \cdot (10 + 52 \cdot 1024 / S)$: 93 KiB at 32K, 83 KiB at 128K, about 80 KiB at 1M.
+    Always quote a windowed model's KV bytes at a context.
+
+- id: q3
+  question: >-
+    A local/global variant of Baseline-0 matches its held-out loss on Eval v0 within the noise floor.
+    A teammate wants to ship it for a product that answers questions about 50-page contracts. What
+    should you say?
+  options:
+    - >-
+      Ship it, because matching held-out loss within the noise floor shows the window loses no
+      information that matters.
+    - >-
+      Do not ship it, because sliding-window models always fail at long context regardless of the
+      number of global layers.
+    - >-
+      Ship it only with a larger window, because loss parity at short context proves the window was
+      the only limitation.
+    - >-
+      Eval v0 measures short-range prediction; test long-range use first, such as retrieval and
+      multi-hop over far context.
+  correct: 3
+  explanation: >-
+    Next-token loss on short windows barely depends on far context, so parity there says little
+    about long-range use. That needs a long-context evaluation (Module 4), not an assumption either
+    way.
+
+- id: q4
+  question: >-
+    You train the local/global arm at $T = 1024$ with a window of 256 and set up an equal-FLOPs
+    comparison against Baseline-0. Its FLOPs per token are only 3.4% lower, so it gets just 3.5% more
+    steps. Why is the saving so small?
+  options:
+    - >-
+      At $T = 1024$ attention scores are a small share of training FLOPs; the weights dominate.
+    - >-
+      Local layers still compute every masked score, so their FLOPs are the same as global layers.
+    - >-
+      Two of the twelve layers are global, and global layers dominate the FLOPs of any model.
+    - >-
+      The window only affects decoding; training FLOPs are identical by construction.
+  correct: 0
+  explanation: >-
+    Training FLOPs are about $2N$ per token plus attention; at $T = 1024$ attention is about 7% of
+    Baseline-0's total, and the window cuts the local layers' share from 512 to 224 keys on average.
+    At 32K the attention term dominates and the saving would be large.

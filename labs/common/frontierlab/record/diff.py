@@ -91,6 +91,10 @@ def classify(key: str, a, b, *, changed=(), axis: str = "tokens", seeds_are_repl
         return "invalidates", "different seed in a comparison that should share seeds"
     if _under(key, INVALIDATING_PREFIXES):
         return "invalidates", "data or evaluation differs"
+    if key.startswith("longctx."):                     # Module 4 continued-training runs
+        if key == "longctx.init_from":
+            return "ignore", "path of the initial checkpoint (its SHA-256 is compared instead)"
+        return "invalidates", "a second changed variable (initial weights, RoPE rule or data mode)"
     if key.startswith("params."):
         if axis == "params" and key == "params.total" and _rel(a, b) > params_tol:
             return "invalidates", f"equal-parameters axis, totals differ by {_rel(a, b):.1%}"

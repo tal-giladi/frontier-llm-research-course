@@ -27,9 +27,10 @@ import torch
 
 from frontierlab.data.loader import TokenData
 from frontierlab.evals.heldout import window_losses
-from frontierlab.flops import PEAK_BF16, flops_per_token
+from frontierlab.attention.accounting import flops_per_token, param_counts   # exact for every attention kind
+from frontierlab.flops import PEAK_BF16
 from frontierlab.metrics.jsonl import JsonlLogger
-from frontierlab.model import LM, PRESETS, param_counts
+from frontierlab.model import LM, PRESETS
 from frontierlab.runcard import write_run_card
 
 
@@ -59,6 +60,7 @@ def build_parser():
     ap.add_argument("--run", type=Path, required=True)
     ap.add_argument("--preset", choices=sorted(PRESETS), default="toy")
     ap.add_argument("--attention", default=None, help="override cfg.attention (Stage B branches)")
+    ap.add_argument("--extra", default=None, help='JSON merged into cfg.extra, e.g. {"kv_lora_rank": 256}')
     ap.add_argument("--steps", type=int, default=300, help="length of the run (sets the LR schedule)")
     ap.add_argument("--stop-after", type=int, default=None, help="checkpoint and stop at this step")
     ap.add_argument("--max-minutes", type=float, default=None, help="checkpoint and stop after this wall time")
@@ -97,6 +99,8 @@ def make_model(a, vocab_size: int):
     cfg = PRESETS[a.preset](vocab_size=vocab_size)
     if a.attention:
         cfg = cfg.with_(attention=a.attention)
+    if a.extra:
+        cfg = cfg.with_(extra={**cfg.extra, **json.loads(a.extra)})
     return cfg, LM(cfg)
 
 

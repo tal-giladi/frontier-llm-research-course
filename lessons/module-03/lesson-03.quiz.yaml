@@ -1,0 +1,85 @@
+- id: q1
+  question: >-
+    You deploy a model with a sliding-window cache that evicts the oldest tokens. Perplexity explodes
+    as soon as the first token of the conversation leaves the cache, although the window is 4,096
+    tokens. What is the most likely explanation?
+  options:
+    - >-
+      The first token is an attention sink; once evicted, idle heads spread mass onto real tokens.
+    - >-
+      RoPE angles overflow once positions exceed the window, so every query after eviction is
+      rotated incorrectly.
+    - >-
+      The first token carries the instruction, so evicting it removes the information the model
+      needs to continue the text.
+    - >-
+      The cache's memory is fragmented after eviction, which corrupts the remaining keys and values
+      in place.
+  correct: 0
+  explanation: >-
+    StreamingLLM shows window attention collapses when even the first token is evicted, because
+    trained models park attention mass on initial tokens regardless of their meaning. Keeping a few
+    initial tokens, or training with a sink, fixes it.
+
+- id: q2
+  question: >-
+    A teammate adds Qwen-style output gating but applies the sigmoid gate to the block's output
+    after the output projection $W_O$, computed from the attention output itself. Which statement is
+    right?
+  options:
+    - >-
+      It is equivalent, because an elementwise gate commutes with the linear output projection.
+    - >-
+      It is the recommended position, because a gate after $W_O$ sees all heads' outputs at once.
+    - >-
+      It differs from the best position reported: per head, after attention, before $W_O$.
+    - >-
+      It makes no difference where the gate sits, as long as the sigmoid is applied elementwise.
+  correct: 2
+  explanation: >-
+    Qiu et al.'s best variant (G1) gates each head's SDPA output with $\sigma(XW_\theta)$, where $X$
+    is the pre-normalised hidden state; that is what adds a non-linearity between $W_V$ and $W_O$
+    and lets a head switch off per token. A gate after $W_O$ cannot act per head.
+
+- id: q3
+  question: >-
+    Baseline-0 has QK-norm with head width 64. The learned gains of a head's query and key norms have
+    largest entries 1.5 and 2.0. What is the largest attention logit that head can produce?
+  options:
+    - >-
+      There is no bound, because RoPE can rotate any query into alignment with any key.
+    - >-
+      About 0.4, because the two gains multiply the $1/\sqrt{64}$ scale.
+    - >-
+      Exactly 64, because each normalised vector has norm 8.
+    - >-
+      At most $1.5 \cdot 2.0 \cdot 8 = 24$, by Cauchy-Schwarz on the normed vectors.
+  correct: 3
+  explanation: >-
+    Normalised vectors have norm $\sqrt{64} = 8$ before their gains; RoPE preserves norms. So
+    $|q \cdot k| / 8 \le (1.5 \cdot 8)(2.0 \cdot 8)/8 = 24$. The bound depends on the gains, not on
+    the projection weights, which is what controls logit growth.
+
+- id: q4
+  question: >-
+    On a 1.8M-parameter toy model trained for 300 steps, your gated arm shows the same first-token
+    attention mass as Baseline-0. The Qwen paper reports a drop from 46.7% to 4.8% in a 15B MoE
+    model. How should you report your result?
+  options:
+    - >-
+      As a failed replication that casts doubt on the published result, since the mechanism did not
+      work.
+    - >-
+      As not shown at this scale: one seed of a tiny, briefly trained model may not develop the sink
+      that the gate removes.
+    - >-
+      As a bug in the gate, because a correct implementation must reproduce the published effect at
+      any scale.
+    - >-
+      As a confirmation, because similar first-token mass in both arms means the gate leaves
+      attention intact as intended.
+  correct: 1
+  explanation: >-
+    The published effect is at billions of parameters and trillions of tokens; a toy run may not form
+    a strong sink at all. The correctness suite, not the effect size, tells you the gate is
+    implemented right; the result is "not shown at this scale", with pilot traces as fallback.

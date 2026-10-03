@@ -1,0 +1,174 @@
+- id: q1
+  question: >-
+    Your lab must choose between two attention designs for a 64K product. Both score 100% on
+    needle-in-a-haystack at 64K. Which additional result would most change your decision?
+  options:
+    - >-
+      Needle-in-a-haystack at 128K, to see which design degrades first past the target length.
+    - >-
+      Two-hop and decoy accuracy at 64K with mid-context facts, plus short-context regression.
+    - >-
+      Mean perplexity over 64K windows of web text, since it averages over every position.
+    - >-
+      The throughput of each design at 64K, since their quality is already shown to be equal.
+  correct: 1
+  explanation: >-
+    Both designs can retrieve; the open question is whether they use what they retrieve, resist
+    distractors and handle middle positions, and what they cost at short context. Averaged perplexity
+    is dominated by near context and cannot separate them.
+
+- id: q2
+  question: >-
+    Eval v1 on your model shows retrieval accuracy of 0.18 with 5 candidates, and 0.18 on the
+    evidence-ablated twins. A teammate wants to drop the task as "broken". What do you check first?
+  options:
+    - >-
+      Whether the generator's oracle still solves every item and finds nothing in the twins.
+    - >-
+      Whether the decision threshold was set too high for a model of this size.
+    - >-
+      Whether more items would push the accuracy above chance, then add them until it does.
+    - >-
+      Whether the model's tokenizer splits the keys, since any task below chance is invalid.
+  correct: 0
+  explanation: >-
+    Equal accuracy with and without the evidence means the model does not read the statements, which
+    is a valid finding if the items are well formed. The oracle and ablation checks establish that;
+    adding items until significant is optional stopping.
+
+- id: q3
+  question: >-
+    A model trained at 4K is served at 16K with no fine-tuning. On held-out documents, YaRN lowers
+    loss past 4K by 0.12 nats but raises it below 4K by 0.06; NTK-aware lowers it past 4K by 0.04 and
+    raises it below 4K by 0.02. The contract's guard allows at most 0.05 below 4K. Which is right?
+  options:
+    - >-
+      Choose YaRN, because the far-position gain is three times larger and the guard is only advisory.
+    - >-
+      Choose neither, because any short-range cost means the rule should not be applied at all.
+    - >-
+      Choose NTK-aware under this contract, and report that YaRN would win with a looser guard.
+    - >-
+      Choose PI, which the papers show has no short-range cost once applied without training.
+  correct: 2
+  explanation: >-
+    The pre-stated rule picks the best rule that passes the guard; YaRN fails it. Moving the guard
+    after seeing results is not allowed, but reporting the trade-off is. PI has the largest short-range
+    cost without training.
+
+- id: q4
+  question: >-
+    You extend Baseline-0 from 1K to 8K with 500M tokens. Afterwards held-out loss at 1K is 0.02
+    nats better than the base, and the context gain at 8K is positive. What must the report include
+    before claiming "the extension improved short-context quality"?
+  options:
+    - >-
+      The base model's loss at 8K with YaRN, to show the rule alone caused the improvement.
+    - >-
+      A longer extension run, to show the 1K improvement keeps growing with more long data.
+    - >-
+      A second evaluation set at 8K, since the 1K windows overlap with the 8K training data.
+    - >-
+      A run continued at 1K for the same 500M tokens, since extra training alone can explain it.
+  correct: 3
+  explanation: >-
+    The extended model saw 500M more tokens than the base. Only an equal-token control at the original
+    length separates the effect of the longer context from the effect of more training.
+
+- id: q5
+  question: >-
+    Your extension data is a 30B-token web corpus packed into random 32K windows, with a median
+    document of 800 tokens. A colleague proposes adding Llama 3's document mask and changing nothing
+    else. What will that do to long-context training?
+  options:
+    - >-
+      Remove almost all long-range signal, since each token then sees only its short document.
+    - >-
+      Fix the problem, because the mask turns unrelated documents into one coherent long context.
+    - >-
+      Double the effective context, because masked tokens no longer compete for attention.
+    - >-
+      Make no difference, because Llama 3 reported the mask had limited impact on pre-training.
+  correct: 0
+  explanation: >-
+    Masking stops attention to other documents, which is correct, but with short documents nothing
+    long remains to attend to. Long documents are needed either way. Llama 3's "limited impact" was for
+    standard pretraining; it called the mask important for long continued pretraining.
+
+- id: q6
+  question: >-
+    DeepSeek-V3 documents two 1,000-step phases, 32K at batch 1,920 and 128K at batch 480. A manager
+    asks for a quick estimate of how many tokens one such phase is, to budget your own extension.
+    Which is closest?
+  options:
+    - >-
+      About 2 million tokens, since 1,000 steps at batch 1,920 is 1.92 million sequences of one token.
+    - >-
+      About 63 billion tokens per phase, since sequence length times batch times steps is 62.9B.
+    - >-
+      About 630 billion tokens per phase, as stated in the DeepSeek-V3 report for both phases.
+    - >-
+      It differs by a factor of four between phases, since the 128K phase has four times longer sequences.
+  correct: 1
+  explanation: >-
+    32,768 × 1,920 × 1,000 and 131,072 × 480 × 1,000 both give about 62.9B tokens: longer sequences,
+    smaller batch. The 630B figure is V3.1's enlarged 32K phase, from the V3.1 model card.
+
+- id: q7
+  question: >-
+    For a 32K stage on Baseline-0 you budget GPU-hours by scaling the 1K run's measured hours by the
+    token ratio. Training FLOPs per token are 0.79 GFLOP at 1K and 2.54 GFLOP at 32K. How far off is
+    the budget, and why?
+  options:
+    - >-
+      Accurate, because FLOPs per token depend only on the parameter count, not the sequence length.
+    - >-
+      About 30% too high, because longer sequences raise the MFU and lower the cost per token.
+    - >-
+      About 3.2 times too low, because the attention term grows with length and dominates at 32K.
+    - >-
+      About 32 times too low, because attention cost grows quadratically with the sequence length.
+  correct: 2
+  explanation: >-
+    Per token, attention costs grow linearly with T (quadratic per sequence), so a 32K token costs
+    2.54 / 0.79 = 3.2 times a 1K token for this model. MFU at 32K is unknown until measured, so the
+    projection must also be labelled.
+
+- id: q8
+  question: >-
+    To extend a released checkpoint, an engineer writes a YaRN config with
+    original_max_position_embeddings set to the new 32K length and factor 4. Evaluation at 32K is
+    worse than with the config documented on the model card. What went wrong?
+  options:
+    - >-
+      Factor 4 is too small; YaRN needs the factor to equal the number of extension stages.
+    - >-
+      The attention factor must be disabled whenever original_max_position_embeddings is set by hand.
+    - >-
+      YaRN cannot be applied to released checkpoints; it only works when trained from scratch.
+    - >-
+      Rotations are now counted over 32K, so YaRN keeps pairs the model never saw complete a turn.
+  correct: 3
+  explanation: >-
+    YaRN decides per pair from the number of turns over the length the model was trained at. Setting
+    it to the new length makes slow pairs look well covered, so they are not interpolated and still
+    see unseen angles.
+
+- id: q9
+  question: >-
+    Two continued-training arms, within-document windows and random windows, both from one base with
+    seed 0, differ in context gain at 1K by 0.004 nats with a paired interval of [-0.001, +0.009] over
+    100 documents. The seed std of held-out loss at this scale is 0.016. What can you conclude?
+  options:
+    - >-
+      Within-document windows are better, because the point estimate favours them.
+    - >-
+      Nothing general: the interval covers zero and one seed per arm cannot rule out seed noise.
+    - >-
+      Random windows are better, because their interval is narrower than the seed std.
+    - >-
+      The two data modes are equivalent at every scale, since the difference is not significant.
+  correct: 1
+  explanation: >-
+    The document-level interval covers zero and only reflects evaluation noise for these two runs; seed
+    variance is not in it. A null result at 1.8M parameters does not show equivalence at larger scale.

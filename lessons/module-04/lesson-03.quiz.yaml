@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    Your team extends a 4K model to 32K by continued training on the usual pretraining stream, packed
+    into random 32K windows. Long-context scores barely move. Your corpus has a median document of 900
+    tokens. What is the most likely problem with the training data?
+  options:
+    - >-
+      The windows are too long for the optimizer, so gradients from late positions vanish.
+    - >-
+      The learning rate was too low, since packed data always needs a higher rate than unpacked data.
+    - >-
+      The corpus is too large, so each long document is seen too rarely to be memorised.
+    - >-
+      Most context in each window comes from unrelated documents, so there is little long-range signal.
+  correct: 3
+  explanation: >-
+    With 900-token documents, a 32K window holds dozens of documents; far context is almost never the
+    same document. Long documents (within-document windows) or document masking plus long documents
+    are needed; masking alone removes the signal entirely.
+
+- id: q2
+  question: >-
+    After extending a base model from 1K to 8K, held-out loss at 1K improved by 0.03 nats and the 8K
+    context gain is positive. A reviewer is not convinced the extension caused either. Which run answers
+    the objection most directly?
+  options:
+    - >-
+      The base model continued at 1K for the same number of tokens, seed and schedule.
+    - >-
+      The extended model evaluated again on a larger held-out set, to tighten the interval.
+    - >-
+      A second extension to 16K, to show that the gain keeps growing with length.
+    - >-
+      The base model evaluated at 8K with YaRN and no training, to show the rule does nothing.
+  correct: 0
+  explanation: >-
+    The extended model saw extra tokens. An equal-token control at the original length separates the
+    effect of more training (likely the 1K improvement) from the effect of training at 8K.
+
+- id: q3
+  question: >-
+    DeepSeek-V3's report gives its long-context phases as 1,000 steps at 32K with batch 1,920 and 1,000
+    steps at 128K with batch 480. The V3.1 card says the 32K phase grew 10-fold to 630B tokens. What do
+    the V3 numbers imply for the V3 32K phase, and does the card agree?
+  options:
+    - >-
+      About 6.3B tokens; the card's 630B would then be a 100-fold increase, so the two disagree.
+    - >-
+      About 63B tokens; ten times that is about 630B, so the card is consistent with the report.
+    - >-
+      About 1.9B tokens, since batch size counts tokens rather than sequences; the card is inconsistent.
+    - >-
+      It cannot be computed, because the report does not state the sequence length of each phase.
+  correct: 1
+  explanation: >-
+    32,768 tokens × 1,920 sequences × 1,000 steps is about 62.9B tokens, and 10 × 62.9B is about 629B.
+    The report states sequence length and batch (in sequences) for both phases.
+
+- id: q4
+  question: >-
+    You compare two extension arms at equal tokens: one trained at 32K, one at 8K, on Baseline-0. The
+    32K arm wins on Eval v1. A colleague says it was also the cheaper choice. What is wrong with that?
+  options:
+    - >-
+      Nothing; equal tokens means equal compute, so the cheaper claim follows from the setup.
+    - >-
+      The 8K arm was cheaper only because it needed fewer optimizer steps for the same tokens.
+    - >-
+      Each 32K token costs about 2.1 times the FLOPs of an 8K token, so the 32K arm used more compute.
+    - >-
+      The 32K arm is cheaper because longer sequences reach a higher MFU on the same GPU.
+  correct: 2
+  explanation: >-
+    Training FLOPs per token include an attention term that grows with length: about 1.18 GFLOP at 8K
+    and 2.54 GFLOP at 32K for Baseline-0. Equal tokens is not equal FLOPs; a cost claim needs the
+    equal-FLOPs axis or measured GPU-hours.

@@ -91,6 +91,14 @@ then append `module done` to the log.
 - Tests compare against a reference with stated tolerances (float64 where it helps).
 - New reusable code goes into your `frontierlab` subpackage with tests in
   `labs/common/tests/test_<subpackage>.py`.
+- Attention kinds register themselves with `@register("name")` (frontierlab/attention/base.py). Do
+  not edit `attention/__init__.py`; import your module in your tests and lab code, and put the import
+  line you want added to `__init__.py` in your inbox file.
+- Systems comparisons (speed, memory) must use `frontierlab.perf` (Module 2: warm-up, sync, repeats,
+  interleaved arms, paired intervals) and the experiment contract; correctness first via
+  `frontierlab.testing` (gradient, causal, cached-decode, equivalence).
+- Root `pytest.ini` sets `--import-mode=importlib`, so `pytest labs/module-NN` works with every folder
+  named `test_lab.py`.
 - Python env: `C:/Users/TalGiladi/OneDrive/repos/course-creator/frontier-llm-research-course/.venv/Scripts/python.exe`.
   Run tests with `-m pytest -p no:cacheprovider`. Do not install packages without saying so in your report.
 

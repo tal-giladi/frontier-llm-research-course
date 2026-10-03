@@ -1,0 +1,63 @@
+- id: q1
+  question: >-
+    Your MLA model serves 128K-context agents and decode memory is the binding limit. A colleague
+    proposes halving the number of attention heads to fit more sequences per GPU. What is the effect?
+  options:
+    - >-
+      Decode memory halves, because each head caches its own latent vector.
+    - >-
+      Decode memory stays the same: MLA caches one latent and RoPE key per token for all heads.
+    - >-
+      Decode memory falls by about a quarter, because only the key half of the cache depends on the
+      head count.
+    - >-
+      Decode memory rises, because fewer heads need a wider latent to keep the same model quality.
+  correct: 1
+  explanation: >-
+    MLA's cache is $d_c + d_r$ elements per token and layer whatever $H$ is; Kimi K2's 64-head and
+    128-head variants both cache 68.6 KiB per token. Head count is a compute decision in MLA; for
+    memory, change $d_c$ or use windows.
+
+- id: q2
+  question: >-
+    Kimi K2 chose 64 heads for lower inference cost; GLM-4.5 chose 2.5 times more heads than usual
+    for better reasoning benchmarks. Your manager asks which lab is right. What is the best answer?
+  options:
+    - >-
+      Kimi K2, because a 0.5%-1.2% validation-loss gain can never justify an 83% increase in
+      inference FLOPs.
+    - >-
+      GLM-4.5, because benchmark accuracy is the outcome users see, while validation loss is only a
+      proxy.
+    - >-
+      Neither transfers as is: they measured different outcomes under different constraints; test
+      it on ours.
+    - >-
+      Both are wrong, because head count has no effect at all when the attention width is held
+      fixed.
+  correct: 2
+  explanation: >-
+    The two reports optimise different things (long-context inference cost versus reasoning
+    benchmarks) and do not contradict each other. The transferable step is to measure both the
+    quality outcome and the cost that matter for your deployment.
+
+- id: q3
+  question: >-
+    You run b0 (4 heads of width 32) against 2 heads of width 64 with 25% partial RoPE, at equal
+    parameters, one seed, 300 toy steps. The paired window interval of the loss difference is
+    [-0.004, +0.006] nats. What can you conclude?
+  options:
+    - >-
+      The head shapes are equivalent at every scale, since the interval contains zero and is narrow.
+    - >-
+      Partial RoPE helps, because the interval's upper end is larger than its lower end in magnitude.
+    - >-
+      The experiment failed, because a sound comparison of head shapes must show a significant
+      difference.
+    - >-
+      No difference is shown: a one-seed interval covers only evaluation noise, not seed noise.
+  correct: 3
+  explanation: >-
+    A one-seed paired window interval ignores seed-to-seed variation (about 0.016 nats for the toy
+    recipe), so it cannot support an equivalence or a difference claim about the design. A sound
+    null result at this scale is a valid outcome, not a failure.

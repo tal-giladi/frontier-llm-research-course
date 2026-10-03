@@ -46,8 +46,10 @@ class RMSNorm(nn.Module):
     def _norm(self, x: torch.Tensor) -> torch.Tensor:
         # RMS over the last axis, keeping the axis for broadcasting. Computed in
         # float32 for stability even if x is half precision, matching LLaMA.
-        rms = torch.rsqrt(x.float().pow(2).mean(dim=-1, keepdim=True) + self.eps)
-        return (x.float() * rms).type_as(x)
+        # float32 at least (bf16/fp16 are upcast); float64 stays float64 for the correctness suite.
+        xf = x.to(torch.promote_types(x.dtype, torch.float32))
+        rms = torch.rsqrt(xf.pow(2).mean(dim=-1, keepdim=True) + self.eps)
+        return (xf * rms).type_as(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Normalize ``x`` (shape ``(..., C)``) and apply the learned gain."""

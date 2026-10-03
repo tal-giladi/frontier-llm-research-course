@@ -1,0 +1,90 @@
+- id: q1
+  question: >-
+    A colleague ports MLA into your inference server. Memory per sequence at 32K context is exactly
+    what the old MHA model used, although every correctness test passes. What is the most likely
+    cause?
+  options:
+    - >-
+      The latent width was set to four times the head width, which is too large to give any saving
+      at this context length.
+    - >-
+      The decoupled RoPE key is cached per head instead of once, which multiplies the cache by the
+      number of heads.
+    - >-
+      The cache stores the up-projected per-head keys and values instead of the latent and the
+      shared RoPE key.
+    - >-
+      The query compression was left out, and without it MLA falls back to caching full queries
+      as well.
+  correct: 2
+  explanation: >-
+    Caching the expanded keys and values computes the same function, so tests pass, but it stores
+    $2Hd$ elements per token and layer like MHA. MLA saves memory only if the cache holds the
+    $d_c + d_r$ latent and RoPE key; query compression never affects the cache.
+
+- id: q2
+  question: >-
+    You are reviewing a design that applies RoPE to the up-projected MLA keys $W^{UK} c_s$ instead
+    of using a separate RoPE key. The author says it trains just as well. What is the problem at
+    inference?
+  options:
+    - >-
+      The keys lose their position information when the latent is normalised, so long contexts
+      degrade badly.
+    - >-
+      A different rotation sits between query and each cached latent, so $W^{UK}$ cannot be folded
+      into the query.
+    - >-
+      RoPE needs an even key width, and up-projected keys always end up with an odd width in this
+      design.
+    - >-
+      The softmax scale then has to change with position, which breaks cached decoding agreement.
+  correct: 1
+  explanation: >-
+    With $k_s = R_s W^{UK} c_s$ the matrix between query and latent differs for each position $s$,
+    so absorption would need a different folded query per cached token, which means rebuilding the
+    keys. The decoupled RoPE key carries position separately and keeps the content part absorbable.
+
+- id: q3
+  question: >-
+    Baseline-0 has 12 layers and 4 KV heads of width 64. You compare MLA with $d_c = 256$,
+    $d_r = 32$ against GQA with 2 KV heads, both in BF16. Which statement about their decode caches
+    is right?
+  options:
+    - >-
+      MLA caches 6,912 bytes per token and the 2-head GQA 6,144, so MLA is slightly larger here.
+    - >-
+      MLA caches far less than the 2-head GQA, because the latent is shared by all 12 query heads.
+    - >-
+      Both cache 6,144 bytes per token, because MLA with $d_c = 4d$ equals GQA with two groups.
+    - >-
+      MLA caches 3,456 bytes per token, half of the 2-head GQA, because the RoPE key is not cached.
+  correct: 0
+  explanation: >-
+    MLA stores $256 + 32 = 288$ elements per layer, $12 \cdot 288 \cdot 2 = 6{,}912$ bytes; GQA with
+    2 heads stores $12 \cdot 2 \cdot 2 \cdot 64 \cdot 2 = 6{,}144$. Against an already-grouped
+    baseline MLA's saving can vanish, which is why the project includes a KV-matched GQA arm.
+
+- id: q4
+  question: >-
+    On a laptop CPU, absorbed MLA decodes more slowly per token than Baseline-0's GQA, although its
+    cache is 37% smaller. A teammate concludes MLA will also be slower on an H100. What is the best
+    response?
+  options:
+    - >-
+      Agree, because an implementation that is slower on one device stays slower on every device
+      by a similar ratio.
+    - >-
+      Disagree, because absorbed MLA needs fewer FLOPs per cached token than GQA, so the CPU result
+      must be a timing bug.
+    - >-
+      Agree, because the CPU result already used interleaved rounds and a paired interval, which
+      makes it hardware-independent.
+    - >-
+      Not shown: MLA's extra FLOPs per key matter on the CPU, but H100 decode is memory-bound, so
+      measure it there.
+  correct: 3
+  explanation: >-
+    Absorbed MLA's intensity is about 23 FLOP/byte, far below the H100 ridge point, so there its
+    smaller cache should translate into time; on a CPU arithmetic and fixed costs dominate. A sound
+    method on one machine does not transfer the result to another.
