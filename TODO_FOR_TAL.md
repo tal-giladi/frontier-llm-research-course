@@ -14,3 +14,9 @@ Plan revision 2 (2026-10-03, after the external review) — new decisions needed
 7. DONE (2026-10-03): no funding; pilots run as scaled pilots on the paid Colab account, projected to the main path.
 7b. DONE (2026-10-03): host pilot traces and checkpoints on a free Hugging Face account.
 8. DONE (2026-10-03): multimodal elective (Module 21) comes after the first release.
+
+## To run the pilots (2026-10-04)
+
+1. Create the GitHub repo `tal-giladi/frontier-llm-research-course` (public is fine) so I can push, or tell me to create it with `gh`. Colab clones the code from there.
+2. Open `curriculum/pilots/pilot_phase0.ipynb` in Colab (A100 runtime), run it top to bottom. P1 first; the rest in order while compute units last. Outputs land in Google Drive `frontier-llm-pilots/`.
+3. Share the `frontier-llm-pilots/summary/` folder and the `p*/` text outputs (or paste them) so I can fill `curriculum/pilots/RESULTS.md` and replace PROJECTED figures.
