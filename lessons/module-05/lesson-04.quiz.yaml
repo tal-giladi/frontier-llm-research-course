@@ -1,0 +1,67 @@
+- id: q1
+  question: >-
+    A blog post states that DeepSeek-V4 uses m = 4 and k = 1,024 in its CSA layers and cites the technical
+    report. You are writing a cost estimate for your team. What do you do with these two values?
+  options:
+    - >-
+      Use them, since a blog that cites the report has presumably copied the numbers from its
+      configuration section.
+    - >-
+      Treat them as unverified: section 2.3 does not state m or k, so check the released model files at a
+      commit or keep them symbolic.
+    - >-
+      Derive them from the reported 10% KV figure, since that ratio fixes the compression rate once the
+      layer count is known.
+    - >-
+      Replace them with DeepSeek-V3.2's values, because V4 reuses the V3.2 lightning indexer and therefore
+      its top-k setting too.
+  correct: 1
+  explanation: >-
+    The report documents the mechanism but not these hyperparameters. The 10% figure is a model-to-model
+    ratio that also depends on entry sizes and layer counts, so it cannot pin down m; reusing V3.2's k is an
+    assumption, not a fact.
+
+- id: q2
+  question: >-
+    In your CSA-style training code, a query at position 9 with m = 4 attends to compressed entries 0, 1
+    and 2. Training loss is suspiciously low. What is wrong?
+  options:
+    - >-
+      Nothing: entry 2 summarises tokens 8 to 11, and the query is inside that block, so it is allowed to
+      use the summary of its own block.
+    - >-
+      The query should attend to entry 3 as well, since overlapping compression shifts every entry forward
+      by one block.
+    - >-
+      Entry 2 includes tokens 10 and 11, which are in the future; only the two complete blocks may be used
+      and the rest must come from the window.
+    - >-
+      The compression weights should use a causal softmax inside each block, which makes entry 2 safe to
+      use for every query in the block.
+  correct: 2
+  explanation: >-
+    (9 + 1) // 4 = 2 complete blocks (tokens 0 to 7) are usable. Entry 2 is a weighted sum that includes
+    tokens 10 and 11, so attending to it leaks the future, which lowers training loss and breaks
+    generation; tokens 8 and 9 come from the uncompressed window.
+
+- id: q3
+  question: >-
+    With all else fixed, you compare CSA layers at m = 4 and m = 8 at a 1M-token context. Which statement
+    about the CSA lightning indexer is correct?
+  options:
+    - >-
+      Its per-query work halves, because it scores S / m compressed keys, but it still grows linearly with
+      the context, so its total remains O(L^2).
+    - >-
+      Its work is unchanged, because the indexer always scores raw tokens and only the main attention
+      operates on the compressed entries.
+    - >-
+      Its work becomes constant, because the top-k selection limits the number of compressed keys it must
+      score to k per query.
+    - >-
+      Its work doubles, because each compressed key now summarises twice as many tokens and needs
+      proportionally more FLOPs.
+  correct: 0
+  explanation: >-
+    The indexer scores every compressed entry: 262,144 at m = 4 and 131,072 at m = 8 per query at 1M.
+    Compression divides the quadratic term by m; top-k limits the attention that follows, not the scoring.

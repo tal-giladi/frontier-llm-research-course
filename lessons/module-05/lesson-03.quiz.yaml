@@ -1,0 +1,95 @@
+- id: q1
+  question: >-
+    Your profile of a DSA-style layer at 32K tokens shows the selected attention doing 6% of dense
+    attention's FLOPs, yet the whole DSA prefill takes longer than dense FlashAttention. Which explanation
+    fits the component table best?
+  options:
+    - >-
+      The FLOP count is wrong, because top-k selection performs a full sort whose arithmetic exceeds the
+      dense attention's matrix products.
+    - >-
+      The indexer is now the dominant FLOP term, so the speed-up is lost in the indexer's ReLU and weighted
+      sum at this context.
+    - >-
+      Dense FlashAttention skips masked blocks, so its causal prefill does only half the FLOPs that the
+      component table assumes for it.
+    - >-
+      The gather reads k separate entries per query with no reuse across queries or heads, so it is memory-
+      bound while dense attention is compute-bound.
+  correct: 3
+  explanation: >-
+    With GQA-shaped entries each gathered byte feeds only a few FLOPs, so moving 2,048 entries per query
+    costs more time than dense attention's well-reused tiles. Sharing entries across many heads (MQA mode)
+    or across neighbouring queries (NSA blocks) is what makes the sparse step efficient.
+
+- id: q2
+  question: >-
+    On the laptop, the linear arm's measured prefill time grows with exponent 0.6 between 512 and 8K tokens,
+    and its op count is about 15,000 aten ops per call. What does this tell you about running it on a GPU
+    with fla kernels?
+  options:
+    - >-
+      That linear attention scales sub-linearly, so on a GPU its advantage over dense attention will be even
+      larger than the exponent suggests.
+    - >-
+      Little about the GPU: the CPU time is dominated by the Python chunk loop's fixed per-op costs, which
+      a fused kernel removes, so measure there.
+    - >-
+      That the chunk size is too large, because a well-chosen chunk would make the exponent exactly 1 on any
+      hardware and kernel.
+    - >-
+      That the recurrent form should be used for prefill instead, because it has fewer ops per call and
+      therefore a smaller exponent.
+  correct: 1
+  explanation: >-
+    An exponent below the arithmetic model's means fixed costs still dominate at the measured sizes; thousands
+    of tiny ops per call is launch-bound behaviour. CPU numbers of reference code do not transfer; the GPU
+    crossover must be measured with the kernel you will deploy.
+
+- id: q3
+  question: >-
+    Eval v1 on your hybrid and dense models gives a two-hop evidence-effect difference (hybrid minus dense)
+    of -0.02 nats, 95% CI [-0.11, +0.07], from 80 items. Retrieval and natural-text loss show no difference.
+    How should the memo state the MiniMax test?
+  options:
+    - >-
+      Refuted: the hybrid matches dense on retrieval, loss and multi-hop use, so the multi-hop concern does not
+      apply to this design.
+    - >-
+      Confirmed: the point estimate is negative, which is the predicted direction of a multi-hop deficit in
+      hybrid models.
+    - >-
+      Not resolved at this power: the interval includes deficits of 0.05 nats and more, so roughly 280 items
+      would be needed to rule one out.
+    - >-
+      Invalid: an evidence effect cannot be compared across models, because each model has a different
+      prior over the candidate words.
+  correct: 2
+  explanation: >-
+    The interval is compatible with no deficit and with a deficit larger than the margin, so it neither
+    confirms nor refutes. The evidence effect cancels each model's prior, so the paired comparison is valid;
+    it is just underpowered.
+
+- id: q4
+  question: >-
+    A projected H100 decode step at 128K costs 57 microseconds for dense attention and 6.5 for the four DSA
+    components, from bytes moved. Before quoting an 8.8x speed-up for the layer, what is the most important
+    missing term?
+  options:
+    - >-
+      Kernel launch overheads of a few microseconds each, which at this size are comparable to the DSA
+      components themselves unless they are fused.
+    - >-
+      The indexer's backward pass, which doubles its cost during decoding because the indexer is trained with
+      its own loss function.
+    - >-
+      The cost of re-sorting the KV cache after every step, which DSA needs so that the selected entries stay
+      contiguous in memory.
+    - >-
+      The quadratic growth of the selected attention, which the roofline bound leaves out once k exceeds the
+      context's square root.
+  correct: 0
+  explanation: >-
+    Roofline bounds ignore fixed per-kernel costs; four or more separate launches at a few microseconds each
+    are the same order as the 6.5-microsecond total. Decoding runs no backward pass, the cache is not
+    re-sorted, and the selected attention is O(k) per query.

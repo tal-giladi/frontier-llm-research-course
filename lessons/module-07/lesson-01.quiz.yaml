@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    A teammate's unit test for your Muon implementation asserts that $O^\top O$ equals the identity to
+    $10^{-3}$ after five Newton–Schulz steps with Jordan's coefficients, and it fails. What is the right
+    response?
+  options:
+    - >-
+      Raise the step count until the test passes, since Muon is only correct once the output is orthogonal.
+    - >-
+      Switch the iteration to float64, because the bf16 rounding is what keeps the result from being orthogonal.
+    - >-
+      Replace the test: check that singular values lie in a band near 1, and check convergence with the cubic.
+    - >-
+      Lower the tolerance to $10^{-1}$, since five steps are known to give an orthogonal matrix within 10%.
+  correct: 2
+  explanation: >-
+    Jordan's quintic has $\varphi(1) = 0.701$, so 1 is not a fixed point: singular values oscillate in a band
+    around 1 by design. Correctness is tested by the band (and unchanged singular vectors), and convergence
+    of the iteration by the cubic, whose fixed point at 1 is stable.
+
+- id: q2
+  question: >-
+    You are porting Muon into a training codebase for a model with tied input and output embeddings,
+    RMSNorm gains and per-head learned sink logits. Which parameters should the Muon groups contain?
+  options:
+    - >-
+      Every parameter with more than one element, so the sink logits and norm gains get orthogonal updates too.
+    - >-
+      Every 2-D matrix, including the tied embedding, because it is the largest matrix in the model.
+    - >-
+      Only the attention projections, because the SwiGLU matrices are rectangular and break the iteration.
+    - >-
+      The 2-D projection matrices inside the blocks; the embedding, the tied head and all vectors stay on AdamW.
+  correct: 3
+  explanation: >-
+    Muon is defined for hidden matrices. An embedding's gradient touches only the rows of tokens in the
+    batch, and vectors have no meaningful orthogonalisation; every published recipe (Jordan, Moonlight,
+    DeepSeek-V4) keeps them on AdamW. Rectangular matrices are fine: the iteration runs on the wide orientation.
+
+- id: q3
+  question: >-
+    Baseline-0's Newton–Schulz work is about $1.7 \times 10^{12}$ FLOPs per optimizer step. On the main path
+    each step trains on 524,288 tokens; in a quick CPU test it trains on 2,048. What does that imply?
+  options:
+    - >-
+      The share of optimizer FLOPs is about 0.4% on the main path but larger than the model's own FLOPs on the CPU test.
+    - >-
+      The share is the same in both settings, because optimizer FLOPs scale with the number of tokens like the model's.
+    - >-
+      The CPU test understates Muon's cost, because Newton–Schulz FLOPs grow with the batch size.
+    - >-
+      Muon cannot be used below a batch of 524,288 tokens, because its updates would be dominated by noise.
+  correct: 0
+  explanation: >-
+    Newton–Schulz runs once per step regardless of the batch, while training FLOPs scale with tokens per step.
+    At $7.9 \times 10^8$ FLOPs per token the main-path step costs $4.1 \times 10^{14}$ (0.41% overhead); at
+    2,048 tokens it costs $1.6 \times 10^{12}$, less than the optimizer.
+
+- id: q4
+  question: >-
+    Your Muon arm reaches a lower loss than the AdamW arm at equal tokens. The Muon arm used your new optimizer
+    class; the AdamW arm used the framework's fused AdamW. What should you do before attributing the gain to Muon?
+  options:
+    - >-
+      Nothing more, since fused and unfused AdamW are mathematically identical and cannot explain a difference.
+    - >-
+      Run AdamW through the same optimizer class, or show both AdamW versions agree, with equal tuning.
+    - >-
+      Repeat the Muon arm with a second seed, since only the new method's variance needs to be measured.
+    - >-
+      Switch both arms to equal wall-clock, because equal tokens favours whichever optimizer is slower.
+  correct: 1
+  explanation: >-
+    Two things changed: the algorithm and the code path (and possibly the tuning). Running both arms through
+    one class, checked against the reference AdamW, isolates the algorithm; equal tuning budgets and seeds
+    for both arms are the other controls of lesson 01.3.

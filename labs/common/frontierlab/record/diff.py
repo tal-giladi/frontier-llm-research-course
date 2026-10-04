@@ -91,6 +91,12 @@ def classify(key: str, a, b, *, changed=(), axis: str = "tokens", seeds_are_repl
         return "invalidates", "different seed in a comparison that should share seeds"
     if _under(key, INVALIDATING_PREFIXES):
         return "invalidates", "data or evaluation differs"
+    if key.startswith("optim."):                       # Module 7 optimizer runs
+        if key in ("optim.branch_from", "optim.init_from", "optim.stability_log", "optim.stability_every"):
+            return "ignore", "bookkeeping (the source checkpoint is identified by parent_run)"
+        if key in ("optim.optimizer_flops_per_step", "optim.muon_matrices"):
+            return ("changed" if any(c.startswith("optim.") for c in changed) else "invalidates"),                 "follows from the optimizer"
+        return "invalidates", "a second changed variable (optimizer, parametrization, schedule or stabilizer)"
     if key.startswith("longctx."):                     # Module 4 continued-training runs
         if key == "longctx.init_from":
             return "ignore", "path of the initial checkpoint (its SHA-256 is compared instead)"

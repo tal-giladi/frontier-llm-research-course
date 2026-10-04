@@ -14,3 +14,6 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P3 — Module 3 project (21 runs, ~39 H100-h PROJECTED) | not piloted (budget) | | | |
 | P4 — Module 4 long docs, Eval v1, zero-shot RoPE | not run | | | |
 | P4 — Module 4 extension arms and project (~4 H100-h PROJECTED) | not piloted yet | | | |
+| P5 — Module 5 fla check, profiles, DSA stages | not run | | | |
+| P7 — Module 7 cost, logit ladder, induced failures | not run | | | |
+| P7 — Module 7 project (~29 H100-h PROJECTED) | not piloted (budget) | | | |

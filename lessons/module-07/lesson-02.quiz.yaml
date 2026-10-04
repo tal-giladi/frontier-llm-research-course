@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    Your team switches a model from AdamW to Muon and keeps AdamW's learning rate of $3 \times 10^{-4}$, but
+    uses Jordan's update scaling $\sqrt{\max(1, A/B)}$. Training is much slower than expected. What is the most
+    likely explanation?
+  options:
+    - >-
+      Each update's RMS is about $1/\sqrt{\max(A,B)}$ per unit learning rate, well below AdamW's ~0.2.
+    - >-
+      Muon needs more Newton–Schulz steps at this learning rate, because small learning rates leave the update ill-conditioned.
+    - >-
+      AdamW's learning rate is too large for Muon, because orthogonal updates have a spectral norm of exactly one.
+    - >-
+      The embedding is now on Muon, because Jordan's scaling applies to every parameter with two dimensions.
+  correct: 0
+  explanation: >-
+    An orthogonal $768 \times 768$ update has RMS $1/\sqrt{768} = 0.036$; AdamW's is typically 0.2–0.4. Without
+    Moonlight's $0.2\sqrt{\max(A,B)}$ matching, reusing AdamW's learning rate gives roughly 5× smaller steps.
+
+- id: q2
+  question: >-
+    One MLA head has $S_{\max} = 250$ on this step's batch, with QK-Clip $\tau = 100$. How does Kimi K2's
+    QK-Clip change that head's weights?
+  options:
+    - >-
+      All four parts ($q^C$, $k^C$, $q^R$ and the shared $k^R$) are scaled by $\sqrt{0.4}$ so the logit becomes 100.
+    - >-
+      Only $q^R$ and $k^R$ are scaled by 0.4, since the rotary parts are where large logits come from.
+    - >-
+      $q^C$ and $k^C$ are scaled by $\sqrt{0.4}$, $q^R$ by 0.4, and the shared $k^R$ is left unchanged.
+    - >-
+      The gradients of $q^C$ and $k^C$ are scaled by 0.4 before the optimizer step, so the next update is smaller.
+  correct: 2
+  explanation: >-
+    $\gamma = \min(1, 100/250) = 0.4$. The shared rotary key serves every head, so it is untouched and the head's
+    rotary query takes the whole factor; the non-rotary parts split it as $\sqrt{\gamma}$ each. The weights are
+    rescaled after the step; gradients are not changed.
+
+- id: q3
+  question: >-
+    A colleague adds QK-Clip with $\tau = 100$ to Baseline-0 (which has QK-norm) and reports that the clip
+    "fires on 30% of steps but the logits do not go down". What is going on?
+  options:
+    - >-
+      $\tau$ is too high for a model this small; lowering it to 10 will make the clip take effect.
+    - >-
+      The RMSNorm after the q and k projections undoes any rescaling of their rows, so the clip has no effect.
+    - >-
+      QK-Clip only works with MLA, because GQA shares key heads across several query heads.
+    - >-
+      The clip should run before the optimizer step, otherwise the update immediately restores the old weights.
+  correct: 1
+  explanation: >-
+    QK-norm normalises each head's q and k after the projection, so multiplying projection rows by a constant
+    changes nothing downstream. QK-norm and QK-Clip are alternative fixes; with QK-norm the logits are
+    already bounded by the norm gains.
+
+- id: q4
+  question: >-
+    You are choosing a logit-control method for a new model whose attention, like DeepSeek-V4's, keeps one
+    compressed KV entry per token that is materialised at inference. What does the published evidence support?
+  options:
+    - >-
+      QK-Clip only, because Kimi K2 showed it is the only method that prevents logit growth under Muon.
+    - >-
+      Soft-capping only, because it bounds the logits fed to the softmax without any extra normalisation cost.
+    - >-
+      Neither, because logit growth is a property of AdamW and does not occur with Muon at scale.
+    - >-
+      RMSNorm on the queries and the compressed KV entry, as V4 does, since the key is available to normalise.
+  correct: 3
+  explanation: >-
+    Kimi K2 used QK-Clip because MLA's keys are not materialised at inference, so QK-norm does not fit; V4's
+    compressed entries are, and V4 normalises them instead. Soft-capping lets $q \cdot k$ keep growing behind the
+    cap, and Moonshot reports logit growth is *more* frequent with Muon.

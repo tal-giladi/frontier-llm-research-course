@@ -38,7 +38,7 @@ re-checked when its module is written and pilot-tested.
 | torchtitan | 0.3.0 | 2026-09-03 | Module 9 |
 | megatron-core | 0.19.2 | 2026-09-18 | Module 9 (mapping table only) |
 | deepspeed | 0.19.7 | 2026-09-16 | Module 9 (mapping table only) |
-| flash-linear-attention | 0.5.2 | 2026-07-27 | Module 5 |
+| flash-linear-attention | 0.5.2 | 2026-07-27 | Module 5 — install with a backend extra: `pip install "flash-linear-attention[cuda]==0.5.2"` (since 0.5 a bare install does not pull torch or triton) |
 | vllm | 0.30.0 | 2026-09-22 | Modules 14–16 (rollouts, test-time compute) |
 | sglang | 0.5.21 | 2026-10-01 | Modules 14–15 (comparison) |
 | verl | 0.9.1 | 2026-09-20 | Modules 14, 16 |
@@ -54,3 +54,4 @@ re-checked when its module is written and pilot-tested.
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
+- Module 5: flash-linear-attention API checked 2026-10-04 at tag v0.5.2: `fla.ops.kda.chunk_kda` and `fla.ops.gated_delta_rule.chunk_gated_delta_rule`, layout `[B, T, H, D]`, log-space gate, `scale` default `1/sqrt(K)`, `initial_state [N, H, K, V]`. The course's chunked gated-delta reference (`frontierlab/attention/deltanet.py`) is the ground truth; run `pytest labs/common/tests/test_attention_m05.py -k fla` on the GPU before using the kernels.

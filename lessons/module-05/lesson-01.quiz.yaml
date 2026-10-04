@@ -1,0 +1,95 @@
+- id: q1
+  question: >-
+    Your chunked gated-delta kernel matches the recurrent reference to 1e-15 in float64 when the chunk size
+    equals the sequence length, and also with chunk size 1. A colleague says equivalence is proven. What
+    should you test before agreeing?
+  options:
+    - >-
+      Only a float32 run, since float64 agreement at the two extreme chunk sizes already covers every
+      intermediate chunk size.
+    - >-
+      Only a longer sequence at chunk size 1, because chunk boundaries cannot introduce errors that the
+      single-chunk run would miss.
+    - >-
+      Intermediate chunk sizes, a length that is not a multiple of the chunk, and a non-zero initial
+      state.
+    - >-
+      Only the gradient check of the layer, because forward equivalence follows automatically once the
+      backward pass is correct.
+  correct: 2
+  explanation: >-
+    Chunk = T has no boundary and chunk = 1 has no intra-chunk solve, so a bug in carrying the state across
+    boundaries, in the last partial chunk or in using S_0 inside the chunk is invisible in both. Test the
+    cases where both parts of the algorithm run together.
+
+- id: q2
+  question: >-
+    A 3:1 hybrid of Baseline-0 (9 linear layers holding about 205 KiB of state each, 3 full GQA layers at
+    1,024 bytes per token) is proposed for a 4K-token chat product, sold on "75% less KV memory". What is
+    the most accurate response?
+  options:
+    - >-
+      About 13.8 MiB against 48 MiB at 4K, a 71% saving; 75% is only approached at much longer
+      contexts.
+    - >-
+      The claim holds exactly at every context, because the saving depends only on the share of linear
+      layers in the model.
+    - >-
+      The saving is larger than 75% at 4K, because the linear layers' fixed state is smaller than their
+      share of a short KV cache.
+    - >-
+      There is no saving at 4K, because linear layers must also cache their keys until the context exceeds
+      the chunk size.
+  correct: 0
+  explanation: >-
+    Bytes are 3 x 1,024 x 4,096 plus 9 x 205.5 KiB, about 13.8 MiB, against 12 x 1,024 x 4,096 = 48 MiB:
+    a 71% saving. The fixed state is a larger share at short contexts, so the ratio only tends to 9/12 as S
+    grows, and 34 MiB per sequence may not matter for a 4K product.
+
+- id: q3
+  question: >-
+    You switch a KDA layer's serving path to keep the recurrent state in bf16 to halve its memory. Short
+    evaluations are unchanged, but answers to 100K-token prompts drift from the fp32 reference. What is the
+    best explanation and next step?
+  options:
+    - >-
+      The short convolution needs fp32 at long context; restore its tail to fp32 and keep the state in
+      bf16, which cannot accumulate error.
+    - >-
+      The decay alpha underflows in bf16 after a few thousand tokens; clamp it to a minimum value and the
+      drift disappears.
+    - >-
+      Long prompts exceed the chunk size, so the chunked kernel is no longer exact; switch the prefill to
+      the recurrent form.
+    - >-
+      Rounding error compounds over many state updates; measure bf16 against fp32 along a long sequence
+      before accepting it.
+  correct: 3
+  explanation: >-
+    The state is updated once per token, so a per-step rounding error of bf16 compounds over 100K updates,
+    which short tests never reach. Low-precision state storage is one of the infrastructure problems MiniMax
+    lists; measure the drift along the sequence before accepting it.
+
+- id: q4
+  question: >-
+    In the lab's equal-parameter, equal-token comparison at 256 tokens, the KDA hybrid's held-out loss is
+    0.05 nats worse than Baseline-0, 95% CI [+0.03, +0.07]. A teammate concludes that hybrids are worse
+    and Module 5 should drop them. What does the evidence actually support?
+  options:
+    - >-
+      The conclusion is right, because equal-parameter comparisons transfer across context length and
+      scale when the data are the same.
+    - >-
+      That at toy scale and 256 tokens, where a hybrid saves nothing, it is worse; long-context cost
+      and quality are still open.
+    - >-
+      Nothing at all, because a single-seed paired bootstrap over evaluation windows cannot detect any
+      difference between two models.
+    - >-
+      That KDA is worse than Gated DeltaNet, because both hybrids share the same full-attention layers and
+      differ only in the gate.
+  correct: 1
+  explanation: >-
+    The interval excludes zero, so on this setting the hybrid is worse, and the window bootstrap does
+    capture evaluation noise (seed noise is a separate limit). But the setting is the least favourable one
+    for a hybrid; its case rests on long-context cost and quality, which 05.3 measures.

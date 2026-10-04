@@ -239,7 +239,62 @@ B0 = f'{PILOT_DIR}/p1/pilot-70m-s0'
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4}
+# ---------------------------------------------------------------------------------------------
+# P5 — Module 5: fla kernels vs the course reference, component profiles, DSA stages.
+# ---------------------------------------------------------------------------------------------
+P5 = [
+    md("""
+## P5 — Module 5: sub-quadratic attention (about 3 hours on an A100)
+
+First checks that the flash-linear-attention kernels agree with the course's reference
+implementation; then component profiles of dense vs linear vs DSA-style attention up to 128K, and
+the two-stage DSA training on the P1 `pilot-70m` checkpoint's preset.
+"""),
+    code("""
+!pip -q install "flash-linear-attention[cuda]==0.5.2"
+!python -m pytest labs/common/tests/test_attention_m05.py -k fla -q 2>&1 | tail -5
+O5 = f'{PILOT_DIR}/p5'; os.makedirs(O5, exist_ok=True)
+!python labs/module-05/lesson-03/profile_attn.py --device cuda --dtype bf16 --shape baseline0 --contexts 8192 16384 32768 65536 131072 --topk 2048 --chunk 64 --linear-mode fla --out "$O5/prefill.json" 2>&1 | tail -30
+!python labs/module-05/lesson-03/profile_attn.py --device cuda --dtype bf16 --shape baseline0 --contexts 8192 16384 32768 65536 131072 --topk 2048 --chunk 64 --linear-mode fla --mode decode --out "$O5/decode.json" 2>&1 | tail -30
+"""),
+    code("""
+!python labs/module-05/lesson-01/train_arms.py --variant main 2>&1 | tail -20
+!python labs/module-05/lesson-02/dsa_stages.py --variant main --device cuda --ablation 2>&1 | tail -30
+"""),
+]
+
+# ---------------------------------------------------------------------------------------------
+# P7 — Module 7: optimizer cost, logit growth on a ladder, transfer sweep, induced failures.
+# The full project (~29 H100-h PROJECTED) is not piloted.
+# ---------------------------------------------------------------------------------------------
+P7 = [
+    md("""
+## P7 — Module 7: optimizers and stability (about 4 hours on an A100)
+
+Measures Muon's step-time cost, checks exact resume with Muon on GPU, then answers the plan's 07.2
+pilot question — does attention-logit growth appear along the 30M → 70M ladder, and does τ = 100
+bind? — and produces the 30M induced-failure traces used by lesson 07.5.
+"""),
+    code("""
+O7 = f'{PILOT_DIR}/p7'; os.makedirs(O7, exist_ok=True)
+!python labs/module-07/lesson-01/cost_table.py --device cuda --presets pilot-30m baseline0 --batch 32 --seq 1024 --vocab 32768 2>&1 | tee "$O7/07-1-cost.txt"
+!python -m frontierlab.optim.train --run "$O7/muon-straight" --optimizer muon --preset pilot-10m --steps 400 --batch 32 --seq 512 --dtype bf16
+!python -m frontierlab.optim.train --run "$O7/muon-resumed" --optimizer muon --preset pilot-10m --steps 400 --batch 32 --seq 512 --dtype bf16 --stop-after 200
+!python -m frontierlab.optim.train --run "$O7/muon-resumed" --optimizer muon --preset pilot-10m --steps 400 --batch 32 --seq 512 --dtype bf16
+!python labs/module-01/lesson-01/compare_logs.py "$O7/muon-straight" "$O7/muon-resumed" | tee "$O7/07-1-resume.txt"
+"""),
+    code("""
+!python labs/module-07/lesson-02/train_arms.py --variant main 2>&1 | tail -10
+!python labs/module-07/lesson-02/train_arms.py --variant main70 2>&1 | tail -10
+!python labs/module-07/lesson-02/compare_arms.py runs/m07/l72/main --device cuda 2>&1 | tee "$O7/07-2-compare.txt"
+!python labs/module-07/lesson-05/induce.py --variant main 2>&1 | tail -10
+!python labs/module-07/lesson-05/diagnose.py runs/m07/l75/main 2>&1 | tee "$O7/07-5-diagnose.txt"
+!python labs/module-07/lesson-05/make_traces.py runs/m07/l75/main 2>&1 | tail -5
+!cp -r runs/m07 "$O7/runs-m07"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P7}
 
 
 def build():

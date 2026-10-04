@@ -1,0 +1,95 @@
+- id: q1
+  question: >-
+    You add a DSA-style indexer to a trained dense model and train everything jointly from the start with
+    only the language-modelling loss, top-k selection switched on. After 1,000 steps the indexer weights
+    have not changed at all. Why?
+  options:
+    - >-
+      The learning rate was too low for the indexer, which needs its own parameter group with a higher rate
+      during joint training.
+    - >-
+      The top-k mask is discrete, so the LM loss sends no gradient to the indexer; it needs its own objective,
+      such as the KL to the main attention.
+    - >-
+      ReLU in the indexer score is zero for most pairs, so the gradient vanishes; replacing it with GELU
+      would let the LM loss train it.
+    - >-
+      The indexer input is detached, which blocks all gradients; removing the detach lets the LM loss reach
+      the indexer through the selection.
+  correct: 1
+  explanation: >-
+    Which keys are selected is a hard decision, and the attention output does not depend on the indexer
+    scores in a differentiable way. That is why V3.2 trains the indexer by KL to the head-summed,
+    L1-normalised main attention; the detach only stops that KL from reaching the main model.
+
+- id: q2
+  question: >-
+    For DeepSeek-V3.2's shape (main attention about 278,500 FLOPs per query-key pair in MQA mode, indexer
+    64 heads of width 128, k = 2,048), which term dominates the arithmetic of one decode step at 128K
+    context?
+  options:
+    - >-
+      The selected attention, because it runs over 2,048 keys with all 128 heads while the indexer has only
+      half as many heads.
+    - >-
+      Neither, because the indexer and the selected attention are both O(L k) and therefore cost the same
+      at any context length.
+    - >-
+      The top-k step, because sorting 131,072 scores is more arithmetic than either matrix product at this
+      context.
+    - >-
+      The indexer, about 2.2e9 FLOPs against 5.7e8 for the selected attention, because it still scores
+      every cached token.
+  correct: 3
+  explanation: >-
+    The indexer costs 64 x (2 x 128 + 2) = 16,512 FLOPs per key over 131,072 keys, about 2.2e9; the
+    selected attention 278,528 x 2,048, about 5.7e8. The indexer dominates above about 34.5K tokens; FP8
+    and few heads lower its constant, not its growth.
+
+- id: q3
+  question: >-
+    After your dense warm-up, the indexer's top-32 keeps 0.71 of the attention mass, the oracle top-32
+    keeps 0.83, and the 32 most recent keys keep 0.74, at 256 tokens. What should the memo say about
+    learned selection at this setting?
+  options:
+    - >-
+      It is not yet worth its cost here: a free sliding window of the same size keeps as much mass, so the
+      indexer adds compute without adding coverage.
+    - >-
+      It is clearly worth it, because the oracle shows that 83% of the mass is reachable and the indexer
+      gets close to that value.
+    - >-
+      It is broken, because a correctly trained indexer must reach the oracle's recall after the warm-up
+      on any model.
+    - >-
+      It cannot be judged, because attention-mass recall measured in dense mode says nothing about a model
+      that will run in sparse mode.
+  correct: 0
+  explanation: >-
+    The window is the baseline selection must beat, and it does not here. The oracle bounds what any
+    k-selector could keep; the indexer need not reach it. Recall on dense attention is the training target
+    itself, so it is the right diagnostic, with the limit that attention shifts during sparse training.
+
+- id: q4
+  question: >-
+    Your serving cluster is limited by GPU memory: the KV cache at 128K context leaves room for only four
+    sequences per GPU. A colleague proposes converting the model to DSA to fit more sequences. What do you
+    answer?
+  options:
+    - >-
+      Agree, because each query reads only k entries, so the cache can be truncated to the k entries used
+      most often across queries.
+    - >-
+      Agree, because DSA stores only the indexer keys, which are a small fraction of the full key-value
+      cache at long context.
+    - >-
+      Disagree: DSA keeps every token's KV entry plus an indexer key, so it saves compute and bandwidth per
+      step but not cache memory.
+    - >-
+      Disagree, because DSA increases the cache only during prefill and then compresses it back to the
+      dense size for decoding.
+  correct: 2
+  explanation: >-
+    Every query may select any earlier token, so all entries must stay; the indexer adds d^I elements per
+    token and layer (6% for Baseline-0 with d^I = 32). A memory-bound fleet needs Module 3's levers or a
+    hybrid with fewer full layers.

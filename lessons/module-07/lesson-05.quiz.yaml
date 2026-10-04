@@ -1,0 +1,74 @@
+- id: q1
+  question: >-
+    A run spikes at step 41,200. In the 300 steps before, the max attention logit of layer 7 rose from 40 to 260;
+    the update/weight ratio and gradient norm were flat until the spike. What do you do first?
+  options:
+    - >-
+      Restart 100 steps before the spike and skip the next 500 batches, as PaLM did.
+    - >-
+      Lower the gradient-clipping threshold so the spike's gradients cannot move the weights as far.
+    - >-
+      Treat it as logit growth: add QK-norm, or QK-Clip if the attention cannot use QK-norm, then resume.
+    - >-
+      Add z-loss with weight $10^{-4}$, since it keeps the softmax normalisers close to zero.
+  correct: 2
+  explanation: >-
+    A logit that climbs for hundreds of steps before the spike, with no jump in the update ratio, is the
+    attention-logit signature. Skipping data postpones the next spike; z-loss acts on the output softmax, not
+    attention; clipping barely changes an Adam step.
+
+- id: q2
+  question: >-
+    After a restart from a checkpoint, the loss climbs steadily from the first resumed step. The update/weight
+    ratio of every matrix jumped about 10× at that step; attention logits were normal. What is the most likely cause?
+  options:
+    - >-
+      A batch of degenerate data at the restart point that the model has never seen before.
+    - >-
+      The run was resumed with a learning rate about 10× too high, or with a wrong schedule step.
+    - >-
+      Attention logits grew past the softmax's useful range during the checkpoint save.
+    - >-
+      The gradient norm was clipped too aggressively after the restart, which stalls learning.
+  correct: 1
+  explanation: >-
+    A ratio jump on every matrix at the same step is what a learning-rate or optimizer-state fault looks like;
+    data spikes are confined to the bad steps and are clipped, and logit growth builds up before the spike.
+
+- id: q3
+  question: >-
+    A colleague proposes Gemma 2-style attention soft-capping at 50 instead of QK-norm "because it bounds the
+    logits just as well and costs nothing". Which objection is the strongest?
+  options:
+    - >-
+      $q \cdot k$ can keep growing behind the cap, and capped logits get almost no gradient.
+    - >-
+      Soft-capping is not differentiable at the cap, so the backward pass produces NaNs once a logit reaches 50.
+    - >-
+      Soft-capping only works on the final-layer logits, not inside attention, as Gemma 2's report shows.
+    - >-
+      A cap of 50 is too low for every model; caps must be at least the logit range seen at initialisation.
+  correct: 0
+  explanation: >-
+    $c\tanh(\ell/c)$ is smooth, but its gradient $\mathrm{sech}^2(\ell/c)$ is tiny for capped logits ($0.0013$ at
+    $\ell = 200$), and the underlying dot products are unbounded — Kimi K2's reason for not relying on it.
+    Gemma 2 capped both attention (50) and final logits (30); Gemma 3 replaced the attention cap with QK-norm.
+
+- id: q4
+  question: >-
+    Your stability log records the max attention logit every 200 steps to save compute. Which failure is that
+    cadence most likely to miss?
+  options:
+    - >-
+      Slow attention-logit growth over several thousand steps before a spike.
+    - >-
+      A steady upward drift of the output $\log Z$ that z-loss is meant to prevent.
+    - >-
+      A gradual rise of the gradient norm over the whole run, as OLMo 2 describes.
+    - >-
+      A learning-rate jump or a few bad batches whose evidence sits on a handful of steps.
+  correct: 3
+  explanation: >-
+    Trends over thousands of steps survive sparse sampling; one-step events do not. Cheap statistics (loss,
+    gradient norm, update ratio, learning rate) should be logged every step; the expensive logit probe can be
+    sampled, as long as it still shows the trend.

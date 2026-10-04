@@ -1,0 +1,213 @@
+- id: q1
+  question: >-
+    A vendor offers a gated-delta kernel that is 30% faster than your reference. On your test it matches the
+    recurrent form to 1e-3 in bf16 at 2K tokens. Before using it for the main-path comparison, what is the
+    most important additional check?
+  options:
+    - >-
+      A training run of a few hundred steps, since a kernel that trains without diverging must be computing
+      the right function.
+    - >-
+      A comparison of its parameter count with the reference layer, since a faster kernel often drops the
+      short convolution.
+    - >-
+      Agreement with the float32 reference across chunk boundaries, long sequences, a non-zero initial state
+      and the gradients, with stated tolerances.
+    - >-
+      A profile showing that it launches fewer kernels than the reference, which proves it fuses the same
+      operations rather than skipping some.
+  correct: 2
+  explanation: >-
+    A bf16 match at one length says little: errors can grow with length, appear only at chunk boundaries or
+    with a carried state, or live in the backward pass. Training without diverging is not a correctness
+    test, and op counts say nothing about the function computed.
+
+- id: q2
+  question: >-
+    Your product serves 128K-token documents and is limited by GPU memory: the dense model fits 4 sequences
+    per GPU. You must choose between a 3:1 linear hybrid and DSA-style selection with k = 2,048 to fit more.
+    Which choice addresses the constraint, and why?
+  options:
+    - >-
+      The hybrid: its linear layers hold a fixed state instead of a growing cache, so the cache shrinks
+      toward a quarter; DSA keeps every token's entry.
+    - >-
+      DSA: each query reads only 2,048 entries, so the cache needs to hold only the entries that queries
+      select, a small share at 128K tokens.
+    - >-
+      Both equally: each reduces attention work at 128K by more than an order of magnitude, and cache size
+      falls in proportion to that work.
+    - >-
+      Neither: a 128K cache is dominated by the weights, so only quantising the model would let more
+      sequences fit on the GPU.
+  correct: 0
+  explanation: >-
+    Memory is the binding constraint, and only the hybrid removes cache: 9 of 12 layers keep about 205 KiB of
+    state each whatever the context. DSA saves compute and bandwidth per step but keeps the full cache plus
+    an indexer key; at 128K the cache, not the weights, dominates.
+
+- id: q3
+  question: >-
+    You convert a dense model to DSA but skip the dense warm-up: the sparse stage starts from a randomly
+    initialised indexer, with the indexer trained by its KL loss and the main model by the LM loss. What do
+    you expect, compared with doing the warm-up first?
+  options:
+    - >-
+      No difference, because the KL loss in the sparse stage trains the indexer just as fast once selection
+      is switched on from the start.
+    - >-
+      Faster convergence, because the main model adapts to the indexer's selections from the first step
+      instead of to dense attention.
+    - >-
+      The indexer cannot learn at all, because its KL loss is defined only over the dense attention
+      distribution of the warm-up stage.
+    - >-
+      Early selections are near random, the main model adapts to them, and the KL sees only the selected
+      set; quality likely suffers.
+  correct: 3
+  explanation: >-
+    In the sparse stage the KL is restricted to the selected set, so a random indexer gets a weak signal
+    about keys it never selects, while the main model adapts to bad selections. The warm-up (0.2% of V3.2's
+    sparse-stage tokens) gives the indexer a dense target first.
+
+- id: q4
+  question: >-
+    In the 05.3 profile at 8K tokens on a laptop, the linear arm's decode step is 30 times faster than dense
+    decode, but its prefill is 20 times slower than dense SDPA. A colleague concludes linear attention is
+    only useful for decoding. What is the best response?
+  options:
+    - >-
+      Agree: prefill is quadratic for every design, so the linear arm can only ever win in the decode phase
+      where its state is constant.
+    - >-
+      The prefill number is our Python chunk loop on a CPU; the arithmetic is linear in L, so measure the
+      fused kernel on the target GPU before concluding.
+    - >-
+      Agree, but only for short contexts: past 8K the chunked form switches to the recurrent form, which is
+      always slower than dense attention.
+    - >-
+      The decode number must be wrong, because a design cannot be faster at decode and slower at prefill
+      when both phases do the same arithmetic.
+  correct: 1
+  explanation: >-
+    The linear core's prefill arithmetic grows linearly with L, but the reference implementation is
+    launch-bound (thousands of small ops per call). Prefill and decode have different bottlenecks, so both
+    numbers can be right; the prefill one describes this kernel on this machine.
+
+- id: q5
+  question: >-
+    DeepSeek-V3.2's indexer has 64 heads of width 128, and the main attention runs in MLA's MQA mode. For a
+    design review, which statement about long-context decode cost is supported by the cost model?
+  options:
+    - >-
+      The cost is O(k) per token at any context, because the indexer runs in FP8 and therefore does not
+      count toward the arithmetic.
+    - >-
+      The indexer's cost is negligible at every context, because it has fewer heads than the 128 heads of
+      the main attention.
+    - >-
+      Above about 35K tokens the indexer, which scores every cached token, costs more arithmetic than the
+      selected attention over 2,048 entries.
+    - >-
+      The selected attention dominates at every context, because each of its 2,048 entries is used by all
+      128 query heads in MQA mode.
+  correct: 2
+  explanation: >-
+    Per decode step the indexer costs about 16,512 FLOPs per cached token and the selected attention about
+    278,528 x 2,048; they are equal near 34.5K tokens. FP8 lowers the indexer's time per FLOP, not its
+    linear growth per step (quadratic over a sequence).
+
+- id: q6
+  question: >-
+    Your Eval v1 comparison of a hybrid against dense attention shows no difference on retrieval and loss;
+    the two-hop evidence-effect difference is -0.01, 95% CI [-0.12, +0.10], from 80 items. Your manager
+    asks whether MiniMax's multi-hop concern can now be dismissed. What do you answer?
+  options:
+    - >-
+      Yes, because the point estimate is close to zero and retrieval shows no difference, which is the
+      pattern expected when there is no deficit.
+    - >-
+      Yes for this model size, because the evidence effect cancels the prior and therefore removes the
+      need for more items in each cell.
+    - >-
+      No, because MiniMax's concern applies only to lightning attention and cannot be tested on gated-delta
+      hybrids with any evaluation.
+    - >-
+      No: the interval includes deficits larger than any margin that matters, so the test is underpowered;
+      a few hundred two-hop items would be needed.
+  correct: 3
+  explanation: >-
+    A null result with a wide interval is not evidence of parity. With a per-item standard deviation near
+    0.3 nats, ruling out a 0.05-nat deficit at 80% power needs about 280 items; MiniMax's own point was that
+    deficits hide where evaluations are weakest.
+
+- id: q7
+  question: >-
+    Your CPU profile puts the DSA decode arm's crossover with dense at about 16K tokens. You are asked for
+    the crossover on the team's H100s. What is the honest answer before the pilot runs?
+  options:
+    - >-
+      A projected range from the roofline model, labelled PROJECTED, with the warning that launch overheads
+      and the gather kernel can move it; then measure.
+    - >-
+      About 16K tokens, since the ratio of DSA to dense cost is set by the algorithm and transfers between
+      machines with the same arithmetic.
+    - >-
+      A quarter of the CPU value, about 4K tokens, because the H100's memory bandwidth is roughly four times
+      that of the CPU's main memory.
+    - >-
+      There is no crossover on GPUs, because FlashAttention makes dense decode bandwidth-optimal so no other
+      design can read fewer bytes.
+  correct: 0
+  explanation: >-
+    Crossovers depend on kernels, launch overheads and memory systems, so a CPU number does not transfer and
+    no single scaling factor fixes it. The roofline gives a labelled projection; DSA does read fewer bytes
+    per step at long context, so a crossover is expected but must be measured.
+
+- id: q8
+  question: >-
+    For the 05.1 comparison, the hybrid has 15% more non-embedding parameters than Baseline-0 and you train
+    both for 600 steps. The hybrid's held-out loss is 0.02 lower. What is the main problem with reporting
+    this as "the hybrid is better"?
+  options:
+    - >-
+      The comparison should use equal wall-clock time instead, since that is the only axis relevant to a
+      serving decision.
+    - >-
+      The arms differ in size as well as attention, so the gain may come from the extra parameters; match
+      them (equal-parameters axis) or report both.
+    - >-
+      A 0.02 difference is always within seed noise for models of this size, so no comparison at this scale
+      can show anything.
+    - >-
+      Linear layers need a higher learning rate than full attention, so the comparison is unfair to the
+      hybrid rather than to Baseline-0.
+  correct: 1
+  explanation: >-
+    Two variables changed: the attention and the parameter count. The lab's `--match-params` shrinks the
+    hybrid's SwiGLU width so non-embedding parameters are equal; whether 0.02 is meaningful then depends on
+    the paired interval and the noise floor, not on a general rule.
+
+- id: q9
+  question: >-
+    A teammate's DSA variant reaches a much lower held-out loss than dense attention after a short
+    conversion. Their causal check fails with a difference of 0.4 in the logits. What is the most likely
+    cause?
+  options:
+    - >-
+      The indexer was trained with too high a learning rate, which makes its selections sharper than the
+      dense attention and lowers the loss.
+    - >-
+      The warm-up was skipped, so the indexer selected different keys than the dense model would have, and
+      the logits moved by 0.4.
+    - >-
+      The top-k is taken over scores that include future positions and the selection is not masked
+      causally, so queries attend to tokens they must not see.
+    - >-
+      The cache stores indexer keys in a different dtype from the main keys, so the full forward and the
+      cached forward disagree.
+  correct: 2
+  explanation: >-
+    A held-out loss far below dense after a short run is the signature of a future leak; the causal check
+    (changing future tokens changes past logits) confirms it. Learning-rate or warm-up issues change quality
+    but cannot make past logits depend on future tokens.

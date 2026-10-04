@@ -30,3 +30,18 @@
   - [15 · Position at long range](lessons/module-04/lesson-02.md)
   - [16 · Extending context by continued training](lessons/module-04/lesson-03.md)
   - [Module 4 quiz](assessments/module-04-quiz.md)
+- **Module 5 — When is sub-quadratic attention worth it?**
+  - [17 · Linear and hybrid attention at scale](lessons/module-05/lesson-01.md)
+  - [18 · Learned sparse attention](lessons/module-05/lesson-02.md)
+  - [19 · Measuring cost and quality honestly](lessons/module-05/lesson-03.md)
+  - [20 · Compressed sparse attention (DeepSeek-V4 CSA/HCA)](lessons/module-05/lesson-04.md)
+  - [Module 5 quiz](assessments/module-05-quiz.md)
+
+- Stage C — Training-recipe questions
+- **Module 7 — Which optimizer and parametrization?**
+  - [28 · Muon from scratch](lessons/module-07/lesson-01.md)
+  - [29 · Muon at scale](lessons/module-07/lesson-02.md)
+  - [30 · Hyperparameter transfer](lessons/module-07/lesson-03.md)
+  - [31 · Schedules](lessons/module-07/lesson-04.md)
+  - [32 · Stability forensics](lessons/module-07/lesson-05.md)
+  - [Module 7 quiz](assessments/module-07-quiz.md)

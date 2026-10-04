@@ -1,0 +1,193 @@
+- id: q1
+  question: >-
+    Your Muon implementation passes a test that compares it with `torch.optim.Muon` within bf16 rounding, but
+    a second test, asserting that five quintic Newton–Schulz steps give singular values within $10^{-2}$ of 1 on
+    a real attention gradient, fails with a smallest singular value of 0.02. What is the right conclusion?
+  options:
+    - >-
+      The implementation is wrong, because five quintic steps always bring every singular value into $[0.99, 1.01]$.
+    - >-
+      The bf16 working precision is the cause; running the iteration in float32 will lift the value to about 1.
+    - >-
+      The torch reference must share the bug, so both implementations need the cubic coefficients instead.
+    - >-
+      It is expected for an ill-conditioned gradient; test the band on well-conditioned inputs and convergence with the cubic.
+  correct: 3
+  explanation: >-
+    The quintic maximises the slope at zero but has no fixed point at 1, and five steps cannot lift a singular
+    value that starts near zero (condition number in the thousands) into the band. The correct tests are the
+    band on well-conditioned matrices, unchanged singular vectors, and convergence of the cubic to $UV^\top$.
+
+- id: q2
+  question: >-
+    A team plans an equal-wall-clock comparison of Muon and AdamW on one GPU. They propose giving AdamW
+    $1.0041\times$ Muon's steps because Newton–Schulz is 0.41% of the training FLOPs at their batch. What should they do instead?
+  options:
+    - >-
+      Measure both step times, interleaved, on that GPU, and set AdamW's steps from the measured ratio.
+    - >-
+      Use the FLOP ratio, because wall-clock measurements on a shared GPU are too noisy to define a budget.
+    - >-
+      Give both arms the same number of steps, because equal wall-clock and equal tokens coincide at 0.41%.
+    - >-
+      Use Jordan's bound $Tm/B$ instead, since it is the published upper limit of Muon's overhead.
+  correct: 0
+  explanation: >-
+    FLOP shares are not time shares: Newton–Schulz runs many small dependent matmuls (in the course's CPU
+    measurement Muon's optimizer step took 10–20× AdamW's), and sharding adds gathers. Equal wall-clock needs a
+    measured, interleaved step-time ratio (lesson 02.4).
+
+- id: q3
+  question: >-
+    You switch a tuned AdamW run (learning rate $3 \times 10^{-4}$, weight decay 0.1) to Muon for the hidden
+    matrices and want to avoid a new sweep. Which configuration lets you reuse both values most directly?
+  options:
+    - >-
+      Jordan's scaling $\sqrt{\max(1, A/B)}$ with the learning rate raised 10× and weight decay unchanged.
+    - >-
+      No shape scaling and no weight decay, since orthogonal updates already have unit spectral norm.
+    - >-
+      Moonlight's $0.2\sqrt{\max(A,B)}$ matching with decoupled weight decay, so updates have AdamW-like RMS.
+    - >-
+      Muon for every parameter including the embedding, so that one optimizer uses the single learning rate.
+  correct: 2
+  explanation: >-
+    Matching makes each Muon matrix's update RMS about 0.2, AdamW's typical range, so the same learning rate and
+    weight decay mean the same step size (Moonlight Eq. 4). Embeddings and vectors stay on AdamW in every recipe.
+
+- id: q4
+  question: >-
+    Your new model uses MLA (no QK-norm) and Muon. Logits in layer 12 pass 400 at step 9,000. You add QK-Clip with
+    $\tau = 100$. Which implementation detail would make the fix wrong?
+  options:
+    - >-
+      Computing $S_{\max}$ per head from the current step's forward pass on the training batch.
+    - >-
+      Scaling the shared rotary key $k^R$ by $\sqrt{\gamma}$ along with each head's own parts.
+    - >-
+      Applying the rescale to the weights after the optimizer step, leaving gradients unchanged.
+    - >-
+      Leaving heads with $S_{\max} \le \tau$ untouched, so only the offending heads are rescaled.
+  correct: 1
+  explanation: >-
+    $k^R$ is shared by every head; scaling it changes all heads' logits, not only the clipped one. Kimi K2 scales
+    $q^C$ and $k^C$ by $\sqrt\gamma$, the head's $q^R$ by $\gamma$, and leaves $k^R$ alone; the other three options
+    are what Kimi K2 does.
+
+- id: q5
+  question: >-
+    In a course-scale run, Muon without QK-norm reaches a max attention logit of 27 while AdamW at the same
+    learning rate reaches 262. A teammate concludes that Kimi K2's statement that logit explosion "occurs more
+    frequently with Muon" is false. What is the sound response?
+  options:
+    - >-
+      Agree, because a reversal at any scale disproves a general claim about the optimizer.
+    - >-
+      Disagree, because the course run must contain a bug: Muon always produces larger logits than AdamW.
+    - >-
+      Agree, but only for GQA; the Kimi K2 claim applies to MLA models, which the run did not test.
+    - >-
+      It is one seed at 1.8M parameters; Kimi's report is at 9B activated, so neither refutes the other.
+  correct: 3
+  explanation: >-
+    Course-scale experiments are not evidence about frontier-scale claims in either direction (plan principle 3).
+    Report the reversal as an observation at this scale and use the pilot's larger traces before drawing
+    conclusions about Recipe-R.
+
+- id: q6
+  question: >-
+    You tuned AdamW at width 384 and train at 768 (head dimension fixed) under µP. The 768-wide run diverges at
+    the transferred learning rate, while a coordinate check of your code showed the hidden-block activation
+    change growing about 2× from 384 to 768. What is the most likely cause?
+  options:
+    - >-
+      The hidden matrices missed their $1/m$ learning-rate factor, so their change grows with width.
+    - >-
+      µP does not transfer to a 2× wider model; the learning rate must be re-tuned at every width.
+    - >-
+      The embedding's learning rate should also have been divided by 2 under µP.
+    - >-
+      The attention scale must be changed from $1/\sqrt d$ to $1/d$ whenever µP is used.
+  correct: 0
+  explanation: >-
+    Under Adam a hidden layer's output change scales with $\eta n$; a missing $1/m$ factor shows exactly as a
+    change that doubles when the width doubles. The embedding keeps its learning rate, and with $d$ fixed the
+    $1/\sqrt d$ scale is fine.
+
+- id: q7
+  question: >-
+    A transfer test sweeps 4 learning rates at widths 64, 128 and 256 with one seed each. Under SP the best value
+    moves from $3 \times 10^{-2}$ at 64 to $3 \times 10^{-3}$ at 256; under µP it stays at $10^{-2}$, but at width 256
+    the best and second-best µP points differ by 0.003 nats, below the 0.01-nat seed noise floor. What do you report?
+  options:
+    - >-
+      µP failed, because a difference below the noise floor means the sweep has no information at all.
+    - >-
+      µP transferred and SP did not, with the µP optimum at 256 not resolved between two grid points.
+    - >-
+      SP transferred, because a shift of two grid steps is within the usual tolerance of a factor of 10.
+    - >-
+      µP transferred perfectly, so the second-best point can be dropped from the report.
+  correct: 1
+  explanation: >-
+    SP's optimum moved two steps (factor 10), µP's none, which passes a one-step rule. The near-tie at 256 is
+    part of the result: the optimum lies somewhere between the two points, and more seeds would resolve it.
+
+- id: q8
+  question: >-
+    You need finished models at 1,000, 2,000 and 4,000 steps for a scaling fit and will keep training the largest
+    one later with new data. Which plan fits both needs best?
+  options:
+    - >-
+      Three separate cosine runs, then re-warm the 4,000-step model for the new data.
+    - >-
+      One cosine run to 4,000 steps, and evaluate its checkpoints at 1,000 and 2,000 steps.
+    - >-
+      One stable run with full checkpoints at each decay start, a decay branch per length, and the trunk kept for later.
+    - >-
+      One stable run to 4,000 steps without any decay, since a constant learning rate gives the final loss directly.
+  correct: 2
+  explanation: >-
+    Branches cost about 4,000 − 400 + 100 + 200 + 400 = 4,300 steps instead of 7,000, and the stable trunk can be
+    extended without undoing a decay. Mid-run cosine checkpoints are not finished models, and an undecayed run
+    is not either.
+
+- id: q9
+  question: >-
+    A run's loss spikes at steps 150–152 and is back to normal by step 160. Before the spike every logged statistic
+    was flat; at the spike the raw gradient norm jumped 20×, while the update/weight ratio rose only 1.5×. What is
+    the most likely cause, and the right action?
+  options:
+    - >-
+      Attention-logit growth; add QK-norm and restart from the last checkpoint.
+    - >-
+      A wrong learning rate after a restart; check the run card's schedule and the resume step.
+    - >-
+      An optimizer-state corruption; reset the Adam moments and continue from step 152.
+    - >-
+      A bad data batch; inspect the batches at those steps and filter that kind of data from the mixture.
+  correct: 3
+  explanation: >-
+    No precursor, a gradient jump confined to the bad steps (clipping keeps the update ratio near normal) and a
+    quick recovery is the data signature; OLMo 2 traced such spikes to long repeated n-grams and filtered them.
+    PaLM's caveat applies: the same data can be harmless at another point in training.
+
+- id: q10
+  question: >-
+    Recipe-R's optimizer decision: at equal tokens Muon is 0.05 nats better (interval $[-0.07, -0.03]$); at equal
+    wall-clock the difference is $-0.015$ $[-0.04, +0.01]$; the pre-stated rule required an upper bound below
+    $-0.02$ at equal wall-clock. What goes into the report?
+  options:
+    - >-
+      Muon, because the equal-tokens result is clearly significant and the wall-clock result points the same way.
+    - >-
+      AdamW, because the equal-wall-clock interval includes zero, which shows the two optimizers are equal.
+    - >-
+      Inconclusive by the rule; keep the simpler choice for Recipe-R and state both results with their limits.
+    - >-
+      Muon, after re-running the wall-clock arm with more seeds until its interval falls below $-0.02$.
+  correct: 2
+  explanation: >-
+    The rule names the axis that decides; switching axes after seeing results, or adding seeds until the
+    interval crosses the threshold, are the moves pre-registration prevents. An interval that includes zero is
+    not evidence of equality either: it is "cannot tell", and the report says so.

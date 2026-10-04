@@ -40,9 +40,9 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 2 — Where does the time go? — commit f83216e; dry-run import 0 problems
 - [x] Module 3 — How should attention spend KV memory? (sub-agent C, integrated)
 - [x] Module 4 — Does the model use its context? (sub-agent D, integrated)
-- [ ] Module 5 — When is sub-quadratic attention worth it?
+- [x] Module 5 — When is sub-quadratic attention worth it? (sub-agent E, integrated)
 - [ ] Module 6 — Which other block changes earn their complexity?
-- [ ] Module 7 — Which optimizer and parametrization?
+- [x] Module 7 — Which optimizer and parametrization? (sub-agent F, integrated)
 - [ ] Module 8 — How low can precision go?
 - [ ] Module 9 — What does the cluster cost, and how does it fail?
 - [ ] Module 10 — Which data, in which mix?
@@ -62,7 +62,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 
 ## Who is working on what
 
-- Main session: Modules 1–4 integrated; next Modules 5 and 6 (two sub-agents), then Stage C.
+- Main session: Modules 1–5 and 7 integrated; next Modules 6 and 8 (two sub-agents).
 
 ## Decisions and open questions
 
@@ -73,3 +73,4 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 | 2026-10-03 | Reuse the MoE course's quiz checker and labkit pattern; lab package `frontierlab` copies from `llmre`/`moelab`, imports neither |
 | 2026-10-04 | Continued training from a checkpoint goes through `frontierlab.longctx.extend` (wraps the loop); the native `--init-from` loop change proposed in `curriculum/inbox/module-04-loop-changes.md` is deferred until a later module needs it |
 | 2026-10-04 | RMSNorm keeps float64 as float64 (Module 3 finding); float32/bf16 behaviour unchanged |
+| 2026-10-04 | Optimizer runs go through `frontierlab.optim.train` (wraps the loop); native loop flags in `curriculum/inbox/module-07-loop-changes.md` deferred. Sidebar running numbers reserve 21–27 for Module 6 (7 lessons). |

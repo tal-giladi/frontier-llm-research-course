@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    For a scaling-law fit you need finished models at 2,000, 4,000 and 8,000 steps, each with a 10% decay.
+    How many training steps does the WSD-branch plan cost, against one cosine run per length?
+  options:
+    - >-
+      14,000 for the branches against 14,000 for cosine, because every token still has to be trained once.
+    - >-
+      8,000 for the branches against 14,000, because the shorter models are checkpoints of the longest one.
+    - >-
+      8,600 for the branches against 14,000: a stable run to 7,200 plus decays of 200, 400 and 800 steps.
+    - >-
+      9,400 for the branches against 14,000: a stable run to 8,000 plus the three decays after it.
+  correct: 2
+  explanation: >-
+    The stable run only has to reach the last decay start ($8{,}000 - 800 = 7{,}200$); each length then adds its
+    own decay: $7{,}200 + 200 + 400 + 800 = 8{,}600$, a 39% saving. Cosine checkpoints of a long run are not
+    finished shorter models, because their learning rate never decayed.
+
+- id: q2
+  question: >-
+    You start a decay branch at step 540 by loading only the model weights of the stable run's checkpoint into a
+    new run with the WSD schedule. The branch's loss jumps up for the first steps. Why?
+  options:
+    - >-
+      It has a fresh optimizer with zero moments and step 0, so it does not continue the stable run.
+    - >-
+      The decay started too early; a branch must keep the peak learning rate for 10% of its steps first.
+    - >-
+      Branches always start with a loss jump, because the learning rate drops suddenly at the decay start.
+    - >-
+      The data order restarted from the beginning, and the first batches are harder than the later ones.
+  correct: 0
+  explanation: >-
+    A branch must start from the full checkpoint (optimizer moments, step, RNG states), which is what
+    `--branch-from` copies; a weights-only start is continued training with a re-warm. The decay itself lowers
+    the learning rate smoothly from its first step.
+
+- id: q3
+  question: >-
+    Midway through a WSD run, its training loss is clearly above that of a cosine run of the same final length
+    at the same step. A reviewer says WSD is worse. What is the right reply?
+  options:
+    - >-
+      Agree, because a schedule that is worse at any intermediate step cannot be better at the end.
+    - >-
+      Compare finished models: WSD's stable phase is expected to sit higher, and the decay closes the gap.
+    - >-
+      Disagree, because training loss is irrelevant and only the evaluation loss at the midpoint matters.
+    - >-
+      Agree, and lengthen the cosine run, since a longer cosine schedule is always better at any step.
+  correct: 1
+  explanation: >-
+    At the same step the cosine run already has a lower learning rate; the stable run's loss drops sharply only
+    during its decay (MiniCPM sections 4.2–4.3). The comparison that answers the question is between finished
+    models of equal length.
+
+- id: q4
+  question: >-
+    DeepSeek-V3 and Kimi K2 decayed over about 30–35% of their tokens, while MiniCPM reports that a 10% decay was
+    enough. You are planning one expensive run. What does this evidence support?
+  options:
+    - >-
+      Use 10%, because MiniCPM measured it carefully and the production labs simply did not know about it.
+    - >-
+      Use 35%, because a longer decay always gives a lower final loss at the same total tokens.
+    - >-
+      Skip the decay entirely, since a constant learning rate scales as well as cosine according to Hägele et al.
+    - >-
+      Treat decay length as a choice to test on smaller branches of your own setup before fixing it for the run.
+  correct: 3
+  explanation: >-
+    "10% is enough" and "benefits plateau around 20%" were measured on those papers' models; production runs chose
+    longer decays. Decay branches make the length cheap to test at small scale. Hägele et al.'s finding is about
+    a constant learning rate *with* a cooldown.

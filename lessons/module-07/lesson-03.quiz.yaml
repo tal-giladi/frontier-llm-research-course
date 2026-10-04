@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    You tuned AdamW at width 256 (best learning rate $8 \times 10^{-3}$) and will train at width 1,024 with µP
+    relative to 256, head dimension fixed. Which settings does µP give the 1,024-wide model?
+  options:
+    - >-
+      Every learning rate divided by 4 and every init std divided by 2, including the embedding's.
+    - >-
+      Hidden learning rate $2 \times 10^{-3}$, hidden init std halved, embedding unchanged, logits multiplied by 1/4.
+    - >-
+      All settings unchanged, since µP's point is that the same hyperparameters work at every width.
+    - >-
+      Hidden learning rate $2 \times 10^{-3}$ and init std divided by 4, with attention scaled by $1/d$ instead of $1/\sqrt{d}$.
+  correct: 1
+  explanation: >-
+    With $m = 4$: hidden Adam learning rate $\eta/m$, hidden init std $0.02/\sqrt{m}$, the embedding keeps its
+    init and learning rate, and a tied head gets a $1/m$ logit multiplier. The base hyperparameter stays the
+    same; the per-group factors change. With $d$ fixed, $1/\sqrt d$ stays.
+
+- id: q2
+  question: >-
+    Your coordinate check shows the change in the last block's output after 5 steps growing about 4× from width
+    128 to 512 under your "µP" implementation, while the logits' change stays flat. What is the most likely bug?
+  options:
+    - >-
+      The readout multiplier is missing, since a flat logit change is what SP produces.
+    - >-
+      The embedding's learning rate was scaled by $1/m$, which shrinks the input to every block.
+    - >-
+      The coordinate check used too few steps; µP only holds after hundreds of steps.
+    - >-
+      The hidden matrices are not getting their $1/m$ learning-rate factor, so their updates grow with width.
+  correct: 3
+  explanation: >-
+    A hidden layer's per-step output change under Adam scales with $\eta n$; without the $1/m$ factor it grows
+    linearly with width, exactly the growth seen in the block output. A wrongly scaled embedding would shrink
+    activations, not grow them.
+
+- id: q3
+  question: >-
+    You use Muon with Moonlight's update-RMS matching ($0.2\sqrt{\max(A,B)}$). Following the spectral-condition
+    argument of lesson 07.3, how should the hidden learning rate scale with the width multiplier $m$?
+  options:
+    - >-
+      As $1/\sqrt{m}$, because the full-rank update's spectral norm grows like $\sqrt{n}$ at a fixed learning rate.
+    - >-
+      As $1/m$, because a matched update has the same entry size as Adam's and must follow Adam's rule.
+    - >-
+      Constant in $m$, because orthogonalisation already removes every dependence on width.
+    - >-
+      As $1/m^2$, because the update is applied to both the fan-in and the fan-out side of the matrix.
+  correct: 0
+  explanation: >-
+    Matched updates have entries of size $0.2\eta$ but are full rank, so $\|\Delta W x\| = 0.2\eta\sqrt n \|x\|$
+    and each output entry moves by $\propto \eta\sqrt n$. Keeping that $\Theta(1)$ needs $\eta \propto 1/\sqrt m$
+    (constant only with Jordan's scaling). The lesson labels this as inference; the transfer test decides.
+
+- id: q4
+  question: >-
+    A one-seed transfer sweep with a factor-3 grid shows the best µP learning rate at width 64 is $10^{-2}$ and at
+    width 256 is $3 \times 10^{-3}$, with the two grid points 0.004 nats apart. Your Module 1 seed noise floor is
+    0.01 nats. What do you report?
+  options:
+    - >-
+      µP failed to transfer, because the optimum moved and any movement contradicts the theory.
+    - >-
+      The optimum moved by one grid step, which the rule allows, and the two points are tied within the noise.
+    - >-
+      µP transferred perfectly, because the difference between grid points is smaller than 0.01 nats.
+    - >-
+      The result is unusable, since only a sweep with three seeds at every grid point can be reported.
+  correct: 1
+  explanation: >-
+    A one-step shift passes the pre-stated rule, and a 0.004-nat gap below a 0.01-nat noise floor means the
+    argmin is not resolved: report both facts. Finite-width drift of the optimum is expected even under µP.
