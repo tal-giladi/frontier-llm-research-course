@@ -62,7 +62,8 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 
 ## Who is working on what
 
-- Main session: Modules 1–8 integrated and pushed; next Modules 9 and 10.
+- 2026-10-04: machine restart interrupted two sub-agents: Module 9 (owns lessons/module-09, labs/module-09, frontierlab/dist, tests/test_dist.py) and Module 10 (owns lessons/module-10, labs/module-10, frontierlab/datax, tests/test_datax.py). Their partial files are uncommitted. On resume: read curriculum/status/module-09.log and module-10.log, keep finished lessons, relaunch each agent to finish only what is missing (same prompts as before, plus "resume: skip lessons marked done").
+- Modules 1–8 committed and pushed (db23392).
 
 ## Decisions and open questions
 
