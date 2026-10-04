@@ -17,3 +17,7 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P5 — Module 5 fla check, profiles, DSA stages | not run | | | |
 | P7 — Module 7 cost, logit ladder, induced failures | not run | | | |
 | P7 — Module 7 project (~29 H100-h PROJECTED) | not piloted (budget) | | | |
+| P6 — Module 6 MTP, HC/mHC ladder, factorial | not run | | | |
+| P6 — Lineage-F integration (~60+ H100-h PROJECTED) | not piloted (budget) | | | |
+| P8 — Module 8 FP8 on L4, sweep | not run | | | |
+| P8 — NVFP4 on B200 | not piloted (no Blackwell on Colab) | | | |

@@ -1,0 +1,85 @@
+- id: q1
+  question: >-
+    In an HC model, every sub-layer's learned mixing matrix has row sums of about 1.05. The model has 30 blocks
+    (60 sub-layers). Roughly what happens to a signal carried by the identity path from the bottom to the top,
+    and why does mHC not have this problem?
+  options:
+    - >-
+      It grows about 18-fold, since the 60 maps multiply; products of doubly-stochastic maps keep sums of 1.
+    - >-
+      It grows about 3-fold (60 × 0.05), since residual gains add across layers; mHC's sigmoid on H_pre
+      removes the excess.
+    - >-
+      It stays unchanged, because the final RMSNorm rescales the summed streams; mHC adds the constraint
+      only to make training faster.
+    - >-
+      It shrinks to zero, because row sums above 1 force column sums below 1; mHC fixes this by making
+      every entry of H_res equal to 1/n.
+  correct: 0
+  explanation: >-
+    The identity path in HC is the product of the per-layer H_res, so gains compound: 1.05^60 is about 18.7.
+    Doubly-stochastic matrices are closed under multiplication, so the composite keeps row and column sums of 1
+    at any depth. The final norm rescales the output, not the gradients inside the stack.
+
+- id: q2
+  question: >-
+    A teammate reports that mHC adds only 1.8% training FLOPs to Baseline-0 and proposes comparing it with
+    Baseline-0 at equal FLOPs. On your unfused implementation, one mHC step takes far longer than that. Which
+    comparison axis should decide adoption, and why?
+  options:
+    - >-
+      Equal FLOPs, because it is the hardware-independent axis and the extra time only reflects a kernel that is
+      missing for now.
+    - >-
+      Equal tokens, because the stability question is about per-step behaviour, so cost is a separate topic.
+    - >-
+      Equal wall-clock, because the 4-stream residual moves about 11 times the bytes, and bytes set its cost.
+    - >-
+      Equal parameters, because mHC adds 1.8M parameters that have to be taken out of the FFN width first.
+  correct: 2
+  explanation: >-
+    mHC Table 2 shows the residual's memory traffic grows roughly in proportion to n while FLOPs barely change, so
+    FLOPs understate the cost. Stability can be studied at equal tokens, but adoption must charge mHC for the
+    time it actually costs on your hardware and kernels.
+
+- id: q3
+  question: >-
+    Your CPU lab finds no loss spikes for HC at any learning rate, and HC's composite forward gain grows from
+    1.00 to 1.35 between the first and the last logged step at the highest rate, while mHC stays at 1.00.
+    What is the soundest conclusion?
+  options:
+    - >-
+      HC is stable at all scales, so mHC's constraint is unnecessary and the paper's 27B result was a
+      training bug.
+    - >-
+      mHC is now established as more stable, because its gain stayed at 1.00 while HC's moved.
+    - >-
+      The lab failed, because a hypothesis lab has to reproduce the reported instability before it counts.
+    - >-
+      No instability at this scale, but HC's identity path drifts; a scale ladder is the next measurement.
+  correct: 3
+  explanation: >-
+    H1 is not observed here, which is a result about this scale and length, not about 27B. The rising gain shows
+    the mechanism mHC targets is present; a pilot ladder tells whether it grows with size. A sound null result
+    passes; claiming either general stability or an established benefit overreaches.
+
+- id: q4
+  question: >-
+    You build an n = 4 mHC model, but initialise every b_pre to 0 and every stream as a copy of the embedding.
+    After training, the four streams are still almost identical. What went wrong?
+  options:
+    - >-
+      Sinkhorn-Knopp with 20 iterations is too inaccurate to let streams differ, so t_max must be raised.
+    - >-
+      Nothing distinguishes the streams: each reads, receives and mixes them symmetrically, so only small
+      random dynamic terms can break the symmetry.
+    - >-
+      Doubly-stochastic mixing averages the streams at every layer by design, so identical streams are the
+      intended behaviour of mHC.
+    - >-
+      The sum of the streams at the top cancels their differences, so the gradients cannot separate them.
+  correct: 1
+  explanation: >-
+    With identical inputs, equal reads and equal writes, a symmetric update keeps the streams equal. HC breaks the
+    symmetry by having sub-layer k read stream k mod n; the course's mHC biases do the same. Doubly-stochastic
+    matrices can be close to the identity, so they do not force averaging.

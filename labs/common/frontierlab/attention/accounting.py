@@ -52,6 +52,9 @@ def param_counts(cfg: ModelConfig) -> dict:
     """Exact counts for ``LM(cfg)``: each layer's attention block is instantiated and counted; the SwiGLU
     (3·C·I), the two RMSNorm gains per layer, the final norm, the embedding and (if untied) the head follow
     the structure of :mod:`frontierlab.model.lm`. Tests check the total against the real model."""
+    if "blocks" in cfg.extra:                            # Module 6 block changes
+        from frontierlab.blocks import accounting as blocks_acc
+        return blocks_acc.param_counts(cfg)
     C, L, V = cfg.hidden_size, cfg.num_hidden_layers, cfg.vocab_size
     attn = [sum(p.numel() for p in attention_module(cfg, i).parameters()) for i in range(L)]
     mlp = 3 * C * cfg.intermediate_size
@@ -110,6 +113,9 @@ def _fwd_matmul(cfg: ModelConfig) -> float:
 
 def flops_per_token(cfg: ModelConfig, T: int, training: bool = True) -> float:
     """Average training (or forward) FLOPs per token at sequence length T. Same convention as frontierlab.flops."""
+    if "blocks" in cfg.extra:                            # Module 6 block changes (MTP, HC/mHC, MoE, ...)
+        from frontierlab.blocks import accounting as blocks_acc
+        return blocks_acc.flops_per_token(cfg, T, training)
     if cfg.attention in M05_KINDS:                       # Module 5 kinds: linear, hybrid, DSA
         return m05_flops_per_token(cfg, T, training)
     w = window(cfg)

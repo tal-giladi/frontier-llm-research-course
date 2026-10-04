@@ -1,0 +1,95 @@
+- id: q1
+  question: >-
+    In an NVFP4 run you turn on stochastic rounding for activations and weights as well as gradients, reasoning
+    that "unbiased rounding can only help". What does the NVFP4 paper report, and why?
+  options:
+    - >-
+      It helps slightly, because the forward pass also accumulates rounding bias over many steps.
+    - >-
+      It makes no difference, because the RHT already removes the bias of round-to-nearest in every tensor.
+    - >-
+      It is required for weights but not activations, because weights persist across steps.
+    - >-
+      It hurts and can diverge: the forward pass then computes a noisy function, while only gradients need unbiasedness.
+  correct: 3
+  explanation: >-
+    SGD averages gradient noise, so unbiased gradient rounding pays off; noise in the forward pass perturbs the
+    function being trained. Section 4.4 finds no benefit on other tensors and appendix E.3 reports divergence with
+    SR on activations or weights.
+
+- id: q2
+  question: >-
+    A colleague applies a random Hadamard transform to the weight-gradient inputs and is surprised that the exact
+    float64 weight gradient is unchanged before quantisation. What explains this, and where does the RHT have its
+    effect?
+  options:
+    - >-
+      It is orthogonal, so $(G^\top Q)(Q^\top X) = G^\top X$; it only changes what the quantiser sees.
+    - >-
+      The transform is applied after the GEMM, so it cannot change the result in any precision at all.
+    - >-
+      The bug is that the signs were not randomised; with random signs the exact gradient changes as intended.
+    - >-
+      The RHT only affects the forward pass, so the weight gradient stays unchanged by design.
+  correct: 0
+  explanation: >-
+    Hadamard matrices with random signs are orthogonal, so applying the same transform to both Wgrad operands
+    along the token dimension cancels exactly. Its purpose is to mix each block of 16 tokens so an outlier no longer
+    sets a block's scale alone.
+
+- id: q3
+  question: >-
+    You want 4-bit MoE expert weights for serving a model that is already pretrained, with a short budget for
+    extra training. Which documented approach matches this situation most closely?
+  options:
+    - >-
+      NVIDIA's NVFP4 recipe, because it is the only documented way to obtain FP4 weights for any LLM.
+    - >-
+      QAT in post-training as in DeepSeek-V4 and Kimi K2 Thinking: fake-quantised experts, an STE.
+    - >-
+      gpt-oss's recipe, because MXFP4 weights can only be obtained by retraining the model from scratch.
+    - >-
+      Kimi K2's MuonClip, since its QK-Clip is what keeps 4-bit expert weights stable in training.
+  correct: 1
+  explanation: >-
+    Both reports describe quantisation-aware training during post-training of an already pretrained model;
+    NVFP4 is a pretraining recipe. gpt-oss also used MXFP4 MoE weights during post-training, not pretraining, and
+    QK-Clip is an attention-logit control from Module 7.
+
+- id: q4
+  question: >-
+    In a course-scale ablation, an NVFP4 arm without stochastic rounding ends 0.001 nats from the full recipe,
+    while the full recipe's two seeds differ by 0.006 nats. The paper reports that stochastic rounding of gradients
+    matters at 12B. How should this be written up?
+  options:
+    - >-
+      Stochastic rounding is unnecessary under 1B parameters, so Recipe-R can drop it.
+    - >-
+      The paper's claim is contradicted, since a controlled ablation found no effect at all.
+    - >-
+      No detectable effect at this scale; the paper's 12B result is neither confirmed nor refuted.
+    - >-
+      Stochastic rounding has a 0.001-nat effect, the estimate to carry into the project.
+  correct: 2
+  explanation: >-
+    The difference is below the seed noise floor, so the design cannot resolve it in either direction. A null
+    result at toy scale is a legitimate finding about this scale, not evidence about trillions of tokens.
+
+- id: q5
+  question: >-
+    DeepSeek-V4 dequantises MXFP4 expert weights to FP8 for its existing kernels and calls this lossless. When is an
+    E2M1 value times its 1 × 32 power-of-two scale exactly representable in E4M3 relative to a 128 × 128 tile scale?
+  options:
+    - >-
+      Always, because E4M3 has more bits than E2M1 and every 4-bit value fits into 8 bits.
+    - >-
+      Never exactly, because E4M3 has only three mantissa bits and E2M1 values need four.
+    - >-
+      Only when the sub-block and tile scales are equal, because any exponent difference loses mantissa bits.
+    - >-
+      When each sub-block scale is within about $2^{-8}$ to $2^{6}$ of the tile scale, so values stay in E4M3's range.
+  correct: 3
+  explanation: >-
+    E2M1 values have at most two significant bits, which E4M3's mantissa holds; the limit is range. With $6 \cdot 2^j
+    \le 448$ and $0.5 \cdot 2^j$ a multiple of E4M3's smallest subnormal $2^{-9}$, $j$ must lie in $[-8, 6]$ (the
+    lesson's arithmetic, checked by enumeration).

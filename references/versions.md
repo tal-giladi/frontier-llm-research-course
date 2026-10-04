@@ -50,8 +50,10 @@ re-checked when its module is written and pilot-tested.
 | transformer-lens | 4.0.0 | 2026-09-21 | Module 17 |
 | nnsight | 0.7.0 | 2026-05-05 | Module 17 |
 | circuit-tracer | 0.5.0 | 2026-03-29 | Module 17.3 |
+| transformer-engine | 2.18 (re-check when piloted) | — | Module 8.3 main path (NVFP4 / MXFP8 on B200; training needs SM 10.0 / 10.3) |
 
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
 - Module 5: flash-linear-attention API checked 2026-10-04 at tag v0.5.2: `fla.ops.kda.chunk_kda` and `fla.ops.gated_delta_rule.chunk_gated_delta_rule`, layout `[B, T, H, D]`, log-space gate, `scale` default `1/sqrt(K)`, `initial_state [N, H, K, V]`. The course's chunked gated-delta reference (`frontierlab/attention/deltanet.py`) is the ground truth; run `pytest labs/common/tests/test_attention_m05.py -k fla` on the GPU before using the kernels.
+- Module 8: torchao 0.18.0 float8 API checked 2026-10-04 at tag v0.18.0: `torchao.float8.convert_to_float8_training(module, *, module_filter_fn=(mod, fqn) -> bool, config=Float8LinearConfig)`, `Float8LinearConfig.from_recipe_name("tensorwise" | "rowwise" | "rowwise_with_gw_hp")`. MX training (`torchao.prototype.moe_training`) is prototype. PyTorch 2.14.1 CPU casts: `float8_e4m3fn` saturates on overflow (even inf -> 448), `float8_e5m2` overflows to inf from 61,440.

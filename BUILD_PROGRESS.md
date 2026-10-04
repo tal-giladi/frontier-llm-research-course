@@ -41,9 +41,9 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 3 — How should attention spend KV memory? (sub-agent C, integrated)
 - [x] Module 4 — Does the model use its context? (sub-agent D, integrated)
 - [x] Module 5 — When is sub-quadratic attention worth it? (sub-agent E, integrated)
-- [ ] Module 6 — Which other block changes earn their complexity?
+- [x] Module 6 — Which other block changes earn their complexity? (integrated)
 - [x] Module 7 — Which optimizer and parametrization? (sub-agent F, integrated)
-- [ ] Module 8 — How low can precision go?
+- [x] Module 8 — How low can precision go? (integrated)
 - [ ] Module 9 — What does the cluster cost, and how does it fail?
 - [ ] Module 10 — Which data, in which mix?
 - [ ] Module 11 — What will the big run do?
@@ -62,7 +62,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 
 ## Who is working on what
 
-- Main session: Modules 1–5 and 7 integrated; next Modules 6 and 8 (two sub-agents).
+- Main session: Modules 1–8 integrated and pushed; next Modules 9 and 10.
 
 ## Decisions and open questions
 
@@ -74,3 +74,4 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 | 2026-10-04 | Continued training from a checkpoint goes through `frontierlab.longctx.extend` (wraps the loop); the native `--init-from` loop change proposed in `curriculum/inbox/module-04-loop-changes.md` is deferred until a later module needs it |
 | 2026-10-04 | RMSNorm keeps float64 as float64 (Module 3 finding); float32/bf16 behaviour unchanged |
 | 2026-10-04 | Optimizer runs go through `frontierlab.optim.train` (wraps the loop); native loop flags in `curriculum/inbox/module-07-loop-changes.md` deferred. Sidebar running numbers reserve 21–27 for Module 6 (7 lessons). |
+| 2026-10-04 | Loop forks the RNG around the accounting calls (Module 8 found that accounting broke exact resume once training uses randomness). `gqa-bidir` is not registered in `attention/__init__` (circular import); 06.7 imports `frontierlab.blocks.diffusion` itself. Block runs use `frontierlab.blocks.train`. |

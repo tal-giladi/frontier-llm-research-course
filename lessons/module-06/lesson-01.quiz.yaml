@@ -1,0 +1,86 @@
+- id: q1
+  question: >-
+    A colleague trains Baseline-0 with one DeepSeek-style MTP module for 9,500 steps and Baseline-0 without it
+    for 9,500 steps, and reports that MTP lowers held-out loss by 0.03 nats. What is the main problem with
+    using this result to decide whether MTP earns its cost?
+  options:
+    - >-
+      Held-out loss cannot be compared, because the MTP model's loss includes the weighted MTP term in
+      evaluation as well as in training.
+    - >-
+      The MTP arm used about 27% more training FLOPs, so the gain may come from compute; compare at equal
+      FLOPs first.
+    - >-
+      The comparison is invalid unless the MTP module is kept at evaluation time, since discarding it changes
+      the architecture being evaluated.
+    - >-
+      Two runs with different objectives can never share a data order, so the difference is likely to be
+      seed noise.
+  correct: 1
+  explanation: >-
+    Each MTP module adds a block and a second pass through the output head per token, about 27% of Baseline-0's
+    training FLOPs. At equal steps MTP gets more compute; giving the baseline the extra steps isolates the effect
+    of the objective. The main head's loss is the right metric, and the data order can be held fixed.
+
+- id: q2
+  question: >-
+    You implement a DeepSeek-style depth-1 module and its training loss falls to almost zero within a hundred
+    steps, while the main head's loss behaves normally. Which bug is most likely?
+  options:
+    - >-
+      The lambda weight is too small, so the optimizer ignores the main head and fits the MTP module alone.
+    - >-
+      The output head is shared with the main model, which lets the module copy the main head's logits.
+    - >-
+      The targets are shifted by k instead of k + 1, so the module is asked to predict the token it was given.
+    - >-
+      The module's block has no causal mask, so it reads future positions of the main hidden state.
+  correct: 2
+  explanation: >-
+    Depth k at position i combines h_i with Emb(t_{i+k}) and must predict t_{i+k+1}. With a shift of k the
+    target is the embedded input itself, which is trivially predictable. A missing mask would also leak, but the
+    off-by-one is the classic cause, and the lab's causality test catches both.
+
+- id: q3
+  question: >-
+    On your 100M-parameter pilot, MTP is inconclusive at equal FLOPs, and its module accepts 55% of drafts in
+    real greedy speculative decoding. Serving is memory-bound and the draft costs about 5% of a main-model step.
+    What does the lesson's formula project, and how should you report it?
+  options:
+    - >-
+      About 1.48x more tokens per unit time, reported as PROJECTED with the formula and the measured
+      acceptance, pending a latency measurement in a serving engine.
+    - >-
+      About 1.55x, the tokens per round, reported as the measured speed-up because acceptance was measured
+      with real decoding rather than teacher forcing.
+    - >-
+      No gain, because an inconclusive training result means the module cannot be used as a draft.
+    - >-
+      About 1.8x, the DeepSeek-V3 figure, since acceptance rates transfer across scales once the module is
+      trained.
+  correct: 0
+  explanation: >-
+    (1 + p) / (1 + c) = 1.55 / 1.05, about 1.48. Tokens per round is not a speed-up because drafting costs
+    time, and the number stays a projection until latency is measured. The training-objective verdict and the
+    draft's usefulness are separate questions.
+
+- id: q4
+  question: >-
+    Meta's parallel heads and DeepSeek-V3's sequential modules both predict t_{i+2} at position i. What does
+    the DeepSeek module see that Meta's second head does not?
+  options:
+    - >-
+      The hidden states of later positions, because the sequential design removes the causal mask from
+      the extra block.
+    - >-
+      A separate unembedding matrix, which lets it specialise on tokens two steps ahead.
+    - >-
+      The main head's logits for t_{i+1}, which it adds to its own logits before the softmax.
+    - >-
+      The embedding of the real token t_{i+1}, so its prediction of t_{i+2} is conditioned on every token
+      before it.
+  correct: 3
+  explanation: >-
+    DeepSeek's module combines RMSNorm(h_i) with RMSNorm(Emb(t_{i+1})) through M_1, keeping the complete
+    causal chain; Meta's head 2 predicts t_{i+2} from z_i alone, without knowing t_{i+1}. Both share the
+    output head and both are causal.

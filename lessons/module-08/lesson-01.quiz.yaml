@@ -1,0 +1,77 @@
+- id: q1
+  question: >-
+    A colleague stores attention-layer gradients in E4M3 with one FP32 scale per tensor and sees 70% of the
+    gradient values become exactly zero after quantisation. The largest gradient is about $10^{-3}$ and the
+    tensor spans more than 30 binades. Which change addresses the cause most directly?
+  options:
+    - >-
+      Switch the gradient format to E2M1, because fewer mantissa bits leave more room for the exponent range.
+    - >-
+      Keep E4M3 but use smaller scaling groups (rows or 1 × 128 tiles), so small values get their own scale.
+    - >-
+      Multiply the loss by a constant before backward, since a larger loss removes the underflow in every group.
+    - >-
+      Round the per-tensor scale up to a power of two, because power-of-two scales are exact in hardware.
+  correct: 1
+  explanation: >-
+    One scale is set by the tensor's amax, and anything below the scaled grid's smallest step flushes to zero;
+    E4M3 spans under 18 binades. Smaller groups give small values their own scale. A loss multiplier moves every
+    value by the same factor and is undone by an amax scale; E2M1 has even less range.
+
+- id: q2
+  question: >-
+    You implement MXFP4 with the OCP rule $X = 2^{\lfloor \log_2 \text{amax} \rfloor - 2}$ and a test shows that
+    about 3% of elements come back smaller than they went in by up to 50%, always the largest ones in a block.
+    What is happening?
+  options:
+    - >-
+      The E2M1 cast is overflowing to infinity, which the dequantise step then replaces with the maximum value.
+    - >-
+      Stochastic rounding is active by mistake, so large values are randomly rounded down to their lower neighbour.
+    - >-
+      The rounded-down scale lets amax / X reach up to 8, above E2M1's maximum of 6, so those values are clamped.
+    - >-
+      E8M0 cannot represent the scale exactly, so every element of the block is multiplied by a slightly wrong value.
+  correct: 2
+  explanation: >-
+    Flooring the exponent puts amax / X in $[4, 8)$; values above 6 saturate, as the spec says they should. A
+    scale rounded up ($2^{\lceil \log_2(\text{amax}/6) \rceil}$) never saturates but wastes up to one binade.
+    E8M0 represents powers of two exactly, and E2M1 has no infinity.
+
+- id: q3
+  question: >-
+    A deployment plan budgets 4 bits per parameter for 100B weights quantised to NVFP4 and reports 50 GB of
+    weight memory. What should the reviewer correct?
+  options:
+    - >-
+      Nothing, because the FP32 tensor scale is a single number and the block scales are stored separately in HBM.
+    - >-
+      The number is too high, because NVFP4 packs two values per byte and its scales are shared across layers.
+    - >-
+      The budget should use 8 bits, because NVFP4 values are dequantised to FP8 before every matrix multiplication.
+    - >-
+      Each 16-value block also stores an 8-bit E4M3 scale, so the cost is 4.5 bits per value, about 56 GB.
+  correct: 3
+  explanation: >-
+    Storage includes the scales: $4 + 8/16 = 4.5$ bits for NVFP4 (NVIDIA), $4 + 8/32 = 4.25$ for MXFP4 (gpt-oss).
+    $100\text{B} \times 4.5 / 8 = 56.25$ GB. The per-tensor FP32 scale is negligible; the block scales are not.
+
+- id: q4
+  question: >-
+    Your emulated E5M2 rounding passes a bit-for-bit test against `x.to(torch.float8_e5m2)` for every value up to
+    57,344, but the training recipe you are emulating clamps out-of-range values. Values above 61,440 come back as
+    infinity from the torch cast. What is the right way to make the emulation and the recipe agree?
+  options:
+    - >-
+      Clamp explicitly to ±57,344 after scaling (saturation), and test overflow separately from in-range rounding.
+    - >-
+      Rely on the torch cast, since PyTorch's FP8 casts saturate on every device and build.
+    - >-
+      Switch the emulation to E4M3, which has no infinity, so the overflow behaviour no longer matters.
+    - >-
+      Ignore it, because a correctly computed amax scale guarantees that no value ever exceeds 57,344.
+  correct: 0
+  explanation: >-
+    The OCP FP8 spec allows both a saturating and an overflowing mode, and casts differ (on torch 2.14.1 CPU the
+    E4M3FN cast saturates while E5M2 overflows to infinity). State the mode, clamp explicitly, and test it.
+    Rounded-down power-of-two scales can push values past the maximum, so overflow is reachable.

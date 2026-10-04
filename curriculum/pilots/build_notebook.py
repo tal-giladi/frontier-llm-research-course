@@ -294,7 +294,53 @@ O7 = f'{PILOT_DIR}/p7'; os.makedirs(O7, exist_ok=True)
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P7}
+# ---------------------------------------------------------------------------------------------
+# P6 — Module 6: MTP and HC/mHC on the ladder (the stability hypothesis), factorial.
+# The Lineage-F run (~60+ H100-h PROJECTED) is not piloted.
+# ---------------------------------------------------------------------------------------------
+P6 = [
+    md("""
+## P6 — Module 6: MTP, hyper-connections vs mHC on the ladder (about 5 hours on an A100)
+
+Answers the plan's 06.2 pilot question: does unconstrained HC become unstable (loss spikes, or only
+identity-path drift as on CPU) along 10M → 30M → 70M at standard and raised learning rates? The runs
+become the course-provided traces for lesson 06.2.
+"""),
+    code("""
+O6 = f'{PILOT_DIR}/p6'; os.makedirs(O6, exist_ok=True)
+!python labs/module-06/lesson-01/train_arms.py --variant main 2>&1 | tail -10
+!python labs/module-06/lesson-02/train_arms.py --variant t4 2>&1 | tail -10
+!python labs/module-06/lesson-02/train_arms.py --variant main 2>&1 | tail -10
+!python labs/module-06/lesson-02/step_time.py --device cuda --preset pilot-30m --batch 16 --seq 1024 --vocab 32768 --bf16 2>&1 | tee "$O6/06-2-step-time.txt"
+!python labs/module-06/lesson-03/factorial.py --variant main 2>&1 | tail -20
+!cp -r runs/m06 "$O6/runs-m06"
+"""),
+]
+
+# ---------------------------------------------------------------------------------------------
+# P8 — Module 8: real FP8 on the L4 (sm89), emulated FP4, precision sweep.
+# NVFP4 kernels need Blackwell: not piloted.
+# ---------------------------------------------------------------------------------------------
+P8 = [
+    md("""
+## P8 — Module 8: FP8 on an **L4** runtime (about 3–4 hours)
+
+Switch the runtime to L4 for this section (the L4 is sm89 and has FP8 tensor cores). Checks the
+torchao Float8 path, trains the 08.2 arms on pilot-30m, then measures real FP8 speed-ups.
+"""),
+    code("""
+O8 = f'{PILOT_DIR}/p8'; os.makedirs(O8, exist_ok=True)
+!python -m pytest labs/common/tests/test_precision.py -k torchao -q 2>&1 | tail -3
+!python labs/module-08/lesson-02/train_fp8.py --variant l4 --max-minutes 50 2>&1 | tail -20
+!python labs/module-08/lesson-02/bench_fp8.py --device cuda --hw L4 --preset pilot-30m --batch 8 --seq 512 2>&1 | tee "$O8/08-2-bench.txt"
+!python labs/module-08/lesson-02/compare_fp8.py --variant l4 --device cuda 2>&1 | tee "$O8/08-2-compare.txt"
+!python labs/module-08/lesson-01/error_tour.py --device cuda --preset pilot-30m --steps 300 2>&1 | tee "$O8/08-1-error-tour.txt"
+!python labs/module-08/lesson-04/sweep.py --variant gpu --device cuda 2>&1 | tail -20
+!cp -r runs/m08 "$O8/runs-m08"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8}
 
 
 def build():

@@ -1,0 +1,54 @@
+- id: q1
+  question: >-
+    A teammate calls Engram "another residual-stream design, like mHC". Which description is accurate?
+  options:
+    - >-
+      Engram widens the residual into several streams and mixes them with a learned matrix at every layer.
+    - >-
+      Engram replaces the FFN of some layers with a router that selects table rows from the hidden state.
+    - >-
+      Engram replaces the token embedding with hashed N-gram embeddings at the input of the model.
+    - >-
+      Engram adds a gated lookup, indexed by a hash of recent token ids, to the residual at a few layers.
+  correct: 3
+  explanation: >-
+    Engram retrieves rows by hashing the last few token ids, gates them with the current hidden state and adds
+    the filtered result at chosen layers. It composes with any residual design (the paper uses mHC) and leaves
+    the input embedding and the FFN in place.
+
+- id: q2
+  question: >-
+    Your Engram tables have 1,000,003 rows and your corpus has about 500,000 distinct bigrams. Your measured
+    collision share is 98%, while uniform hashing predicts about 40%. What should you check first?
+  options:
+    - >-
+      The tokenizer compression, because merging case variants increases the number of colliding bigrams.
+    - >-
+      The hash function, for example a multiplier that shares structure with the table size.
+    - >-
+      The gate, because a gate near zero makes distinct rows look identical in the measurement.
+    - >-
+      The number of hash heads, because a single head always collides on most n-grams at this load.
+  correct: 1
+  explanation: >-
+    A collision share far above the uniform prediction e^(-N/M) points at a hash that does not spread keys, such as
+    a multiplier equal to the table size. Compression reduces distinct keys, the gate does not affect bucket
+    assignment, and one head at N/M of 0.5 should leave about 60% alone.
+
+- id: q3
+  question: >-
+    You must compare MoE with MoE plus Engram as the paper's allocation experiment does. Which setup matches it?
+  options:
+    - >-
+      Keep total and activated parameters fixed, remove routed experts and give their parameters to Engram tables.
+    - >-
+      Keep the MoE unchanged and add an Engram table, since lookups cost no FLOPs and so the comparison stays fair.
+    - >-
+      Match training FLOPs only, letting Engram's total parameters grow as large as host memory allows.
+    - >-
+      Match activated parameters only, and count Engram's tables as activated because every token reads a row.
+  correct: 0
+  explanation: >-
+    The allocation ratio splits a fixed inactive budget between experts and memory, with total and activated
+    parameters held fixed. Adding a table to an unchanged MoE is a capacity increase, and table rows are read,
+    not multiplied, so they are not activated parameters.

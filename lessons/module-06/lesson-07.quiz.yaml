@@ -1,0 +1,56 @@
+- id: q1
+  question: >-
+    A masked-diffusion model reports 3.9 nats per token on held-out text and your autoregressive model 3.6. A
+    colleague concludes the AR model is clearly better at modelling the text. What is the main problem?
+  options:
+    - >-
+      Diffusion losses are reported in bits and AR losses in nats, so the numbers must be converted first.
+    - >-
+      One is an upper bound on the NLL of all tokens, the other an exact NLL of all but the first token.
+    - >-
+      Diffusion models must be evaluated with their sampler, so a likelihood number says nothing about them.
+    - >-
+      The diffusion model's number includes the 1/t weight, which makes it lower than its true NLL.
+  correct: 1
+  explanation: >-
+    LLaDA's Eq. 3 and Eq. 6 bound the negative log-likelihood from above, over every position; the AR loss is an
+    exact conditional NLL of tokens 2..T. A gap can come from the bound's looseness; a fair comparison needs the
+    same quantity. The 1/t weight is what makes the number a bound (higher, not lower).
+
+- id: q2
+  question: >-
+    A product team wants LLaDA-style generation "because it writes 4 tokens per step instead of 1". For a 256-token
+    answer after a 512-token prompt with 64 sampling steps, what is the most accurate cost statement?
+  options:
+    - >-
+      It costs a quarter of AR decoding, because 64 steps replace 256 and each step is one forward pass.
+    - >-
+      It costs about the same as AR decoding, because the total number of generated tokens is the same.
+    - >-
+      Fewer sequential steps, but each re-reads all 768 positions with no KV cache: far more compute.
+    - >-
+      It is cheaper only during training, because sampling uses the same number of passes as AR decoding.
+  correct: 2
+  explanation: >-
+    64 passes over 768 positions is about 49K token-positions against roughly 768 for cached AR decoding. Fewer
+    sequential steps can lower latency when decode is latency-bound, but compute is much higher; the trade has to
+    be measured, not read from steps.
+
+- id: q3
+  question: >-
+    You train a Coconut-style model directly in the final stage, with every reasoning step replaced by continuous
+    thoughts from the start, and it does no better than answering without reasoning. What does the paper suggest?
+  options:
+    - >-
+      Use the multi-stage curriculum that replaces language reasoning steps by thoughts one stage at a time.
+    - >-
+      Increase the number of thoughts per step, since continuous thoughts need more capacity than words.
+    - >-
+      Detach the fed-back hidden state, since gradients through the thoughts make training unstable.
+    - >-
+      Switch to a recurrent-depth model, since continuous thoughts only work in looped architectures.
+  correct: 0
+  explanation: >-
+    Coconut's ablation "w/o curriculum" performs no better than no-CoT; the multi-stage curriculum guided by
+    language reasoning chains is what makes it work. The thoughts are trained end to end through the gradient,
+    and the method is defined for ordinary transformers.

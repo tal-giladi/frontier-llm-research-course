@@ -1,0 +1,174 @@
+- id: q1
+  question: >-
+    Your team's next 1B model will be served with speculative decoding, and the pretraining budget is fixed in
+    GPU-hours. A colleague proposes adding one DeepSeek-style MTP module "because DeepSeek-V3's ablation shows
+    gains". What should the experiment that decides this measure?
+  options:
+    - >-
+      Held-out loss of the main head at equal training tokens, since that is the axis DeepSeek's ablation used.
+    - >-
+      The MTP module's own training loss, since a lower MTP loss means the main model learned to plan ahead.
+    - >-
+      Main-head quality at equal training FLOPs or time, and separately the draft's real acceptance rate.
+    - >-
+      Acceptance rate only, since the module is discarded at inference and cannot affect the main model.
+  correct: 2
+  explanation: >-
+    MTP adds training FLOPs, so a fixed budget means comparing at equal FLOPs or time; its two possible benefits,
+    quality and decode speed, are separate measurements. The module's gradients do change the main model, and its
+    own loss says nothing about the main head.
+
+- id: q2
+  question: >-
+    You test a DeepSeek-style MTP module on a 30M-parameter pilot. At equal tokens it improves held-out loss by
+    0.01 nats (MDE 0.02); at equal training FLOPs it is 0.08 nats worse. A reviewer says the result contradicts
+    DeepSeek-V3. What is the best reply?
+  options:
+    - >-
+      It does contradict it, so MTP should be removed from the course's list of promising techniques.
+    - >-
+      It does not: DeepSeek compared at equal tokens at 15.7B and above, and Meta reports MTP hurting small models.
+    - >-
+      It confirms DeepSeek, because the equal-tokens gain has the same sign as the published one.
+    - >-
+      The pilot is invalid, because MTP experiments must keep the module at evaluation to be comparable.
+  correct: 1
+  explanation: >-
+    The pilot answers a different question (equal FLOPs, tiny scale) from the published ablations (equal tokens,
+    large MoE models), and Meta's small-model finding predicts this outcome. The 0.01 gain is below the MDE, so it
+    confirms nothing either; evaluating the main head with the module discarded is the standard protocol.
+
+- id: q3
+  question: >-
+    A pull request adds hyper-connections with n = 4 and claims "almost free: +0.8% FLOPs". On your 8-GPU training
+    job, steps get 25% slower. Which explanation, and which next step, are most sound?
+  options:
+    - >-
+      The FLOP count is wrong; recount the dynamic projections, since they must account for the 25%.
+    - >-
+      The slowdown is noise from the shared cluster; HC adds so few FLOPs that it cannot change step time.
+    - >-
+      The extra time comes from the optimizer, because HC's static matrices need their own Adam states.
+    - >-
+      The 4-stream residual multiplies memory traffic about 11-fold; profile it, then judge HC at equal wall-clock.
+  correct: 3
+  explanation: >-
+    HC and mHC barely change FLOPs but read and write n-times-wider residuals (mHC Table 2), plus larger
+    activations and pipeline messages. That is a memory-bound cost; profiling locates it, and adoption must be
+    judged at equal wall-clock. Optimizer state for a few thousand parameters is negligible.
+
+- id: q4
+  question: >-
+    In a 40-layer HC model the composite Amax gain of the residual maps rises from 1.0 to 40 during training while
+    the loss still looks fine. Why does mHC's projection prevent this, and what remains approximate?
+  options:
+    - >-
+      Products of doubly-stochastic maps keep row and column sums of 1; after 20 steps columns are approximate.
+    - >-
+      Sinkhorn-Knopp makes each matrix orthogonal, so the composite has norm exactly 1 at any number of iterations.
+    - >-
+      mHC normalises the summed streams before the final norm, which divides out any gain the maps accumulate.
+    - >-
+      The sigmoid on H_pre and H_post caps every coefficient at 2, which bounds the growth of the product.
+  correct: 0
+  explanation: >-
+    Products of doubly-stochastic matrices stay doubly stochastic, so the identity path neither grows nor shrinks.
+    Sinkhorn ends with a row normalisation, so rows are exact and columns approximate; mHC reports a composite
+    backward gain up to about 1.6 at 27B. The matrices are not orthogonal, and a per-layer cap of 2 would compound.
+
+- id: q5
+  question: >-
+    Your HC vs mHC lab at three learning rates finds no loss spikes for either at 10M parameters. You have budget
+    for one more experiment before deciding on mHC for a 1B run. Which is most informative?
+  options:
+    - >-
+      Repeat the 10M runs with five more seeds, so that the null result becomes statistically significant.
+    - >-
+      Skip further tests and adopt HC, since the expected instability is absent and HC is cheaper than mHC.
+    - >-
+      Run HC and mHC at 30M and 70M at the raised rates, logging composite gains to see if drift grows with scale.
+    - >-
+      Run mHC alone at 1B for a short time, since stability can only be judged at the target scale.
+  correct: 2
+  explanation: >-
+    A scale ladder shows whether the mechanism (the identity path drifting) grows towards the target scale, which
+    a null at one size cannot. More seeds at 10M sharpen a number that does not transfer; adopting HC on a null
+    ignores the trend; an mHC-only run has no comparison.
+
+- id: q6
+  question: >-
+    Four branches each beat Baseline-0 by 0.01 to 0.03 nats in separate runs, with a comparison noise of about
+    0.01. The lead proposes training the combination once and announcing the summed gain of 0.08 if it is better
+    than Baseline-0. What is wrong with this plan?
+  options:
+    - >-
+      Nothing, provided the combination is trained with the same data and seeds as the branches.
+    - >-
+      It adds noisy, selected gains and uses the wrong reference: the best single branch at equal budget.
+    - >-
+      The branches should be combined two at a time first, because four-way combinations cannot be trained stably.
+    - >-
+      The summed gain must be divided by the number of branches, since each was measured against Baseline-0.
+  correct: 1
+  explanation: >-
+    Selected noisy gains overstate the truth (winner's curse) and interactions make sums unreliable; beating
+    Baseline-0 is already true of the best branch. The defensible claim compares the combination with its best
+    single branch at equal FLOPs, with a pre-stated rule.
+
+- id: q7
+  question: >-
+    A 2 x 2 factorial of MLA and mHC gives cell means b0 3.400, MLA 3.390, mHC 3.385, both 3.384, with a
+    single-cell standard error of 0.004. What should the report say about the interaction?
+  options:
+    - >-
+      A strong negative interaction of −0.016, since the combination misses the additive prediction by that much.
+    - >-
+      No interaction, since the combination is better than either single change.
+    - >-
+      An interaction of +0.009, clearly detected because it is more than twice the cell standard error.
+    - >-
+      An interaction of +0.009 with a standard error of about 0.008: not resolved at this power.
+  correct: 3
+  explanation: >-
+    gamma = 3.384 − 3.390 − 3.385 + 3.400 = +0.009. A four-cell contrast has twice a cell's standard error, here
+    about 0.008, so the interval is roughly ±0.016: not resolved. Being better than both singles says nothing about
+    additivity.
+
+- id: q8
+  question: >-
+    The Lineage-F integration has four components and a budget of 22 runs. You must say whether the combination
+    beats its best single branch and which components earn their place inside it. Which design and reference fit?
+  options:
+    - >-
+      Factorial-lite cells, plus Baseline-0 and the best single at the combination's training FLOPs.
+    - >-
+      A full factorial of 16 cells at one seed each, compared at equal tokens so every cell sees the same data.
+    - >-
+      The combination with 11 seeds against Baseline-0 with 11 seeds, the most powerful test of a single question.
+    - >-
+      One-factor-at-a-time with four seeds per single, then the combination only if all four singles win.
+  correct: 0
+  explanation: >-
+    Factorial-lite identifies each component's effect alone and inside the combination; the equal-FLOPs reference
+    arms answer the adoption question. A one-seed full factorial has no noise estimate, the 11-seed design cannot
+    attribute anything, and a gate on all singles winning reintroduces selection.
+
+- id: q9
+  question: >-
+    You select the best single branch for the Lineage-F decision by comparing the branches' held-out scores, then
+    report "combination − best single" on the same evaluation windows. Why can this bias the result, and what is
+    the fix?
+  options:
+    - >-
+      It biases nothing, because paired windows remove all variation that is shared between the arms.
+    - >-
+      The bias comes from using different seeds; it disappears if every branch is trained with seed 0.
+    - >-
+      Selecting on the same windows favours a lucky branch; select on validation windows, report once on test.
+    - >-
+      It can only bias the result in favour of the combination, so any adoption decision stays safe.
+  correct: 2
+  explanation: >-
+    Picking the minimum of several noisy scores and reporting it on the same items makes the chosen branch look
+    better than it is (lesson 01.3's selection/test separation). Select on validation and score the final,
+    pre-registered comparison once on held-out test windows. The bias can go either way for the decision.

@@ -30,11 +30,11 @@ from pathlib import Path
 
 import yaml
 
-IGNORE_PREFIXES = ("run", "question", "parent_run", "notes", "args.run", "args.question", "args.parent",
+IGNORE_PREFIXES = ("run", "question", "precision.notes", "parent_run", "notes", "args.run", "args.question", "args.parent",
                    "args.log_every", "args.ckpt_every", "args.eval_every", "args.stop_after", "args.max_minutes",
                    "args.data", "args.device", "args.peak", "hardware.platform", "hardware.cpu_threads",
                    "measured.cost_usd", "measured.final_val_loss")
-SEED_KEYS = ("args.seed", "args.data_seed")
+SEED_KEYS = ("args.seed", "args.data_seed", "config.extra.blocks.seed")
 INVALIDATING_PREFIXES = ("data", "data_files", "args.eval_windows", "args.seq")
 SOFTWARE_KEYS = ("hardware.torch", "hardware.python", "hardware.cuda", "git.commit")
 AXES = ("tokens", "flops", "wallclock", "params")
@@ -91,6 +91,12 @@ def classify(key: str, a, b, *, changed=(), axis: str = "tokens", seeds_are_repl
         return "invalidates", "different seed in a comparison that should share seeds"
     if _under(key, INVALIDATING_PREFIXES):
         return "invalidates", "data or evaluation differs"
+    if key.startswith("blocks."):                      # Module 6 BlockLM runs (frontierlab.blocks.train)
+        if key in ("blocks.blocks_log", "blocks.hyper_every"):
+            return "ignore", "logging only"
+        if any(c.startswith("config.extra.blocks") or c == "config.attention" for c in changed):
+            return "changed", "follows from the declared block change"
+        return "invalidates", "a second changed variable (a Module 6 block switch)"
     if key.startswith("optim."):                       # Module 7 optimizer runs
         if key in ("optim.branch_from", "optim.init_from", "optim.stability_log", "optim.stability_every"):
             return "ignore", "bookkeeping (the source checkpoint is identified by parent_run)"

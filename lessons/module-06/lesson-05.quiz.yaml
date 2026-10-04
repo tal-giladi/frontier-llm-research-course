@@ -1,0 +1,57 @@
+- id: q1
+  question: >-
+    You train a MatFormer with widths {I/8, I/4, I/2, I}, sampling one width per step uniformly, for the same
+    number of steps as a normal model. Its full-width submodel ends with a higher loss than the normal model.
+    What is the most likely reason, before blaming nesting itself?
+  options:
+    - >-
+      The full width saw only about a quarter of the steps, so the comparison is not at equal per-width training.
+    - >-
+      Nested weights cannot represent the full model, because the first neurons must serve every width.
+    - >-
+      Uniform sampling makes every step cost the full width's FLOPs, so the model was undertrained.
+    - >-
+      Mix'n'Match must be applied during training as well, or the largest width never receives gradients.
+  correct: 0
+  explanation: >-
+    Each width is trained on the steps where it was sampled, so at equal total steps the full width gets about a
+    quarter of them; the paper compares at a per-granularity token budget. Steps at small widths are cheaper, not
+    full-cost, and the full width does receive gradients whenever it is sampled.
+
+- id: q2
+  question: >-
+    A product team wants a cheaper model for phones and the existing one for servers, and plans speculative
+    decoding with the small one as the draft. Why might a MatFormer submodel be a better draft than an
+    independently trained small model?
+  options:
+    - >-
+      Its FFN is smaller at every layer, so its tokens per second are always higher than any other small model.
+    - >-
+      It shares weights with the verifier and was trained inside it, so its predictions agree with it more often.
+    - >-
+      It needs no verification step, because nested models produce the same tokens as the full model.
+    - >-
+      It is trained with a distillation loss from the full model, which independent models cannot use.
+  correct: 1
+  explanation: >-
+    MatFormer reports submodels more consistent with the universal model than independent baselines, which raises
+    draft acceptance; it also lets draft and verifier share memory. Its outputs still differ, so verification is
+    needed, and MatFormer's training samples widths rather than distilling.
+
+- id: q3
+  question: >-
+    A blog post says Gemma 3n's Per-Layer Embeddings "make the model 40% smaller". Which statement is supported by
+    Google's documentation?
+  options:
+    - >-
+      PLE compresses the transformer weights so that E4B has 4B parameters in total instead of 8B.
+    - >-
+      PLE removes the ordinary token embedding, replacing it by small per-layer tables of the same total size.
+    - >-
+      PLE keeps per-layer embedding parameters off the accelerator, so only the core weights need its memory.
+    - >-
+      PLE skips layers at inference time for tokens whose per-layer embedding marks them as easy.
+  correct: 2
+  explanation: >-
+    Google says the per-layer embeddings can be loaded and computed on the CPU, so only about 2B (E2B) or 4B (E4B)
+    core weights sit in accelerator memory out of 5B and 8B total. The total does not shrink; the placement does.

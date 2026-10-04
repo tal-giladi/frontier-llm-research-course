@@ -1,0 +1,174 @@
+- id: q1
+  question: >-
+    Your team's FP8 run uses one scale per tensor for activations. After a data change, a few channels of the
+    attention output grow 1,000× larger than the rest and the loss starts drifting above the BF16 control. The
+    precision log shows activation underflow rising from 0.1% to 9%. Which change targets the cause?
+  options:
+    - >-
+      Switch the activations to E5M2, whose wider range holds both the outliers and the small values per tensor.
+    - >-
+      Lower the learning rate until the outlier channels shrink, then return to per-tensor FP8 scaling.
+    - >-
+      Scale activations per token in 1 × 128 tiles, so an outlier channel only sets the scale of its own tile.
+    - >-
+      Keep per-tensor scaling but compute the scale from the 99th percentile instead of the maximum.
+  correct: 2
+  explanation: >-
+    One per-tensor scale is set by the outliers and flushes everything 1,000× smaller. Fine-grained tiles confine
+    the outlier to 128 channels of a token (DeepSeek-V3 section 3.3.2). A percentile scale would clip the outliers
+    instead, and E5M2 trades away precision everywhere.
+
+- id: q2
+  question: >-
+    You must deploy a 70B dense model's MLP weights in 4 bits on hardware that supports both MXFP4 and NVFP4. A
+    colleague says the two are "the same 4 bits". Which statement correctly compares them?
+  options:
+    - >-
+      They store identical bits per value; only the name differs between the OCP spec and NVIDIA's documents.
+    - >-
+      NVFP4: 16-value blocks, E4M3 scales, an FP32 tensor scale (4.5 bits); MXFP4: 32-value blocks, E8M0 scales (4.25).
+    - >-
+      MXFP4 uses 16-value blocks with E4M3 scales; NVFP4 uses 32-value blocks with E8M0 scales, so NVFP4 is smaller.
+    - >-
+      NVFP4 stores elements as INT4 while MXFP4 stores them as E2M1, so only MXFP4 is a floating-point format.
+  correct: 1
+  explanation: >-
+    Both use E2M1 elements. NVFP4's smaller blocks and finer E4M3 scales cost 0.25 bits more per value and track
+    each block's amax more closely; NVIDIA reports MXFP4 needing 36% more tokens to match NVFP4's loss at 8B.
+
+- id: q3
+  question: >-
+    A pull request adds FP8 to the weight-gradient GEMM by reusing the per-token 1 × 128 activation tiles already
+    computed for the forward pass. Unit tests pass because the emulation multiplies dequantised float32 values.
+    What should the reviewer say?
+  options:
+    - >-
+      Wgrad contracts over tokens, so it needs 128 × 1 tiles along tokens; no block-scaled kernel can run this layout.
+    - >-
+      The change is fine, because the scales are applied after the GEMM, so their layout never matters.
+    - >-
+      It is fine for weights but not for activations, because only the weights are used by two different GEMMs.
+    - >-
+      Wgrad must stay in BF16 in every published FP8 recipe, so the PR should be rejected on those grounds alone.
+  correct: 0
+  explanation: >-
+    Block scales must be constant along each block of the contraction dimension; DeepSeek-V3 appendix B.2 uses
+    1 × 128 tiles forward and 128 × 1 backward. An emulation that dequantises first hides layouts no kernel can
+    execute, so the test checks the wrong thing.
+
+- id: q4
+  question: >-
+    Your FP8 GEMM kernel's accumulator keeps about 14 significant bits. Layers with $K = 768$ look fine, but the
+    $K = 8{,}192$ down-projection of a wide model shows several percent of relative error. You cannot change the
+    kernel's accumulator. What do you change?
+  options:
+    - >-
+      Switch the inputs to E5M2, so the products have a wider exponent range before accumulation.
+    - >-
+      Scale the inputs per tensor instead of per tile, so all partial products share one exponent.
+    - >-
+      Split the layer into eight parallel layers of $K = 1{,}024$ and average their outputs.
+    - >-
+      Add each 128-element partial sum into an FP32 accumulator ($N_C = 128$), as DeepSeek-V3 does.
+  correct: 3
+  explanation: >-
+    The error grows with the number of additions into one narrow accumulator; restarting it every 128 elements and
+    summing the partial results in FP32 keeps the error at the $K = 128$ level. Changing the input format does not
+    widen the accumulator, and averaging split layers changes the model.
+
+- id: q5
+  question: >-
+    You emulate NVFP4 training on a laptop: the full recipe, and the recipe without stochastic rounding, one seed
+    each, 300K tokens. The two held-out losses differ by 0.004 nats; the full recipe's two seeds differ by 0.012.
+    What do you report about stochastic rounding?
+  options:
+    - >-
+      Stochastic rounding is unnecessary, so Recipe-R's FP4 trial should round gradients to nearest.
+    - >-
+      Stochastic rounding hurts, because the arm without it has the lower loss of the two.
+    - >-
+      No detectable effect at this scale; the result neither supports nor contradicts NVIDIA's 12B ablation.
+    - >-
+      The emulation must be wrong, because NVIDIA's paper reports that removing stochastic rounding hurts.
+  correct: 2
+  explanation: >-
+    The difference is smaller than the seed noise, so the experiment cannot resolve it. A null result at toy scale
+    is a valid result; it is not evidence that the ingredient is unnecessary over trillions of tokens.
+
+- id: q6
+  question: >-
+    A 4-bit recipe quantises weights with 1 × 16 blocks along the input dimension and reuses the same block layout,
+    applied to $W^\top$, for the input-gradient GEMM. Training is unstable in a way FP8 never was. Which ingredient
+    of the NVFP4 recipe addresses this specific problem?
+  options:
+    - >-
+      Stochastic rounding of the weights, so that the two quantised copies agree on average.
+    - >-
+      2-D 16 × 16 weight blocks, so W and its transpose quantise to the same values and both passes use one weight.
+    - >-
+      A random Hadamard transform on the weights before Fprop, so outliers are spread across the block.
+    - >-
+      Keeping the first and last blocks in BF16, because only those layers use the transposed weight.
+  correct: 1
+  explanation: >-
+    With 1-D blocks, $q(W^\top)^\top \ne q(W)$: the backward pass differentiates a different function from the one
+    the forward pass computed. Square 2-D blocks remove the mismatch. The NVFP4 paper uses SR only on gradients
+    and the RHT only on Wgrad inputs.
+
+- id: q7
+  question: >-
+    A product manager reads that Kimi K2 Thinking and DeepSeek-V4 use 4-bit expert weights and concludes that
+    "4-bit pretraining is now standard at frontier labs". What is the accurate correction?
+  options:
+    - >-
+      Both pretrained in FP4 from the start, but only for the expert weights, so the claim is correct for MoE models.
+    - >-
+      Kimi K2 Thinking pretrained in INT4 and DeepSeek-V4 in MXFP4, so the claim holds with two different formats.
+    - >-
+      Neither model uses 4-bit weights at inference; their 4-bit formats are only used for gradient communication.
+    - >-
+      Both applied quantisation-aware training in post-training; their pretraining evidence is not 4-bit evidence.
+  correct: 3
+  explanation: >-
+    Kimi K2 Thinking's card describes INT4 QAT of the MoE components in post-training; DeepSeek-V4 section 5.2.1
+    describes MXFP4 QAT of expert weights in post-training. The documented 4-bit pretraining evidence is NVIDIA's
+    NVFP4 report, from one lab.
+
+- id: q8
+  question: >-
+    You must choose between FP8 linears via torchao and BF16 for a 125M-parameter model on one H100. Emulation
+    shows the loss gap inside your 0.25% margin. The roofline says block linears are 46% of the BF16 step. Which
+    plan gives a defensible decision?
+  options:
+    - >-
+      Adopt FP8 now: the numerics pass and FP8 tensor cores have twice the BF16 peak, so the step is about 2× faster.
+    - >-
+      Time real torchao kernels, compiled and interleaved with BF16; adopt only if the speed-up interval exceeds 1.
+    - >-
+      Reject FP8: the emulated arm ran three times slower than BF16, which shows FP8 costs throughput at this size.
+    - >-
+      Adopt FP8 if the roofline's fused-cast projection exceeds 1.2×, since projections are conservative bounds.
+  correct: 1
+  explanation: >-
+    With 46% of the step in the linears, even perfect 2× GEMMs give at most about 1.3×, and unfused casts can make
+    it slower. Emulation speed says nothing about FP8 kernels, and a projection is an upper bound, not a
+    measurement; the rule needs a measured interval.
+
+- id: q9
+  question: >-
+    You quantise a trained model's MLP weights to INT4 (groups of 32) by PTQ and lose 0.05 nats. You have budget for
+    a short extra training phase. Which experiment tells you whether QAT is worth it?
+  options:
+    - >-
+      From the same weights, train BF16 and INT4 QAT for equal tokens; compare exported QAT with PTQ of the BF16 run.
+    - >-
+      Run INT4 QAT for all the extra tokens and compare its exported loss with the original PTQ model's loss.
+    - >-
+      Compare PTQ at group size 32 with PTQ at group size 128, since QAT only matters when groups are large.
+    - >-
+      Run QAT with the activations also quantised to INT4, because weight-only QAT cannot change the loss at all.
+  correct: 0
+  explanation: >-
+    The extra tokens alone lower the loss, so a fair comparison gives the control the same tokens from the same
+    starting point and then applies the same PTQ scheme. Comparing QAT with the original PTQ model confounds QAT
+    with more training.

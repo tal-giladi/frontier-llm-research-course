@@ -1,0 +1,72 @@
+- id: q1
+  question: >-
+    Using the precision law with $\gamma_w = 2.67$, a planner says: "4-bit weights cost us 22% of our parameters,
+    so a 4-bit model needs 22% more parameters to match a 16-bit one." What is right and wrong in this?
+  options:
+    - >-
+      Right on both counts: $N_{\text{eff}} = N(1 - e^{-4/2.67}) \approx 0.78N$, and matching needs $N/0.78 \approx 1.29N$.
+    - >-
+      $N_{\text{eff}} \approx 0.78N$ is right, but matching needs about 29% more parameters, not 22%, and only within the fit's range.
+    - >-
+      Wrong: low-precision training reduces the data term $D^{-\beta}$, not the parameter term.
+    - >-
+      Wrong: the law says 4-bit and 16-bit weights give the same loss once the model is large enough.
+  correct: 1
+  explanation: >-
+    $1 - e^{-1.4956} = 0.776$, so matching $N_{\text{eff}}$ needs $1/0.776 = 1.29\times$ the parameters — and the
+    constants come from 30M–220M-parameter fits whose authors warn they are unlikely to transfer.
+
+- id: q2
+  question: >-
+    Why does Eq. 5 of the precision law give a compute-optimal precision that does not depend on the compute budget
+    when $\alpha = \beta$?
+  options:
+    - >-
+      The loss then depends on $N_{\text{eff}} D \propto C f(P)/P$, so $P^*$ maximises $f(P)/P$ for any $C$.
+    - >-
+      Because the irreducible loss $E$ dominates at large compute, so precision then stops mattering.
+    - >-
+      Because the paper fixes $P$ to 8 bits in its fits and only varies $N$ and $D$.
+    - >-
+      Because larger budgets always use more tokens, which cancels the effect of the extra parameters.
+  correct: 0
+  explanation: >-
+    With equal exponents the optimum over $N$ and $D$ at fixed $P$ depends on their product, which the budget
+    constraint fixes up to the factor $f(P)/P$; maximising it gives $P^* \approx 1.9\gamma$ for three tensor types.
+
+- id: q3
+  question: >-
+    Your CPU sweep of three widths under 1M parameters fits the law's form with $\gamma = 3.9$, which implies
+    $P^* \approx 7.4$ bits — close to the paper's 7–8. What is the correct reading?
+  options:
+    - >-
+      The sweep independently validates the paper's compute-optimal precision at a new scale.
+    - >-
+      The sweep shows the paper's constants are correct, since the fitted $\gamma$ matches Table 2.
+    - >-
+      It is a curve fit at toy scale with weight-only quantisation; the agreement is not evidence for the law.
+    - >-
+      The sweep shows that 7–8 bits is optimal for toy models but not for frontier models.
+  correct: 2
+  explanation: >-
+    With few points and four free parameters a smooth form fits easily, the sweep quantises weights only, and
+    the $k = 3$ step assumes activations share $\gamma$. A match is a coincidence until tested at the scales the
+    claim is about.
+
+- id: q4
+  question: >-
+    A model trained on 10× more tokens than planned will be served with INT4 PTQ. By the law's Eq. 2
+    ($\delta_{\text{PTQ}} \propto D^{0.5068}/N^{0.3439}$), what happens to the PTQ penalty, and what follows for the plan?
+  options:
+    - >-
+      It shrinks by 3.2×, because a better-trained model has more robust weights.
+    - >-
+      It is unchanged, because the penalty depends only on the number of bits used.
+    - >-
+      It doubles, because the penalty is linear in the number of training tokens.
+    - >-
+      It grows about 3.2× ($10^{0.507}$); plan QAT or more bits and measure it.
+  correct: 3
+  explanation: >-
+    $10^{0.5068} = 3.2$: in the fit the PTQ penalty grows with training data, which is the paper's case for
+    quantisation-aware training of heavily trained models. The exponent is the paper's, so the plan measures it.

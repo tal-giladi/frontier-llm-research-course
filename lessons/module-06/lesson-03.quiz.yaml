@@ -1,0 +1,80 @@
+- id: q1
+  question: >-
+    Cell means (held-out loss) of a 2 x 2 factorial: Baseline-0 3.50, MLA only 3.46, MTP only 3.47, both 3.45.
+    What is the interaction, and what does it mean here?
+  options:
+    - >-
+      −0.01: the combination is better than the additive prediction of 3.43, so the changes help each other.
+    - >-
+      +0.02: the additive prediction is 3.43 and the combination reaches only 3.45, so the gains partly overlap.
+    - >-
+      −0.05: the combination improves on Baseline-0 by 0.05, which is the interaction by definition.
+    - >-
+      0.00: each change helped on its own, so their effects must add in the combination.
+  correct: 1
+  explanation: >-
+    gamma = m11 − m10 − m01 + m00 = 3.45 − 3.46 − 3.47 + 3.50 = +0.02. The additive prediction is 3.50 − 0.04 −
+    0.03 = 3.43; the measured combination is 0.02 worse than that, so for a loss a positive interaction means
+    the effects overlap.
+
+- id: q2
+  question: >-
+    Five architecture branches were each compared once with Baseline-0, with comparison noise of about 0.01
+    nats. Three showed gains of 0.004 to 0.012 nats and are proposed for the integration run, with an expected
+    combined gain of 0.025. What is the main problem with that expectation?
+  options:
+    - >-
+      Gains in nats cannot be added up, so the expected gain has to be computed on perplexity instead.
+    - >-
+      Three branches are too few for a combination, so a gain can only be expected with all five of them.
+    - >-
+      They were picked for large noisy gains and effects need not add; measure the combination itself.
+    - >-
+      The gains are below the noise, so the integration run should use the two branches that lost instead.
+  correct: 2
+  explanation: >-
+    Selecting on measured gains keeps lucky draws (the winner's curse), and interactions make the additive sum
+    unreliable even for real effects. The plan is a pre-stated comparison of the combination with its best single
+    branch at the same budget.
+
+- id: q3
+  question: >-
+    You have a fixed budget of 24 runs for four components with 2 seeds each, and the decision is whether the
+    combination beats its best single branch and which components earn their place inside it. Which design fits?
+  options:
+    - >-
+      Factorial-lite: baseline, four singles, the combination and four leave-one-out cells, 10 cells and 20
+      runs.
+    - >-
+      Full factorial: all 16 cells with 1.5 seeds each on average, to estimate every pairwise interaction.
+    - >-
+      One-factor-at-a-time with 4 seeds: baseline and four singles, then add the combination only if every
+      single wins.
+    - >-
+      The combination alone with 12 seeds against Baseline-0 with 12 seeds, which maximises statistical power.
+  correct: 0
+  explanation: >-
+    Factorial-lite gives each component's effect alone and inside the combination, and the combination against
+    every single branch, within budget. A full factorial does not fit with whole seeds; the other two cannot say
+    which components earn their place.
+
+- id: q4
+  question: >-
+    Your 2 x 2 factorial reports an interaction of +0.006 nats with a paired 95% interval of [−0.004, +0.016],
+    per-seed values +0.011 and +0.001, and a single-cell MDE of 0.02. How should you report it?
+  options:
+    - >-
+      As a positive interaction, because both per-seed values are positive and the point estimate is above 0.
+    - >-
+      As no interaction detected at this power; the smallest detectable interaction is about 0.04, twice the
+      cell MDE.
+    - >-
+      As evidence that the effects add, because the interval contains 0, so the additive prediction can replace
+      the combined run.
+    - >-
+      As a failed experiment, because an interaction smaller than the MDE means the factorial was set up wrongly.
+  correct: 1
+  explanation: >-
+    The interval contains 0, so the rule says no interaction detected; with four cells the contrast's standard
+    error is twice a cell's, so its MDE is about 0.04. Absence of evidence is not evidence of additivity, and a
+    sound null result is a result.

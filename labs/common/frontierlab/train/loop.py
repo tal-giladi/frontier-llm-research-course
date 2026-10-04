@@ -134,8 +134,11 @@ def main(argv=None):
         step = ck["step"]
         print(f"resumed from step {step}")
     tokens_per_step = a.batch * a.seq * a.grad_accum
-    fpt = flops_per_token(cfg, a.seq)
-    pc = param_counts(cfg)
+    # The accounting builds throwaway modules that draw random numbers: fork the RNG so a resumed run
+    # starts its first step from exactly the restored state (found in Module 8 with stochastic rounding).
+    with torch.random.fork_rng(devices=list(range(torch.cuda.device_count()))):
+        fpt = flops_per_token(cfg, a.seq)
+        pc = param_counts(cfg)
     write_run_card(a.run, question=a.question, parent=a.parent, config=asdict(cfg), args=vars(a),
                    data_meta=train.meta, budget={"steps": a.steps, "tokens": a.steps * tokens_per_step,
                                                  "train_flops": fpt * a.steps * tokens_per_step},

@@ -1,0 +1,77 @@
+- id: q1
+  question: >-
+    You port DeepSeek-V3's FP8 recipe and quantise each activation once, in 1 × 128 tiles per token, then reuse
+    that same quantised tensor for the weight-gradient GEMM to save a cast. What is wrong with this?
+  options:
+    - >-
+      Nothing, because the weight-gradient GEMM only needs the activation values, never their scales.
+    - >-
+      The weight gradient must be computed in BF16 in this recipe, so the FP8 copy is never used there.
+    - >-
+      Wgrad contracts over tokens, so it needs scales along tokens: the recipe uses 128 × 1 tiles there.
+    - >-
+      Reusing it is fine for E4M3, but only E5M2 activations can be reused in the backward pass.
+  correct: 2
+  explanation: >-
+    A block-scaled GEMM needs one scale per block along its contraction dimension. Fprop contracts over
+    channels, Wgrad over tokens, so DeepSeek-V3 (appendix B.2) quantises activations 1 × 128 forward and
+    128 × 1 backward.
+
+- id: q2
+  question: >-
+    An FP8 GEMM kernel accumulates partial sums with about 14 significant bits. For a layer with $K = 8192$ input
+    features your tests show errors of several percent, while $K = 512$ looks fine. What fix does DeepSeek-V3
+    describe?
+  options:
+    - >-
+      Promote the partial result to FP32 on the CUDA cores every $N_C = 128$ elements and continue the sum there.
+    - >-
+      Switch the inputs from E4M3 to E5M2, because the wider exponent range removes the accumulation error.
+    - >-
+      Split the layer into 16 layers of $K = 512$, since the error depends only on the size of each layer.
+    - >-
+      Use per-tensor instead of per-tile scales, so that every partial product has the same exponent.
+  correct: 0
+  explanation: >-
+    The error comes from adding small products to a large running sum in a narrow accumulator, so it grows
+    with $K$. Restarting the accumulator every 128 elements and adding the partial sums in FP32 keeps the error
+    at its $K = 128$ level; the input format does not change the accumulator's width.
+
+- id: q3
+  question: >-
+    A teammate converts Baseline-0 with torchao Float8 rowwise, measures 1.4× throughput on an H100 and proposes
+    also converting the output head and the attention score computation, "since they are GEMMs too". What is
+    the best response?
+  options:
+    - >-
+      Agree, because every GEMM gains 2× in FP8 and the head is the largest single GEMM at small width.
+    - >-
+      Agree for the head but not for attention, because softmax inputs are already in FP32.
+    - >-
+      Disagree, because torchao refuses to convert any module whose weights are tied to an embedding.
+    - >-
+      Keep them in BF16 as DeepSeek-V3 does, unless a controlled run shows the gap stays in the margin.
+  correct: 3
+  explanation: >-
+    DeepSeek-V3 section 3.3.1 keeps the output head and attention operators in BF16/FP32 because they are
+    sensitive to error. Extending FP8 to them is a new changed variable that needs its own measured loss gap,
+    not an inference from speed.
+
+- id: q4
+  question: >-
+    On a laptop, the emulated `fp8-deepseek` arm trains at 1,000 tokens/s against BF16's 3,000, and its held-out
+    loss is within 0.002 nats of BF16 with a paired interval inside the margin. What should the report say?
+  options:
+    - >-
+      FP8 is three times slower than BF16 on this model, so the recipe should be rejected.
+    - >-
+      The numerics are within the margin at this scale; speed is not measured, because emulation is not an FP8 kernel.
+    - >-
+      FP8 is adopted, because the loss gap is inside the margin and laptops are a conservative speed test.
+    - >-
+      The result is inconclusive, because emulated runs cannot be compared with BF16 runs at all.
+  correct: 1
+  explanation: >-
+    Emulation reproduces FP8 rounding in float32 and is slower by construction; it answers the numerics
+    question only. The speed half of the decision rule needs real kernels (torchao on an L4 or H100) with the
+    Module 2 benchmark harness.

@@ -49,6 +49,8 @@ HARDWARE = {
                               "https://www.nvidia.com/en-us/data-center/a100/"),
     "A100-SXM-40GB": Hardware("A100 SXM4 40GB (the usual Colab A100)", 312e12, 1.555e12, "bf16",
                               "https://www.nvidia.com/en-us/data-center/a100/"),
+    "B200": Hardware("B200 (per GPU: DGX B200 figures / 8)", 2.25e15, 8.0e12, "bf16",
+                     "https://www.nvidia.com/en-us/data-center/dgx-b200/"),
     "L4": Hardware("L4 24GB", 121e12, 0.300e12, "bf16", "https://www.nvidia.com/en-us/data-center/l4/"),
     "T4": Hardware("T4 16GB", 65e12, 0.320e12, "fp16", "https://www.nvidia.com/en-us/data-center/tesla-t4/"),
 }

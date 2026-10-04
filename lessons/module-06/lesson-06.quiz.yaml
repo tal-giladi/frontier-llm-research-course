@@ -1,0 +1,56 @@
+- id: q1
+  question: >-
+    Your tokenizer averages 4.0 bytes per token. You consider a BLT-style model whose latent transformer is the same
+    size as your current model, with local models costing about 5% of a latent step per byte. At which average
+    patch size does it start to cost fewer FLOPs per byte than the tokenized model?
+  options:
+    - >-
+      Any patch size, because bytes are smaller units than tokens and the latent model sees fewer of them.
+    - >-
+      About 4.0 bytes, because the latent model then runs exactly as often as the tokenized one.
+    - >-
+      About 5 bytes, because F/p + 0.05F falls below F/4 only when p exceeds 5.
+    - >-
+      Never, because the local encoder and decoder always cost more than one latent step per byte.
+  correct: 2
+  explanation: >-
+    F/p + 0.05F < F/4 means 1/p < 0.2, so p > 5 bytes. At 4.0 bytes the latent model runs as often as before and
+    the local models are pure overhead; bytes are only cheaper when patches are longer than tokens.
+
+- id: q2
+  question: >-
+    With a global entropy threshold, a byte-level model's patches grow very long inside a repeated multiple-choice
+    template and short elsewhere. What does BLT report doing about this kind of drift?
+  options:
+    - >-
+      Lowering the threshold during repetitive content, so that templates are split into one-byte patches.
+    - >-
+      Resetting the entropy model's context at newlines and using the approximately monotonic rule.
+    - >-
+      Replacing entropy patching by fixed four-byte strides whenever repetition is detected in a document.
+    - >-
+      Training a classifier on top of the entropy model to predict where boundaries should be placed.
+  correct: 1
+  explanation: >-
+    Low entropy on repeated content makes global-threshold patches drift longer. For the large run BLT resets the
+    entropy context at new lines and uses the monotonic constraint, which reacts to jumps rather than to absolute
+    entropy; it explicitly does not train a boundary classifier.
+
+- id: q3
+  question: >-
+    In a patched sentence you see cuts in the middle of rare words, such as "S|tandar|dization", with an order-2
+    byte model as the entropy model. What is the most reasonable interpretation?
+  options:
+    - >-
+      The entropy model sees only two bytes back, so it cannot tell the rest of a rare word is predictable.
+    - >-
+      The threshold is too high, because a higher threshold always produces more cuts inside words.
+    - >-
+      Entropy patching is broken for English text, because word boundaries should be the only cut points.
+    - >-
+      The monotonic rule was used by mistake, since only that rule ever cuts inside a word.
+  correct: 0
+  explanation: >-
+    A two-byte context leaves the continuation of rare words genuinely uncertain, so entropy rises mid-word. A
+    stronger entropy model (BLT uses a 100M byte transformer with a 512-byte window) would find those bytes easy.
+    Higher thresholds cut less, not more, and either rule can cut inside words.

@@ -36,6 +36,15 @@
   - [19 · Measuring cost and quality honestly](lessons/module-05/lesson-03.md)
   - [20 · Compressed sparse attention (DeepSeek-V4 CSA/HCA)](lessons/module-05/lesson-04.md)
   - [Module 5 quiz](assessments/module-05-quiz.md)
+- **Module 6 — Which other block changes earn their complexity?**
+  - [21 · Multi-token prediction](lessons/module-06/lesson-01.md)
+  - [22 · Residual-stream design: hyper-connections and mHC](lessons/module-06/lesson-02.md)
+  - [23 · Combining changes](lessons/module-06/lesson-03.md)
+  - [24 · Conditional memory and lookup sparsity: Engram](lessons/module-06/lesson-04.md)
+  - [25 · Elastic architectures](lessons/module-06/lesson-05.md)
+  - [26 · Tokenizer-free models: Byte Latent Transformer](lessons/module-06/lesson-06.md)
+  - [27 · Non-autoregressive and latent reasoning](lessons/module-06/lesson-07.md)
+  - [Module 6 quiz](assessments/module-06-quiz.md)
 
 - Stage C — Training-recipe questions
 - **Module 7 — Which optimizer and parametrization?**
@@ -45,3 +54,9 @@
   - [31 · Schedules](lessons/module-07/lesson-04.md)
   - [32 · Stability forensics](lessons/module-07/lesson-05.md)
   - [Module 7 quiz](assessments/module-07-quiz.md)
+- **Module 8 — How low can precision go?**
+  - [33 · Number formats and scaling](lessons/module-08/lesson-01.md)
+  - [34 · FP8 training](lessons/module-08/lesson-02.md)
+  - [35 · FP4 training and quantisation-aware training](lessons/module-08/lesson-03.md)
+  - [36 · Scaling laws for precision](lessons/module-08/lesson-04.md)
+  - [Module 8 quiz](assessments/module-08-quiz.md)
