@@ -3,8 +3,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
-build/
-dist/
+/build/
+/dist/
 .env
 .ipynb_checkpoints/
 # data, checkpoints and run outputs are produced by the lab scripts, never committed

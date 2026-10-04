@@ -1,0 +1,72 @@
+- id: q1
+  question: >-
+    You map a job onto a 16 x 16 x 16 TPU v4 slice and a colleague computes the worst-case distance as 45 hops
+    (15 per axis). What did they leave out?
+  options:
+    - >-
+      The optical circuit switches, which add one hop between every pair of 4 x 4 x 4 cubes.
+    - >-
+      The wraparound links: along an axis of 16 the farthest chip is 8 hops away, so 24 in all.
+    - >-
+      Dimension-ordered routing, which takes the diagonal and so needs only 15 hops in total.
+    - >-
+      The data-centre network, which carries traffic between the cubes of one slice.
+  correct: 1
+  explanation: >-
+    In a torus each axis is a ring, so the distance along it is min(d, n - d), at most n/2 = 8. Summed over three
+    axes the worst case is 24 hops. Inside a slice traffic stays on ICI; DCN is for traffic between pods.
+
+- id: q2
+  question: >-
+    In the Scaling Book's notation you have A[I, J_X] and B[J_X, K] and want C[I, K]. What communication does the
+    matmul need?
+  options:
+    - >-
+      An all-gather of A along X before the multiply, because A is sharded on the contracting dimension.
+    - >-
+      None, because both operands are sharded the same way and each chip has matching slices.
+    - >-
+      An all-reduce (or a reduce-scatter if C may stay sharded) over X of the partial products.
+    - >-
+      An all-to-all along X, because the contracting dimension has to move to a non-contracting one.
+  correct: 2
+  explanation: >-
+    Each chip multiplies its J/X slices and gets a partial sum of the whole C. Summing the partials over X is an
+    all-reduce; if C may end up sharded, a reduce-scatter suffices. It is the second matmul of a Megatron TP MLP.
+
+- id: q3
+  question: >-
+    Gemini 2.5 trained with synchronous data parallelism across several 8,960-chip TPUv5p pods in different data
+    centres. Which statement fits the bandwidth figures of the lesson?
+  options:
+    - >-
+      Tensor parallelism should cross the pods, because DCN latency is hidden by the large matmuls.
+    - >-
+      Pipeline stages should be split across pods, because activations are smaller than weights.
+    - >-
+      Any dimension can cross the pods, because ICI and DCN have similar bandwidth per chip.
+    - >-
+      Data parallelism is the dimension to cross pods, because it communicates once per step.
+  correct: 3
+  explanation: >-
+    DCN gives about 6-12.5 GB/s per chip against roughly 45-90 GB/s per ICI link. The dimension that moves the
+    fewest bytes per unit of compute, gradient synchronisation once per step, is the one to put on the slow link.
+
+- id: q4
+  question: >-
+    DeepSeek's ISCA 2025 paper reports Hopper's FP8 accumulation as FP22 (13 mantissa bits) and asks for higher
+    accumulation precision. How does this connect to DeepSeek-V3's training recipe from lesson 08.2?
+  options:
+    - >-
+      It is the limit behind promoting partial sums to FP32 every 128 elements in the FP8 GEMMs.
+    - >-
+      It is the reason V3 keeps the optimizer moments in BF16 instead of FP32.
+    - >-
+      It explains why V3 uses E5M2 for gradients and E4M3 for activations and weights.
+    - >-
+      It forced V3 to train its attention operators in FP8, since the accumulator was too narrow.
+  correct: 0
+  explanation: >-
+    With about 14 bits kept in the tensor-core accumulator, long FP8 dot products lose accuracy; V3 promotes the
+    partial result to FP32 on the CUDA cores every 128 elements. V3 uses E4M3 everywhere and keeps attention in
+    higher precision.

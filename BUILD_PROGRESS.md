@@ -44,7 +44,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 6 — Which other block changes earn their complexity? (integrated)
 - [x] Module 7 — Which optimizer and parametrization? (sub-agent F, integrated)
 - [x] Module 8 — How low can precision go? (integrated)
-- [ ] Module 9 — What does the cluster cost, and how does it fail?
+- [x] Module 9 — What does the cluster cost, and how does it fail? (integrated)
 - [ ] Module 10 — Which data, in which mix?
 - [ ] Module 11 — What will the big run do?
 - [ ] Module 12 — Post-training foundations

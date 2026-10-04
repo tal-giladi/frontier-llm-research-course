@@ -1,0 +1,179 @@
+- id: q1
+  question: >-
+    You are planning a 70B dense model on 64 nodes of 8 H100s at 8K tokens per sequence. The planner shows TP moves
+    about 30 times more bytes per GPU per step than DP. Which rank order do you give the launcher, innermost first,
+    and why?
+  options:
+    - >-
+      [DP, PP, TP], so the gradient all-reduce gets NVLink and finishes before the next step starts.
+    - >-
+      [TP, PP, DP], so the per-layer TP collectives stay on NVLink and the once-per-step DP traffic crosses nodes.
+    - >-
+      [PP, TP, DP], so neighbouring pipeline stages share a node and the point-to-point sends are fastest.
+    - >-
+      Any order, because NCCL picks ring or tree per collective and so hides where the ranks are placed.
+  correct: 1
+  explanation: >-
+    Put the most talkative dimension where the bandwidth is. TP sends activations several times per layer and
+    micro-batch; DP sends each gradient once per step. Llama 3 orders [TP, CP, PP, DP] for this reason; NCCL's
+    algorithm choice cannot move bytes off InfiniBand.
+
+- id: q2
+  question: >-
+    A 128K-context continued-training run (lesson 04.3's extension at a larger scale) runs out of memory on the
+    first pipeline stage even with full recomputation. The model's weights are well under budget. Which change
+    addresses the cause most directly?
+  options:
+    - >-
+      Add context parallelism, so each GPU holds the activations of a fraction of every sequence.
+    - >-
+      Raise the pipeline degree, so each stage holds fewer layers and therefore fewer weights.
+    - >-
+      Switch from 1F1B to GPipe, so the first stage frees its activations earlier in the step.
+    - >-
+      Move from ZeRO-1 to ZeRO-3, so the optimizer state no longer competes with activations.
+  correct: 0
+  explanation: >-
+    Activations scale with tokens per GPU. CP splits each sequence over ranks, cutting per-GPU activations by the CP
+    degree; more PP or ZeRO-3 shrinks weight-related memory, and GPipe holds more activations, not fewer.
+
+- id: q3
+  question: >-
+    Your ring attention matches single-device attention in float64 on 4 ranks. You then switch to two chunks per
+    rank for load balance; on 8 GPUs the slowest rank becomes 1.7x faster, but on your laptop's 4 CPU processes
+    nothing changes. What explains the difference?
+  options:
+    - >-
+      The laptop run is wrong, because load balancing changes the attention result, so the float64 check must be
+      repeated for the balanced sharding.
+    - >-
+      gloo does not support isend and irecv, so the CPU ring runs every transfer synchronously and cannot overlap
+      it with the block computation.
+    - >-
+      CPU processes share one machine's cores and memory bandwidth, so evening out per-rank work does not shorten
+      the step as it does on separate GPUs.
+    - >-
+      Two chunks per rank double the K/V traffic around the ring, which the GPUs' NVLink hides behind compute but
+      the CPU cannot.
+  correct: 2
+  explanation: >-
+    Balanced sharding computes the same pairs and sends the same bytes; it only evens out per-rank work. That
+    shortens the step when each rank has its own hardware. On one shared CPU the total work matters, which the
+    lesson's measurement showed. The float64 check still holds for both shardings.
+
+- id: q4
+  question: >-
+    With PP = 16 and 16 micro-batches per step, 1F1B leaves about 48% of every GPU idle. Memory is tight on the
+    first stage and you cannot change the global batch. Which change shrinks the bubble without adding activation
+    memory on that stage?
+  options:
+    - >-
+      Interleaved 1F1B with v = 4, because each device's chunks are smaller and so need less memory.
+    - >-
+      GPipe, because all forwards run first and the bubble is then paid only once per step.
+    - >-
+      DualPipe, because it feeds micro-batches from both ends and keeps one copy of the parameters.
+    - >-
+      A zero-bubble schedule, which defers weight gradients into the idle slots within 1F1B's peak memory.
+  correct: 3
+  explanation: >-
+    Splitting the backward lets W fill the bubble at the same peak memory as 1F1B's first stage. Interleaving
+    raises the first stage's activations, GPipe holds all 16 micro-batches, and DualPipe needs two copies of the
+    parameters.
+
+- id: q5
+  question: >-
+    A torchtitan comparison on one 8x H100 node reports FSDP 8 at 6,900 tokens/s per GPU [6,850, 6,950] and
+    FSDP 4 x TP 2 at 6,980 [6,890, 7,060], both at equal tokens per step. The decision rule says adopt TP only if its
+    interval lies entirely above FSDP's. What do you record?
+  options:
+    - >-
+      Adopt FSDP 4 x TP 2, because its median is higher and the intervals overlap only slightly.
+    - >-
+      Keep FSDP 8: the intervals overlap, so the rule says the difference is not established here.
+    - >-
+      Repeat with a longer warm-up and report whichever layout wins the repetition as the result.
+    - >-
+      Adopt FSDP 4 x TP 2, because TP is always faster on one node once sequence parallelism is on.
+  correct: 1
+  explanation: >-
+    The rule was stated before the runs; overlapping intervals mean "not distinguishable", so the simpler layout
+    stays. Rerunning until one wins is outcome-driven testing, and "TP is always faster" is not what the evidence
+    says.
+
+- id: q6
+  question: >-
+    The capability probe for tensor parallelism on a model with per-head QK-norm reports: forward loss equal to one
+    process to 1e-16, but max gradient difference 4e-3. Training runs and the loss falls. What do you do?
+  options:
+    - >-
+      Accept it, because a forward loss that matches to 1e-16 proves the parallel model computes the same
+      function and gradients.
+    - >-
+      Loosen the tolerance, because 4e-3 is the size of BF16 rounding and real training runs in BF16 anyway.
+    - >-
+      Find the parameters with wrong gradients (the QK-norm weights) and sum their partial gradients over TP.
+    - >-
+      Disable QK-norm whenever TP is on, because the two features are documented as incompatible in PyTorch.
+  correct: 2
+  explanation: >-
+    The forward is right and the replicated QK-norm weights get partial gradients, one per rank's heads. An
+    all-reduce over the TP group fixes it; the probe ran in float64, so 4e-3 is a bug, not rounding.
+
+- id: q7
+  question: >-
+    A run with FSDP2 on 512 GPUs checkpoints model and optimizer with DCP, plus the step. It crashes at step 41,800
+    and resumes from step 41,500. The loss looks continuous. Which missing state makes the resumed run a different
+    run from the one in the contract?
+  options:
+    - >-
+      The data-stream position and the RNG states, so batches and random draws differ after the resume.
+    - >-
+      The gathered full model, because DCP saves only shards and the full weights cannot be rebuilt.
+    - >-
+      The NCCL communicator, because a new communicator reduces gradients in a different order.
+    - >-
+      The profiler state, because the next trace starts from step 0 and the timings are shifted.
+  correct: 0
+  explanation: >-
+    DCP reassembles sharded tensors on load, so weights and optimizer are fine. Without the data position the run
+    repeats or skips batches, and without the RNG states dropout or token dropping draw different noise; the curve
+    can look continuous either way.
+
+- id: q8
+  question: >-
+    Your cluster doubles from 8,192 to 16,384 GPUs with the same hardware. Checkpoints block for 30 s and restarts
+    take 5 minutes. How should the checkpoint interval change, under the Poisson model?
+  options:
+    - >-
+      Stay the same, because the cost of one checkpoint and of one restart has not changed.
+    - >-
+      Double, because more GPUs write the checkpoint in parallel and each checkpoint is cheaper.
+    - >-
+      Halve, because the job's mean time between failures halves and lost work grows with the interval.
+    - >-
+      Shrink by about a factor of 1.4, because Young's interval scales with the square root of the MTBF.
+  correct: 3
+  explanation: >-
+    The job MTBF is per-device MTBF divided by device count, so it halves. Young's interval sqrt(2 x delta x M)
+    then shrinks by sqrt(2), about 1.41. The write time is the same per checkpoint if each GPU writes its own
+    shard.
+
+- id: q9
+  question: >-
+    You must restart a 64-rank FSDP2 run on 48 ranks after losing nodes, and you want the continued run to be as
+    close as possible to what 64 ranks would have done. Which design choice, made before the run, matters most?
+  options:
+    - >-
+      Randomness and data order derived from global quantities (seed, step, sample), not per-rank generators.
+    - >-
+      Saving the checkpoint with torch.save on rank 0 instead of DCP, so that the file does not depend on sharding.
+    - >-
+      A checkpoint interval short enough that at most one step of work is lost when the number of ranks changes.
+    - >-
+      Keeping every per-rank RNG state in the checkpoint, so that each new rank can load the state of an old one.
+  correct: 0
+  explanation: >-
+    DCP reshards tensors to any rank count, but per-rank streams have no meaning on a different set of ranks.
+    Counter-based randomness and a global data stream give every sample the same data and noise whatever rank
+    processes it; only the reduction order then differs.

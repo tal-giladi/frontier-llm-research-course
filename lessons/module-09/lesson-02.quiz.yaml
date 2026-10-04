@@ -1,0 +1,73 @@
+- id: q1
+  question: >-
+    A run uses PP = 8 with 1F1B and 8 micro-batches per step, and the profiler shows each GPU idle about 47% of the
+    step. A teammate proposes switching to GPipe "because it is simpler and has the same bubble". What happens?
+  options:
+    - >-
+      The bubble halves, because GPipe runs all forwards first and so overlaps the pipeline fill with the drain.
+    - >-
+      The bubble stays the same and each stage now holds 8 micro-batches of activations instead of at most 8 - s.
+    - >-
+      The bubble stays the same and activation memory falls, because GPipe frees activations after each forward.
+    - >-
+      The bubble grows to (p-1)/m, because GPipe cannot start a backward until every stage has finished.
+  correct: 1
+  explanation: >-
+    Both schedules leave each device idle for (p-1)(F+B), so the bubble is (p-1)/(m+p-1) = 7/15 for both. GPipe keeps
+    all m micro-batches' activations on every stage; 1F1B keeps at most p - s on stage s.
+
+- id: q2
+  question: >-
+    With p = 8 stages and m = 16 micro-batches, interleaved 1F1B with v = 2 chunks per device cuts the bubble from
+    0.30 to 0.18 in your simulation. What do you pay for it?
+  options:
+    - >-
+      Twice the parameters per device, because each device now holds two copies of its stage.
+    - >-
+      Nothing measurable, because interleaving only reorders the same messages between the same devices.
+    - >-
+      More point-to-point messages and more activation memory on the first stage than plain 1F1B.
+    - >-
+      A larger global batch, because interleaving requires twice as many micro-batches per step.
+  correct: 2
+  explanation: >-
+    Each micro-batch passes every device v times, so there are v times more transfers, and the first stage holds
+    p(1 + (p-1)/(pv)) stages' worth of activations (11.5 here, against 8). Parameters are not duplicated; that is
+    DualPipe.
+
+- id: q3
+  question: >-
+    Why can a zero-bubble schedule fill bubbles that 1F1B cannot, without changing what the model computes?
+  options:
+    - >-
+      It skips the weight gradients of some micro-batches and rescales the others, which is unbiased in expectation.
+    - >-
+      It runs the optimizer step asynchronously, so the next step's forwards start inside the current step's drain.
+    - >-
+      It sends activations in lower precision, so the stages wait less for each other between forwards.
+    - >-
+      The input gradient is what the previous stage waits for; the weight gradient can run later, in the gaps.
+  correct: 3
+  explanation: >-
+    Splitting the backward into B (input gradient, on the critical path between stages) and W (weight gradient, needed
+    only at the optimizer step) lets W fill idle slots. Every gradient is still computed exactly once, so the update
+    is the same as 1F1B's.
+
+- id: q4
+  question: >-
+    A dense 30B model trains on one 8-GPU node with PP = 4 and little communication. Someone suggests DualPipe because
+    DeepSeek-V3's table shows it with the smallest bubble. What is the strongest objection?
+  options:
+    - >-
+      DualPipe doubles the parameters per device, and its main benefit is hiding communication this run hardly has.
+    - >-
+      DualPipe needs at least 64-way expert parallelism, because its F&B pairs overlap only all-to-all calls.
+    - >-
+      DualPipe only works with FP8, because its overlapped chunks rely on DeepSeek's fine-grained quantisation.
+    - >-
+      DualPipe needs an odd number of stages, because micro-batches are fed from both ends of the pipeline.
+  correct: 0
+  explanation: >-
+    DualPipe keeps two stages per device (2x parameters) and gains most by hiding the cross-node all-to-all under
+    computation. Interleaving or a zero-bubble schedule shrinks the bubble without duplicating parameters. It needs an
+    even number of stages, not an odd one.

@@ -57,3 +57,11 @@ re-checked when its module is written and pilot-tested.
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
 - Module 5: flash-linear-attention API checked 2026-10-04 at tag v0.5.2: `fla.ops.kda.chunk_kda` and `fla.ops.gated_delta_rule.chunk_gated_delta_rule`, layout `[B, T, H, D]`, log-space gate, `scale` default `1/sqrt(K)`, `initial_state [N, H, K, V]`. The course's chunked gated-delta reference (`frontierlab/attention/deltanet.py`) is the ground truth; run `pytest labs/common/tests/test_attention_m05.py -k fla` on the GPU before using the kernels.
 - Module 8: torchao 0.18.0 float8 API checked 2026-10-04 at tag v0.18.0: `torchao.float8.convert_to_float8_training(module, *, module_filter_fn=(mod, fqn) -> bool, config=Float8LinearConfig)`, `Float8LinearConfig.from_recipe_name("tensorwise" | "rowwise" | "rowwise_with_gw_hp")`. MX training (`torchao.prototype.moe_training`) is prototype. PyTorch 2.14.1 CPU casts: `float8_e4m3fn` saturates on overflow (even inf -> 448), `float8_e5m2` overflows to inf from 61,440.
+- Module 9: torchtitan 0.3.0 checked 2026-10-04 at tag v0.3.0: runs are Python functions returning `Trainer.Config`
+  (`MODULE=<module> CONFIG=<function> ./run_train.sh`, i.e. `torchtitan.train --module --config`); `--section.option`
+  CLI overrides still work but are deprecated; `COMM_MODE="fake_backend"` dry-runs a config on one GPU. Field names used
+  by the course (`parallelism.data_parallel_shard_degree`, `tensor_parallel_degree`, `pipeline_parallel_degree`,
+  `pipeline_parallel_schedule`, `context_parallel_degree`, `training.local_batch_size`, `training.seq_len`,
+  `checkpoint.enable/interval`, `profiler.enable_profiling/profile_freq`, `metrics.log_freq`) are in
+  `torchtitan/config/configs.py`, `components/checkpointer/base.py`, `tools/profiler.py`. `tps` in the metrics line is per
+  device. PyTorch 2.14.1 ships `ScheduleDualPipeV` and `ScheduleZBVZeroBubble` in `torch.distributed.pipelining`.

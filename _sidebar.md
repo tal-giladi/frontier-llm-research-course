@@ -60,3 +60,10 @@
   - [35 · FP4 training and quantisation-aware training](lessons/module-08/lesson-03.md)
   - [36 · Scaling laws for precision](lessons/module-08/lesson-04.md)
   - [Module 8 quiz](assessments/module-08-quiz.md)
+- **Module 9 — What does the cluster cost, and how does it fail?**
+  - [37 · Parallelism layouts at scale](lessons/module-09/lesson-01.md)
+  - [38 · Pipeline schedules and overlap](lessons/module-09/lesson-02.md)
+  - [39 · A measured multi-GPU investigation](lessons/module-09/lesson-03.md)
+  - [40 · Failure and recovery](lessons/module-09/lesson-04.md)
+  - [41 · TPUs, JAX and hardware co-design](lessons/module-09/lesson-05.md)
+  - [Module 9 quiz](assessments/module-09-quiz.md)

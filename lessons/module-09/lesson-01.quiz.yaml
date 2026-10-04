@@ -1,0 +1,98 @@
+- id: q1
+  question: >-
+    You train a 70B dense model on 32 nodes of 8 H100s with TP = 8 and DP = 32. A colleague's launcher assigns
+    ranks with DP as the innermost dimension. Throughput is a third of what the planner projected, and every
+    other setting matches. What is the most likely cause?
+  options:
+    - >-
+      Each TP group now spans 8 nodes, so the per-layer activation collectives cross InfiniBand instead of NVLink.
+    - >-
+      The DP gradient all-reduce now runs inside a node, which is slower than running it across nodes.
+    - >-
+      ZeRO-1 cannot shard optimizer state when DP is innermost, so the GPUs run out of memory and swap.
+    - >-
+      Pipeline bubbles grow when DP is innermost, because micro-batches are split differently over the ranks.
+  correct: 0
+  explanation: >-
+    With DP innermost, TP ranks are 32 apart, one per node. TP moves activations several times per layer and
+    micro-batch, far more bytes than DP's once-per-step gradients, so it is the dimension that must stay on
+    NVLink; that is the reason for Llama 3's [TP, CP, PP, DP] order.
+
+- id: q2
+  question: >-
+    An 8B-parameter model, data parallel only, on 8 GPUs of 80 GB, with BF16 weights, FP32 gradients and FP32
+    master weights plus AdamW moments (18 bytes per parameter in all). Which is the lowest ZeRO stage at which the
+    model state (not counting activations) fits, and what does that stage cost you?
+  options:
+    - >-
+      ZeRO-2, at 32 GB per GPU; it needs a weight all-gather in every forward and backward pass.
+    - >-
+      ZeRO-3, at 18 GB per GPU; it is the only stage that shards the optimizer moments.
+    - >-
+      ZeRO-1, at 60 GB per GPU; gradients are reduce-scattered and weights all-gathered once per step.
+    - >-
+      ZeRO-0, at 144 GB per GPU, because activations are not counted and gradients can be offloaded.
+  correct: 2
+  explanation: >-
+    ZeRO-1 shards the 12 bytes of master weights and moments over 8 ranks: 2 + 4 + 12/8 = 7.5 bytes, 60 GB. Its
+    communication is the same bytes as DDP's all-reduce, split into a reduce-scatter and an all-gather. Only ZeRO-3
+    gathers weights in every forward and backward.
+
+- id: q3
+  question: >-
+    Your ring attention passes the float32 comparison with single-device attention to 3e-6, and gradients look
+    plausible. In float64 the output agrees to 1e-15 but dK differs by 0.2 on every rank except the last. What is the
+    most likely bug?
+  options:
+    - >-
+      The online-softmax merge is wrong, because a merge error appears only in float64.
+    - >-
+      The dK/dV accumulators skip their last hop, so they never return to the rank that owns them.
+    - >-
+      The causal mask uses positions relative to the block instead of absolute positions.
+    - >-
+      The K/V blocks are sent before they are computed, so ranks read stale values.
+  correct: 1
+  explanation: >-
+    A correct forward rules out the merge and the mask. Each block's dK/dV accumulator must travel n hops, one more
+    than the forward's n-1, to land back on its owner; if the final hop is skipped every rank keeps a neighbour's
+    accumulator. The float32 check missed it because nobody compared dK there.
+
+- id: q4
+  question: >-
+    You switch context parallelism from contiguous shards to two chunks per rank (chunks r and 2n-1-r) to balance the
+    causal work. On 8 GPUs the step time does not change at all. What should you check first?
+  options:
+    - >-
+      Whether the number of chunks divides the vocabulary size, since unequal chunks break balance.
+    - >-
+      Whether NCCL is using the ring algorithm, because the tree algorithm erases the balance.
+    - >-
+      Whether the sequence length is a power of two, because otherwise chunk sizes differ by one token.
+    - >-
+      Whether the attention kernel skips fully masked sub-blocks or computes every block and masks it afterwards.
+  correct: 3
+  explanation: >-
+    Balancing changes how many visible (query, key) pairs each rank has. A kernel that computes the full rectangle
+    for every block and masks afterwards does the same work for every sharding, so the slowest rank does not get
+    faster. The gain needs block skipping.
+
+- id: q5
+  question: >-
+    DeepSeek-V3 trains with PP16, EP64 over 8 nodes and ZeRO-1 data parallelism and no tensor parallelism. A team
+    training a dense 120B model with standard GQA on the same cluster wants to copy "no TP". What is the soundest
+    reading of the evidence?
+  options:
+    - >-
+      Copy it, because the report shows TP is never needed on H800 clusters, whose NVLink is too slow for TP.
+    - >-
+      Treat it as model-specific (MLA, recomputation, FP8 activations, EP) and plan the dense model's memory first.
+    - >-
+      Reject it, because without TP no model above 70B can fit on 80 GB GPUs, whatever the other dimensions are.
+    - >-
+      Copy it only together with DualPipe, because DualPipe is the part that removes the need for TP.
+  correct: 1
+  explanation: >-
+    The report attributes the absence of TP to its memory optimisations for that architecture. A dense 120B model
+    has different weights per layer and activation sizes; the planner (or a measurement) decides whether it fits
+    with PP and ZeRO alone.

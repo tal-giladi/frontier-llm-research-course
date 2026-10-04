@@ -1,0 +1,94 @@
+- id: q1
+  question: >-
+    After a node failure your FSDP run resumes from its last checkpoint and the loss curve continues smoothly. The
+    checkpoint holds the sharded model and optimizer state and the step. A reviewer says the resumed run is not the
+    run in your experiment contract. What is the most direct way to settle it?
+  options:
+    - >-
+      Compare the resumed loss curve with the curve before the crash and check that there is no visible jump.
+    - >-
+      Rerun the same job uninterrupted and compare every state component and every logged loss bit for bit.
+    - >-
+      Check that the learning rate after the resume equals the scheduled value at that step in the run card.
+    - >-
+      Evaluate the final checkpoint on Eval v0 and check it is within the seed noise floor of the baseline.
+  correct: 1
+  explanation: >-
+    A smooth curve, a correct learning rate and a good eval are all consistent with a different data order or RNG
+    stream. Bitwise equality of model, optimizer, scheduler, data position, step, RNG and losses against an
+    uninterrupted run is the test that rules every such difference out.
+
+- id: q2
+  question: >-
+    You save a checkpoint with FSDP2 on 64 GPUs and must resume on 48 after losing two nodes. Model, optimizer,
+    scheduler and data stream load correctly through DCP. What still prevents the 48-GPU run from being the same run?
+  options:
+    - >-
+      The optimizer moments cannot be resharded, because AdamW state is tied to the rank that created it.
+    - >-
+      DCP cannot load a checkpoint into a world size that does not divide the one it was saved with.
+    - >-
+      Per-rank RNG streams have no mapping to a different rank count, and gradient sums change order.
+    - >-
+      The learning-rate schedule must be restarted, because the global batch per rank has changed.
+  correct: 2
+  explanation: >-
+    DCP reshards tensors (including optimizer state) to any layout. Per-rank random streams cannot be mapped onto a
+    different set of ranks unless randomness is counter-based on global indices, and a different number of ranks
+    reduces gradients in a different order, so the run continues correctly but not bit-identically.
+
+- id: q3
+  question: >-
+    A 16K-GPU job has one unexpected interruption every 3.1 hours. Checkpoints block training for 60 s and a restart
+    costs 10 minutes. The team checkpoints every 2 hours "to keep the overhead low". What does the Poisson model
+    say?
+  options:
+    - >-
+      About 20 minutes is near-optimal; every 2 hours loses far more to recomputed work than it saves in writes.
+    - >-
+      Every 2 hours is right, because each checkpoint costs a full minute and that dominates the waste.
+    - >-
+      The interval does not matter much, because the 10-minute restart cost dominates every interval.
+    - >-
+      Checkpoint every minute, because the expected lost work then becomes negligible at any write cost.
+  correct: 0
+  explanation: >-
+    Young's interval is sqrt(2 x 1 min x 186 min), about 19 minutes. At 2 hours each failure loses an hour of work on
+    average, far more than the writes saved; at 1 minute half the time goes into writing checkpoints.
+
+- id: q4
+  question: >-
+    A colleague summarises Llama 3's reliability section as "78% of the 466 interruptions were hardware failures".
+    What is wrong with the summary?
+  options:
+    - >-
+      The 78% refers to GPU failures only; host and network hardware failures are counted separately in the report.
+    - >-
+      The 466 figure includes the restarts caused by the 78%, so the true number of hardware events is smaller.
+    - >-
+      The 78% includes silent data corruption, which the report counts as a software issue rather than hardware.
+    - >-
+      The 78% is of the 419 unexpected interruptions, not of all 466; the 47 planned ones are not failures at all.
+  correct: 3
+  explanation: >-
+    Section 3.3.4 counts 47 planned and 419 unexpected interruptions and attributes about 78% of the unexpected ones
+    to confirmed or suspected hardware issues. Planned interruptions can be checkpointed right before they happen and
+    cost a restart but no lost work.
+
+- id: q5
+  question: >-
+    Gemini 2.5's training continued on fewer TPU slices after a local failure, losing tens of seconds instead of ten
+    minutes or more. In the goodput model, which quantity does slice-granularity elasticity change most?
+  options:
+    - >-
+      The checkpoint write time delta, because fewer slices write fewer shards.
+    - >-
+      The restart cost R, because the job continues instead of waiting for a replacement and a relaunch.
+    - >-
+      The mean time between failures M, because removing the failed slice removes its future failures.
+    - >-
+      The optimal checkpoint interval only, because elasticity makes failures cheaper to detect.
+  correct: 1
+  explanation: >-
+    Elasticity attacks the cost per failure: no relaunch, no wait for a spare, so R drops from minutes to seconds.
+    M is set by the hardware and the cluster size; delta by the checkpoint path.

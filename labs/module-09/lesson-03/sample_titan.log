@@ -1,0 +1,20 @@
+# SYNTHETIC SAMPLE for testing the parser. The format follows torchtitan 0.3.0 (components/metrics.py);
+# the numbers are invented placeholders, NOT a measurement of anything.
+[rank0]:[titan] 2026-10-04 00:00:00,000 - root - INFO - Building llama3 8B (synthetic sample line)
+[rank1]:[titan] 2026-10-04 00:00:00,000 - root - INFO - Building llama3 8B (synthetic sample line)
+[rank0]:[titan] 2026-10-04 00:00:01,000 - root - INFO - [31mstep:  1  [32mloss:  9.50000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,010  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:01,000 - root - INFO - [31mstep:  1  [32mloss:  9.50000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,010  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:02,000 - root - INFO - [31mstep:  2  [32mloss:  9.00000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,020  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:02,000 - root - INFO - [31mstep:  2  [32mloss:  9.00000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,020  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:03,000 - root - INFO - [31mstep:  3  [32mloss:  8.50000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,030  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:03,000 - root - INFO - [31mstep:  3  [32mloss:  8.50000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,030  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:04,000 - root - INFO - [31mstep:  4  [32mloss:  8.00000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,040  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:04,000 - root - INFO - [31mstep:  4  [32mloss:  8.00000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,040  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:05,000 - root - INFO - [31mstep:  5  [32mloss:  7.50000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,050  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:05,000 - root - INFO - [31mstep:  5  [32mloss:  7.50000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,050  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:06,000 - root - INFO - [31mstep:  6  [32mloss:  7.00000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,060  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:06,000 - root - INFO - [31mstep:  6  [32mloss:  7.00000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,060  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:07,000 - root - INFO - [31mstep:  7  [32mloss:  6.50000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,070  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:07,000 - root - INFO - [31mstep:  7  [32mloss:  6.50000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,070  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank0]:[titan] 2026-10-04 00:00:08,000 - root - INFO - [31mstep:  8  [32mloss:  6.00000  [33mgrad_norm:  1.0000  [36mmemory: 50.00GiB(60.00%)  [34mtps: 1,080  [36mtflops: 100.00  [35mmfu: 10.00%[39m
+[rank1]:[titan] 2026-10-04 00:00:08,000 - root - INFO - [31mstep:  8  [32mloss:  6.00000  [33mgrad_norm:  1.0000  [36mmemory: 51.00GiB(61.00%)  [34mtps: 1,080  [36mtflops: 100.00  [35mmfu: 10.00%[39m

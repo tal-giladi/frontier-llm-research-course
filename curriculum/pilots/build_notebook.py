@@ -340,7 +340,20 @@ O8 = f'{PILOT_DIR}/p8'; os.makedirs(O8, exist_ok=True)
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8}
+P9 = [
+    md("""
+## P9 — Module 9: single-GPU failure and recovery (about 15 minutes)
+
+Multi-GPU layouts (torchtitan on 8× H100) cannot be piloted on Colab. This cell checks the part that
+fits one GPU: kill a run, resume it, and verify every state component is bit-identical.
+"""),
+    code("""
+O9 = f'{PILOT_DIR}/p9'; os.makedirs(O9, exist_ok=True)
+!python labs/module-09/lesson-04/kill_and_resume.py --device cuda --world 1 2>&1 | tee "$O9/09-4-kill-resume.txt"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9}
 
 
 def build():

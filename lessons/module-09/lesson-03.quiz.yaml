@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    Your torchtitan report says layout B (FSDP 4 x TP 2) reaches 7,100 tokens/s per GPU and layout A (FSDP 8) 6,900,
+    each the median of steps 1-60 of one run. What should you fix before drawing a conclusion?
+  options:
+    - >-
+      Nothing: a 3% difference on the same node and model is already larger than typical GPU noise.
+    - >-
+      Report tokens/s for the whole node instead, because per-GPU numbers hide the TP communication.
+    - >-
+      Drop the warm-up and compilation steps, repeat each layout, alternate the runs and compare intervals.
+    - >-
+      Rerun both with more TP, because a 2-way TP split is too small to show the effect of the layout.
+  correct: 2
+  explanation: >-
+    The first steps include torch.compile and allocator warm-up, one run per layout gives no spread, and back-to-back
+    runs let drift masquerade as an effect. Skip warm-up, repeat in A B A B order, and apply the decision rule to the
+    intervals.
+
+- id: q2
+  question: >-
+    A profiler trace of one rank shows 180 ms of NCCL kernels in a 2.1 s step. A colleague writes "communication
+    overhead: 8.6%". Why is that number not the exposed communication?
+  options:
+    - >-
+      NCCL kernels launch asynchronously, so the trace shows their launch time rather than their duration.
+    - >-
+      Part of the NCCL time overlaps compute kernels; only the time when no compute kernel runs is exposed.
+    - >-
+      The exposed communication is the slowest rank's NCCL time, so one rank's trace always overstates it.
+    - >-
+      The trace includes the reduce-scatter of gradients, which never contributes to the step time.
+  correct: 1
+  explanation: >-
+    Exposed communication is the length of the NCCL intervals minus their overlap with compute intervals. Summing
+    kernel time counts the hidden part too; the trace needs interval arithmetic (or the sync-minus-no-sync method of
+    lesson 02.3).
+
+- id: q3
+  question: >-
+    You apply a standard tensor-parallel plan to a model with per-head QK-norm. After fixing the head-count reshape,
+    the first-step loss matches a single-GPU run exactly. What does the course's capability probe still find, and why?
+  options:
+    - >-
+      The QK-norm weights get only partial gradients on each TP rank, because each rank sees only its own heads.
+    - >-
+      The output projection's gradient is doubled, because RowwiseParallel all-reduces it on every rank.
+    - >-
+      The RoPE frequencies differ per rank, because each rank recomputes them for its local head dimension.
+    - >-
+      The loss is correct but the embedding gradient is missing, because TP does not shard the embedding.
+  correct: 0
+  explanation: >-
+    The norm weights are replicated, but the per-head inputs they normalise are split across TP ranks, so each
+    rank's gradient covers only its heads. Without an all-reduce over the TP group the replicas drift. The forward,
+    and so the first loss, is unaffected.
+
+- id: q4
+  question: >-
+    Your capability matrix row for "Float8 + FSDP2 + torch.compile" says: documented by torchtitan 0.3.0; CPU probe
+    untestable; main path not run. A manager reads the row as "supported for our model". What is the correct reading?
+  options:
+    - >-
+      Supported, because the framework documents it and torchtitan tests its features before each release.
+    - >-
+      Unsupported, because a CPU probe that cannot run means the combination is known to fail.
+    - >-
+      Supported for Llama-style models only, because documented features are tested on Llama 3 first.
+    - >-
+      Unknown for this model: it exists, but nobody has run it with a correctness check on this architecture.
+  correct: 3
+  explanation: >-
+    The matrix separates "documented" from "composed for this model". Untestable on CPU and not run on GPU means no
+    evidence either way; it becomes "composed" only after a run passes its correctness check (for example losses
+    matching BF16 within the run-to-run spread).

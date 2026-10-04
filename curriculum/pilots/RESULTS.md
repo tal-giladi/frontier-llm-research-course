@@ -21,3 +21,5 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P6 — Lineage-F integration (~60+ H100-h PROJECTED) | not piloted (budget) | | | |
 | P8 — Module 8 FP8 on L4, sweep | not run | | | |
 | P8 — NVFP4 on B200 | not piloted (no Blackwell on Colab) | | | |
+| P9 — Module 9 single-GPU recovery (kill_and_resume --world 1) | not run | | | |
+| P9 — Module 9 torchtitan 8× H100, ring CP, pipelining | not piloted (single-GPU Colab) | | | |
