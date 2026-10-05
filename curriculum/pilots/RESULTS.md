@@ -23,3 +23,5 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P8 — NVFP4 on B200 | not piloted (no Blackwell on Colab) | | | |
 | P9 — Module 9 single-GPU recovery (kill_and_resume --world 1) | not run | | | |
 | P9 — Module 9 torchtitan 8× H100, ring CP, pipelining | not piloted (single-GPU Colab) | | | |
+| P10 — Module 10 docmask, RegMix, micro-anneals, continued training (T4 variants) | not run | | | |
+| P10 — Module 10 10.2, 10.3 and project (~13 H100-h PROJECTED) | not piloted (budget) | | | |

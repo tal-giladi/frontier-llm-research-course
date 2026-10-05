@@ -45,7 +45,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 7 — Which optimizer and parametrization? (sub-agent F, integrated)
 - [x] Module 8 — How low can precision go? (integrated)
 - [x] Module 9 — What does the cluster cost, and how does it fail? (integrated)
-- [ ] Module 10 — Which data, in which mix?
+- [x] Module 10 — Which data, in which mix? (integrated)
 - [ ] Module 11 — What will the big run do?
 - [ ] Module 12 — Post-training foundations
 - [ ] Module 13 — Which post-training pipeline for which target?
@@ -75,4 +75,5 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 | 2026-10-04 | Continued training from a checkpoint goes through `frontierlab.longctx.extend` (wraps the loop); the native `--init-from` loop change proposed in `curriculum/inbox/module-04-loop-changes.md` is deferred until a later module needs it |
 | 2026-10-04 | RMSNorm keeps float64 as float64 (Module 3 finding); float32/bf16 behaviour unchanged |
 | 2026-10-04 | Optimizer runs go through `frontierlab.optim.train` (wraps the loop); native loop flags in `curriculum/inbox/module-07-loop-changes.md` deferred. Sidebar running numbers reserve 21–27 for Module 6 (7 lessons). |
+| 2026-10-05 | Data runs use `frontierlab.datax.train` (wraps the loop); native `--mixture/--doc-mask/--anneal` flags in `curriculum/inbox/module-10-shared-changes.md` deferred. `gqa-docmask` registered in `attention/__init__`. |
 | 2026-10-04 | Loop forks the RNG around the accounting calls (Module 8 found that accounting broke exact resume once training uses randomness). `gqa-bidir` is not registered in `attention/__init__` (circular import); 06.7 imports `frontierlab.blocks.diffusion` itself. Block runs use `frontierlab.blocks.train`. |

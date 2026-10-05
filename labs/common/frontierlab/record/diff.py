@@ -35,7 +35,8 @@ IGNORE_PREFIXES = ("run", "question", "precision.notes", "parent_run", "notes", 
                    "args.data", "args.device", "args.peak", "hardware.platform", "hardware.cpu_threads",
                    "measured.cost_usd", "measured.final_val_loss")
 SEED_KEYS = ("args.seed", "args.data_seed", "config.extra.blocks.seed")
-INVALIDATING_PREFIXES = ("data", "data_files", "args.eval_windows", "args.seq")
+INVALIDATING_PREFIXES = ("data", "data_files", "args.eval_windows", "args.seq",
+                         "datax.mixture", "datax.planned_accounting", "datax.init_sha256")
 SOFTWARE_KEYS = ("hardware.torch", "hardware.python", "hardware.cuda", "git.commit")
 AXES = ("tokens", "flops", "wallclock", "params")
 ORDER = {"invalidates": 0, "warn": 1, "changed": 2, "replicate": 3, "ignore": 4}
@@ -103,6 +104,10 @@ def classify(key: str, a, b, *, changed=(), axis: str = "tokens", seeds_are_repl
         if key in ("optim.optimizer_flops_per_step", "optim.muon_matrices"):
             return ("changed" if any(c.startswith("optim.") for c in changed) else "invalidates"),                 "follows from the optimizer"
         return "invalidates", "a second changed variable (optimizer, parametrization, schedule or stabilizer)"
+    if key.startswith("datax."):                       # Module 10 data runs (frontierlab.datax.train)
+        if key == "datax.init_from":
+            return "ignore", "path of the initial checkpoint (its SHA-256 is compared instead)"
+        return "invalidates", "a second changed variable (mixture, document mask, anneal or initial weights)"
     if key.startswith("longctx."):                     # Module 4 continued-training runs
         if key == "longctx.init_from":
             return "ignore", "path of the initial checkpoint (its SHA-256 is compared instead)"

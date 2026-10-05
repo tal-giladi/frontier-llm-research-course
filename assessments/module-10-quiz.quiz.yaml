@@ -1,0 +1,193 @@
+- id: q1
+  question: >-
+    A teammate adds a "high-quality" source to the mixture: a folder they prepared themselves months ago. Its
+    meta.json lists the dataset name and `revision: main`, no licence, and token counts that match the files.
+    The ablation with it looks good. What do you do before it goes into Data-v1?
+  options:
+    - >-
+      Keep it, since the token counts match the files and the ablation shows the data is useful.
+    - >-
+      Block it until it is re-prepared from a pinned commit and a person has recorded its licence.
+    - >-
+      Keep it but drop its weight to 5%, so that any licence problem affects only a small share of tokens.
+    - >-
+      Re-run the ablation with three more seeds, since a strong source should survive a stricter test.
+  correct: 1
+  explanation: >-
+    A branch name is not a version, so nobody can say which bytes the ablation used, and a source without a
+    licence record cannot be shipped at any weight. Seeds address noise, not provenance.
+
+- id: q2
+  question: >-
+    Data-v0 assigns splits by a hash of each document's normalised text. You add FineWeb, which contains every
+    FineWeb-Edu page, and prepare it with the same hash rule. A reviewer worries that FineWeb copies of Data-v0's
+    validation pages are now training data. Which answer is correct?
+  options:
+    - >-
+      They are, because FineWeb is a different dataset and its documents get fresh random splits.
+    - >-
+      They are, unless FineWeb is deduplicated against Data-v0 train before it is prepared.
+    - >-
+      Exact copies cannot be; near-copies with small edits can, which the cross-split MinHash check looks for.
+    - >-
+      Neither exact nor near copies can be, because the hash rule groups similar documents together.
+  correct: 2
+  explanation: >-
+    The same text gives the same hash and the same split in every source, so an exact copy of a validation page
+    is validation in FineWeb too. A near-copy hashes differently and lands anywhere, which is why the near-duplicate
+    check exists; hashing does not group similar texts.
+
+- id: q3
+  question: >-
+    Your document-masking ablation (3 seeds per arm) gives a per-document loss difference of +0.012 with a 95%
+    interval of [−0.031, +0.055]; the non-inferiority margin was +0.01. The masked runs also trained 18% slower on
+    the dense mask path. What is the honest conclusion?
+  options:
+    - >-
+      Masking is worse, since the mean difference is positive and it is also slower.
+    - >-
+      Masking is non-inferior, since the interval contains zero and the effect is therefore negligible.
+    - >-
+      Masking should be dropped, because a dense mask can never be made faster than causal attention.
+    - >-
+      Inconclusive: the design cannot resolve 0.01, so report the power needed and the dense-path slowdown.
+  correct: 3
+  explanation: >-
+    The upper bound exceeds the margin and the lower bound is below it, so the pre-stated rule says inconclusive;
+    a null result is reported with the seeds needed to resolve the margin. The slowdown belongs to the dense
+    implementation; block-skipping kernels remove it.
+
+- id: q4
+  question: >-
+    After a preemption you restart a mixture run with the same command. The training loss is continuous, but the
+    per-source tokens in `mixture_accounting.json` no longer match the planned numbers in the run card. What is
+    the most likely cause?
+  options:
+    - >-
+      The sampler's state was not restored, so the stream restarted or reshuffled instead of continuing.
+    - >-
+      The learning-rate schedule restarted, which changes how many tokens each step consumes.
+    - >-
+      Floating-point nondeterminism, which changes which documents are sampled after a restart.
+    - >-
+      The evaluation windows changed, which shifts how tokens are counted per source.
+  correct: 0
+  explanation: >-
+    With a counter-based sampler, consumed accounting equals the plan exactly at any step after a correct resume;
+    a mismatch means the stream did not continue where it stopped. Kernel nondeterminism does not choose
+    documents, and evaluation does not consume training tokens.
+
+- id: q5
+  question: >-
+    A filter keeping the top 10% of a web pool by an educational classifier beats the unfiltered pool by 0.08
+    nats on FineWeb-Edu held-out text, loses 0.05 on the pool's own held-out text and ties on Wikipedia, at equal
+    tokens with seeds. Your next run is 10 times longer. What should you weigh most?
+  options:
+    - >-
+      The FineWeb-Edu gain, since educational text is the closest proxy for downstream benchmarks.
+    - >-
+      The classifier's F1, since a better classifier would turn the tie on Wikipedia into a gain.
+    - >-
+      The tie on neutral text and that at 10 times the tokens the kept 10% repeats ten times as often.
+    - >-
+      The loss on the pool's own text, since the unfiltered distribution is what a general model must model.
+  correct: 2
+  explanation: >-
+    Gains on the filter's target are expected by construction; the neutral set shows no gain, and a longer run
+    multiplies the repetition the filter forces, which is Nemotron-CC's argument against aggressive filtering at
+    long horizons.
+
+- id: q6
+  question: >-
+    A rephrased source wins 0.03 nats over repeating the originals at equal training tokens on a probe written in
+    a different style by a different model. Generating it cost 9 times one training run's FLOPs. Your lab will
+    train about 40 runs on Data-v1. How should the generator compute enter the decision?
+  options:
+    - >-
+      Not at all, since compute spent on data is a one-off cost outside the comparison axis.
+    - >-
+      As cost per run: about 0.2 runs each over 40 reuses, which the 0.03 gain can easily justify.
+    - >-
+      As a disqualifier, since any data that costs more than a training run to make is not worth making.
+    - >-
+      As cost on the first run only; later runs reuse the data without cost, so they can skip the comparison.
+  correct: 1
+  explanation: >-
+    The generator's compute is part of the data's cost and is amortised over every run that uses it: 9 runs'
+    worth over 40 runs is about 0.23 per run. Leaving it out hides a real cost, and a fixed rule ignores reuse.
+
+- id: q7
+  question: >-
+    Twenty-four tiny RegMix-style runs give a regression whose predicted best mixture is 70% Wikipedia. A
+    confirmation with 3 seeds finds it 0.01 nats worse than the uniform mixture, interval [−0.02, +0.04]. What do
+    you do with Data-v1's weights?
+  options:
+    - >-
+      Use the predicted mixture, since the regression was fitted on 24 runs and the confirmation on only 3 seeds.
+    - >-
+      Average the predicted and uniform mixtures, which keeps both pieces of evidence.
+    - >-
+      Fit a larger regression model to the same 24 runs until it agrees with the confirmation result.
+    - >-
+      Keep the uniform mixture as the default and report the prediction as not confirmed.
+  correct: 3
+  explanation: >-
+    The confirmation is the pre-stated test and it did not show the predicted mixture better, so the default
+    stays and the result is reported. Overriding it with the model it was testing, or refitting until they agree,
+    is the bias the confirmation exists to prevent.
+
+- id: q8
+  question: >-
+    You score a math dataset with a short anneal from a stable checkpoint: math held-out loss falls by 0.25 nats
+    relative to the stable checkpoint. What must the comparison include before you credit the dataset?
+  options:
+    - >-
+      A control anneal on the general mix alone, same checkpoint, tokens and schedule, and a guard on general loss.
+    - >-
+      A longer anneal of at least ten billion tokens, since shorter anneals cannot show real effects.
+    - >-
+      An anneal at a larger model size, since anneal effects at small scale always reverse at large scale.
+    - >-
+      An anneal with the learning rate held constant, so the decay does not mask the dataset's effect.
+  correct: 0
+  explanation: >-
+    Decaying the learning rate improves the model by itself, so only the difference from a control anneal is the
+    dataset's effect, and the guard checks the cost elsewhere. Holding the rate constant would no longer be an
+    anneal at all.
+
+- id: q9
+  question: >-
+    Continued training on code improves code loss by 0.4 nats against the starting checkpoint and leaves Eval v0
+    loss unchanged against it. The equal-token control on general data improved Eval v0 loss by 0.05. How should
+    the report state forgetting?
+  options:
+    - >-
+      No forgetting, since Eval v0 loss is the same as before continued training.
+    - >-
+      Forgetting of 0.05 nats: the code run is that much worse than the same training on general data.
+    - >-
+      Negative forgetting of 0.05 nats, since the control shows the model was still improving.
+    - >-
+      It cannot be stated, because the code run and the control used different data.
+  correct: 1
+  explanation: >-
+    Forgetting is measured against the equal-token control: the general-data run reached 0.05 lower Eval v0 loss,
+    so the code run gave that up. Different data between the two is exactly the variable being measured.
+
+- id: q10
+  question: >-
+    Your Data-v1 report says "every choice is backed by an ablation". A reviewer asks what the smallest effect
+    your final Data-v1 vs Data-v0 comparison could detect. Which part of the record answers that?
+  options:
+    - >-
+      The leakage report, since contamination sets a lower bound on any detectable improvement.
+    - >-
+      The manifest, since the token counts per source decide how large a mixture effect can be.
+    - >-
+      The seed standard deviation of Data-v0 and the minimum detectable effect computed from it for 3 seeds.
+    - >-
+      The accounting file, since equal tokens guarantee that any difference is detectable.
+  correct: 2
+  explanation: >-
+    The minimum detectable effect comes from the noise floor and the number of seeds (lesson 01.4); it says which
+    of the reported nulls are informative. Manifest, accounting and leakage report establish validity, not power.

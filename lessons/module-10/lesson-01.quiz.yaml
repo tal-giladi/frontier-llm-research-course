@@ -1,0 +1,78 @@
+- id: q1
+  question: >-
+    Your integrity report finds that 3 of 210 validation documents have a training document with exact
+    Jaccard 0.93 (the same article with a different header). A data ablation compares two mixtures on this
+    validation set. What is the right response?
+  options:
+    - >-
+      Keep them, since 3 of 210 documents cannot move a mean loss by more than the noise.
+    - >-
+      Drop them from the evaluation set, record it, and rescore every run on that same set.
+    - >-
+      Remove the three training twins only from the arm that contains more of that source.
+    - >-
+      Switch the split rule to a random draw per document so that duplicates are spread evenly.
+  correct: 1
+  explanation: >-
+    A near-copy turns those items into a memorisation test that favours whichever arm repeats that source;
+    fixing the evaluation set for every arm keeps the comparison paired and honest. A random draw would make
+    leaks more likely, not fewer, because it ignores content.
+
+- id: q2
+  question: >-
+    A 60/25/15 mixture run is preempted at step 4,000 and restarted. The sampler draws each window's source
+    with a generator seeded from the run seed at start-up, and the run card states the planned tokens per
+    source. What is wrong after the restart?
+  options:
+    - >-
+      Nothing, because the generator is re-seeded with the same seed and gives the same sequence again.
+    - >-
+      Only the learning rate, because the schedule restarts while the data order continues correctly.
+    - >-
+      The model weights, because a re-seeded generator also re-initialises the parameters on restart.
+    - >-
+      The stream restarts from window 0, so early windows repeat and the per-source token counts are wrong.
+  correct: 3
+  explanation: >-
+    Re-seeding replays the stream from the beginning, so the run sees its first 4,000 steps of data again and
+    the stated accounting no longer describes it. A counter-based stream (seek to step x accum x batch) or a
+    saved sampler state makes the restart the same run.
+
+- id: q3
+  question: >-
+    You add document masking with a boolean attn_mask in scaled_dot_product_attention. Throughput falls by a
+    third and a teammate says the change must be broken, because masking removes most attention pairs. What
+    do you tell them?
+  options:
+    - >-
+      The dense mask path still computes every score and is slower than is_causal; savings need a block-skipping kernel.
+    - >-
+      The mask must be wrong, since a correct mask always reduces attention FLOPs by the fraction of pairs it removes.
+    - >-
+      The slowdown comes from RoPE, which must be recomputed per document once a mask is used.
+    - >-
+      Masking always costs a third more compute, so the slowdown is the expected price of correctness.
+  correct: 0
+  explanation: >-
+    A boolean mask is applied after the scores are computed, and it disables the fused causal path. FlexAttention
+    block masks or variable-length FlashAttention skip whole masked blocks; RoPE needs no change because it is
+    relative.
+
+- id: q4
+  question: >-
+    The n-gram leakage check reports 0 of 5,153 LAMBADA passages flagged against your new mixture. Before you
+    write "no LAMBADA leakage" in the report, what is the most useful check?
+  options:
+    - >-
+      Lower the threshold until at least a few passages are flagged, then report that number instead.
+    - >-
+      Rerun it with a different random seed, since a single run of a hash-based check can miss items.
+    - >-
+      Plant passages in a copy of the training text, confirm all are flagged, count short items.
+    - >-
+      Compare LAMBADA accuracy of the new model with the old one, since leakage would raise it.
+  correct: 2
+  explanation: >-
+    A zero only means something if the checker can find a known leak; the planted control measures its
+    recall, and short items cannot be checked by n-grams at all. Lowering the threshold until something appears
+    changes the definition, and accuracy changes have many causes.

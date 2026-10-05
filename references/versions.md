@@ -52,6 +52,18 @@ re-checked when its module is written and pilot-tested.
 | circuit-tracer | 0.5.0 | 2026-03-29 | Module 17.3 |
 | transformer-engine | 2.18 (re-check when piloted) | — | Module 8.3 main path (NVFP4 / MXFP8 on B200; training needs SM 10.0 / 10.3) |
 
+## Module 10 data and models (checked 2026-10-04)
+
+| Item | Revision | Licence | Used in |
+|---|---|---|---|
+| HuggingFaceFW/fineweb sample-10BT | `9bb295ddab0e05d785b879661af7260fed5140fc` | ODC-By 1.0 | 10.1–10.5 (`web`) |
+| wikimedia/wikipedia 20231101.en | `b04c8d1ceb2f5cd4588862100d08de323dccfbaa` | CC BY-SA 3.0, GFDL | 10.1–10.5 (`wiki`) |
+| HuggingFaceTB/finemath finemath-4plus | `e92b25a616738fe95dc186b64dfb19f9c8525594` | ODC-By 1.0 | 10.4–10.5 (`math`) |
+| HuggingFaceFW/fineweb-edu-llama3-annotations | `72df4c92fb1b48beceb16016e8f695ec40a6c3a5` | ODC-By 1.0 (labels by Llama-3-70B-Instruct) | 10.2 |
+| HuggingFaceFW/fineweb-2 (fra_Latn, deu_Latn, heb_Hebr) | `af9c13333eb981300149d5ca60a8e9d659b276b9` | ODC-By 1.0 | 10.6 |
+| SWE-bench/SWE-smith, `data/train-00002-of-00011.parquet` | `ea6d7173829c7ec8fa16c22055699ff2e9188091` | MIT | 10.6 |
+| Qwen/Qwen3-0.6B (generator, tokenizer) | `c1899de289a04d12100db370d81485cdf75e47ca` | Apache-2.0 | 10.3, 10.6 |
+
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.

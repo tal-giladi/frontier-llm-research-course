@@ -1,0 +1,54 @@
+- id: q1
+  question: >-
+    A mixture gives Hebrew 5% of training tokens. With your English-trained tokenizer Hebrew needs about 9.7 tokens
+    per word against 1.6 for English. What does the 5% mean in terms of text?
+  options:
+    - >-
+      About 5% of the words, since the share is set in tokens and tokens are a fixed unit of text.
+    - >-
+      Far less than 5% of the words, since each Hebrew word costs about six times as many tokens.
+    - >-
+      More than 5% of the words, since Hebrew words are shorter than English words on average.
+    - >-
+      It cannot be said, since token shares and word shares are unrelated to fertility.
+  correct: 1
+  explanation: >-
+    A token share buys text in proportion to 1 / fertility, so Hebrew gets roughly a sixth of the words that 5%
+    of English tokens would. The fix is a better tokenizer or a share set in bytes or words, not in tokens.
+
+- id: q2
+  question: >-
+    Your English pipeline drops documents with fewer than 2 of the 8 Gopher stop words. Applied to a German crawl
+    it removes 92% of documents. What is the FineWeb2-style fix?
+  options:
+    - >-
+      Lower the requirement to 1 English stop word for German, which keeps most German documents.
+    - >-
+      Skip stop-word filtering for German entirely, since stop words only matter for English.
+    - >-
+      Build German stop words from word frequencies and set each threshold per language.
+    - >-
+      Translate the German documents into English first, then apply the English rule unchanged.
+  correct: 2
+  explanation: >-
+    FineWeb2 derives stop words per language from frequency and adapts each threshold per language (for example
+    with the Quantile method). One English stop word is still the wrong signal, and dropping the filter lets
+    non-linguistic junk through.
+
+- id: q3
+  question: >-
+    You split agent-training tasks generated from 40 repositories into train and test at random by task. Test
+    accuracy is high. Which check most directly tells you whether the score is inflated?
+  options:
+    - >-
+      Re-split by repository and compare test accuracy, and count test patches with near-copies in train.
+    - >-
+      Re-run the evaluation with another random seed for the split and average the two scores.
+    - >-
+      Check that the test set has the same mix of bug-generation strategies as the training set.
+    - >-
+      Increase the number of test tasks until the confidence interval is narrower than one point.
+  correct: 0
+  explanation: >-
+    Tasks from one repository share code and often most of a patch, so a task-level split leaks; a repository
+    split and a near-copy count measure that directly. More tasks or another random split keep the same leak.

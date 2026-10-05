@@ -67,3 +67,11 @@
   - [40 · Failure and recovery](lessons/module-09/lesson-04.md)
   - [41 · TPUs, JAX and hardware co-design](lessons/module-09/lesson-05.md)
   - [Module 9 quiz](assessments/module-09-quiz.md)
+- **Module 10 — Which data, in which mix?**
+  - [42 · Data integrity at scale](lessons/module-10/lesson-01.md)
+  - [43 · Model-based quality filtering](lessons/module-10/lesson-02.md)
+  - [44 · Synthetic and rephrased data](lessons/module-10/lesson-03.md)
+  - [45 · Mixtures and micro-anneals](lessons/module-10/lesson-04.md)
+  - [46 · Continued training and forgetting](lessons/module-10/lesson-05.md)
+  - [47 · Multilingual and code data](lessons/module-10/lesson-06.md)
+  - [Module 10 quiz](assessments/module-10-quiz.md)

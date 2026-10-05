@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    Two candidate quality classifiers for your web pool reach F1 0.84 and 0.79 against the annotator's labels.
+    You can afford one more week of compute before the data freeze. What should decide between them?
+  options:
+    - >-
+      The higher F1, since it imitates the annotator more closely and the annotator defines quality.
+    - >-
+      The one whose kept pages look better in a manual review of fifty randomly chosen documents.
+    - >-
+      Small models trained at equal tokens on each filter's output, compared by seed on non-target held-out sets.
+    - >-
+      The one that keeps more tokens, since quantity matters more than quality at any training horizon.
+  correct: 2
+  explanation: >-
+    Classifier accuracy measures imitation of the labeller, not training value; DCLM chose its filter by
+    training on each filter's output (Table 4). Manual review and kept-token counts are useful context but
+    do not measure the effect on a model.
+
+- id: q2
+  question: >-
+    Your regression classifier has Spearman 0.6 with the 0–5 labels, but F1 at the threshold of 3 is 0.02,
+    because it almost never predicts 3 or more. What does this most likely mean for using it as a filter?
+  options:
+    - >-
+      Its predictions shrink toward the mean; filtering by rank (keep the top fraction) can still work well.
+    - >-
+      It has learned nothing, since an F1 near zero means its ranking is close to random.
+    - >-
+      It must be retrained as a classifier, because regression models cannot be used to rank pages.
+    - >-
+      The labels are wrong, since a correct label set always gives a regressor an F1 above 0.5.
+  correct: 0
+  explanation: >-
+    Squared-error regression pulls predictions toward the average label, so a fixed cut-off can catch almost
+    nothing while the ordering is decent. Keeping a fraction by rank, or calibrating the threshold on held-out
+    labels, uses the ranking that Spearman measures.
+
+- id: q3
+  question: >-
+    A filtered arm beats the unfiltered pool by 0.08 nats on FineWeb-Edu held-out loss, is 0.05 nats worse on
+    the pool's own held-out split and ties on Wikipedia. The filter was trained on educational-value labels.
+    What is the most defensible summary?
+  options:
+    - >-
+      The filter improves data quality, since the largest effect is on the highest-quality evaluation set.
+    - >-
+      The filter hurts the model, since the pool's own held-out set is the most representative evaluation.
+    - >-
+      The filter improves the model only at this scale and would hurt at a larger one, as Nemotron-CC showed.
+    - >-
+      It moved the model toward its target distribution; on text it does not favour there is no measured gain.
+  correct: 3
+  explanation: >-
+    A filter for educational pages wins on educational held-out text by construction and loses on the
+    distribution it removed; the neutral set shows no gain. Nemotron-CC's horizon argument concerns repetition
+    at long runs, not this pattern.
+
+- id: q4
+  question: >-
+    You must choose a filter threshold for a 15T-token run. Keeping the top 10% of your web pool leaves 1.2T
+    unique tokens, and the web share of the mix is 60%. Which concern should weigh most against that threshold?
+  options:
+    - >-
+      Scoring cost, because running the classifier over the pool costs more than training on it.
+    - >-
+      Repetition: 9T web tokens from 1.2T unique is 7.5 epochs, past where repeats keep value.
+    - >-
+      Classifier drift, because a filter trained on one snapshot cannot score later snapshots.
+    - >-
+      The tokenizer, because filtered text compresses better and the token budget then shrinks.
+  correct: 1
+  explanation: >-
+    At 60% of 15T the web part is 9T tokens, which a 1.2T pool can only supply with about 7.5 passes;
+    Muennighoff et al. find diminishing returns beyond about 4 epochs, which is Nemotron-CC's argument for
+    keeping more data. Scoring a pool once is far cheaper than training on it.

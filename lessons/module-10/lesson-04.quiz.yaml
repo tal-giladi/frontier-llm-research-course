@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    You fit a quadratic regression from mixture weights to loss on 24 tiny runs. In-sample R² is 0.99 and
+    leave-one-out Spearman is 0.35. Your manager wants to use the regression's best mixture for the next big run.
+    What do you recommend?
+  options:
+    - >-
+      Use it, since an R² of 0.99 shows the regression captures how the mixture drives the loss.
+    - >-
+      Do not rely on it yet: the fit memorises the runs; add runs or a simpler model, then confirm with seeds.
+    - >-
+      Use the single best of the 24 runs instead, since measured points are always better than predictions.
+    - >-
+      Switch the target to training loss, which is less noisy and gives the regression a cleaner signal.
+  correct: 1
+  explanation: >-
+    With 11 coefficients and 24 points the in-sample fit is close to guaranteed; leave-one-out ranking is the
+    honest test and it is weak. The best measured run is one noisy sample, and training loss rewards whatever
+    is easiest to fit, not what the target needs.
+
+- id: q2
+  question: >-
+    RegMix trains its proxy models at 1M parameters and uses the regression to choose a mixture for 1B
+    parameters. Which property must hold for that to work, and what did the paper do about it?
+  options:
+    - >-
+      Absolute losses must be equal across sizes; the paper rescales the 1M losses by a fitted constant.
+    - >-
+      The best mixture must be the natural token distribution; the paper uses it as the prior for sampling.
+    - >-
+      The ranking of mixtures must transfer across scale; the paper checks the rank correlation at 1B too.
+    - >-
+      Each source must improve every domain; the paper removes sources with negative coefficients first.
+  correct: 2
+  explanation: >-
+    The method only needs mixtures to be ordered the same way at both sizes, which is why it reports rank
+    correlation, measured at 1M and again with 1B models (Table 2). Absolute losses differ across sizes, and
+    sources interact in complicated ways.
+
+- id: q3
+  question: >-
+    A micro-anneal with 50% of a new code dataset lowers code held-out loss by 0.30 nats relative to the
+    stable checkpoint it started from. What is the main thing missing before you can credit the dataset?
+  options:
+    - >-
+      A control anneal on the general mix alone with the same tokens and schedule from the same checkpoint.
+    - >-
+      A longer anneal, since effects shorter than 10B tokens are never visible at any model size.
+    - >-
+      A larger share of code in the anneal, since 50% is too little to show what the dataset can do.
+    - >-
+      A second tokenizer, since code needs its own tokenizer before its loss can be compared at all.
+  correct: 0
+  explanation: >-
+    Decaying the learning rate improves the model on its own; OLMo 2 found that an anneal on the pretraining
+    mix alone raised its average by 4.4 points. Only the difference from a control anneal is the dataset's effect.
+
+- id: q4
+  question: >-
+    Your micro-anneal for a math source gives target gain [−0.21, −0.15] (candidate − control loss on math) and
+    a guard on general held-out loss of [+0.01, +0.04], with a pre-stated guard budget of 0.02. What does the
+    rule decide, and what is a sensible next step?
+  options:
+    - >-
+      Adopt, since the target gain is large and clearly separated from zero.
+    - >-
+      Reject the source permanently, since any measurable regression on general text disqualifies a dataset.
+    - >-
+      Inconclusive, and rerun with more seeds until the guard interval falls below the budget.
+    - >-
+      Inconclusive under the rule; try a smaller share of the source, as OLMo 2's 10/90 math anneal did.
+  correct: 3
+  explanation: >-
+    The guard's lower bound is below the budget and its upper bound above it, so the rule says inconclusive.
+    Rerunning only until the interval moves is optional stopping; a lower share is a new, pre-stated arm, and
+    OLMo 2 found a small share of math already gave most of the gain.

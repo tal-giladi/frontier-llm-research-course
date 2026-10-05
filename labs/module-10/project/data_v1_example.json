@@ -1,0 +1,20 @@
+{
+  "name": "data-v1-example",
+  "note": "The build's example recipe, from the free-CPU ablations of lessons 10.1-10.5 (2026-10-04/05). Copy it and replace every choice and evidence string with your own runs.",
+  "sources": [
+    {"name": "edu", "root": "labs/common/data/v0", "weight": 0.33,
+     "evidence": "10.4 runs/m10/l104 conf-natural vs conf-uniform: avg -0.001 [-0.210, +0.209], inconclusive; predicted-best RegMix mixture +0.071 [-0.139, +0.280], inconclusive. Natural (token-proportional) weights kept as the default: no mixture was shown better."},
+    {"name": "web", "root": "labs/common/data/m10/web", "weight": 0.23,
+     "evidence": "10.2 runs/m10/l102: top-30% classifier filter inconclusive on every held-out set (wiki -0.037 [-0.124, +0.050]); top 10% and 3% made web and LAMBADA worse. Unfiltered FineWeb kept. Weight: 10.4 natural share, as for edu."},
+    {"name": "wiki", "root": "labs/common/data/m10/wiki", "weight": 0.24,
+     "evidence": "10.4 natural share (see edu). Licence CC BY-SA 3.0: share-alike, see the provenance report. 10.4 micro-anneal with wiki inconclusive (guard +0.043 [-0.009, +0.095]), so no separate wiki anneal."},
+    {"name": "math", "root": "labs/common/data/m10/math", "weight": 0.20,
+     "evidence": "10.4 natural share (see edu). 10.5 runs/m10/l105: continued training at 10% FineMath gains +0.70 [+0.54, +0.85] with forgetting +0.017 [-0.006, +0.039], over the 0.02 budget, and 10.4's 50/50 math anneal was rejected (guard +0.097 [+0.050, +0.144]): FineMath stays in the main mix instead of a separate mid-training stage."}
+  ],
+  "doc_mask": false,
+  "doc_mask_evidence": "10.1 runs/m10/l101: mask - no mask per-document loss +0.012 [-0.031, +0.055], inconclusive; default (no mask) kept, it is cheaper on the dense path.",
+  "rephrased": {"included": false,
+    "evidence": "10.3 runs/m10/l103: reph - orig on the QA probe -0.546 [-0.830, -0.263] (adopt on the probe), but the probe shares the generator's style, orig was better on the originals and on general text, and generation cost 5.3 training runs. Not included by default."},
+  "anneal": {"candidates": [], "share": 0.5,
+    "evidence": "10.4 runs/m10/l104 micro-anneals: wiki inconclusive, math rejected at the 0.02 guard. No candidate adopted; a 10/90 math anneal is the pre-stated next arm."}
+}

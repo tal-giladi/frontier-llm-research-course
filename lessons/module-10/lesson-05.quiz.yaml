@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    After continued training on legal text, general held-out loss is 0.01 nats worse than the starting checkpoint.
+    The equal-token control (same steps on general data) is 0.06 nats better than the starting checkpoint. How
+    much forgetting does the legal run show?
+  options:
+    - >-
+      0.01 nats, since forgetting is measured against the model the run started from.
+    - >-
+      0.05 nats, since the gain of the control has to be subtracted from the legal run's change.
+    - >-
+      0.07 nats, the gap between the legal run and the control on general held-out loss.
+    - >-
+      None, since a change of 0.01 nats is within the seed noise of a typical run.
+  correct: 2
+  explanation: >-
+    Forgetting is defined against what the same training on general data would have given: the legal run is
+    0.01 worse and the control 0.06 better than the start, a gap of 0.07. Comparing with the start hides most
+    of the cost because the base was still improving.
+
+- id: q2
+  question: >-
+    You restart continued training from a checkpoint and copy over the base run's optimizer state and its
+    schedule, which had already decayed to the minimum learning rate. Target loss barely moves. What is the
+    most likely reason?
+  options:
+    - >-
+      The rate stays at the old minimum: no re-warm, so the model adapts very slowly.
+    - >-
+      The optimizer moments are lost on load, so the first steps take random directions.
+    - >-
+      Continued training cannot change a converged model, whatever the schedule.
+    - >-
+      The new data needs a new tokenizer, so the model cannot read it at all.
+  correct: 0
+  explanation: >-
+    Keeping the decayed schedule means training at the minimum rate; re-warming and re-decaying (with a fresh
+    optimizer, as --init-from does) is the documented recipe. Converged models do adapt, which is why mid-training
+    gives large gains.
+
+- id: q3
+  question: >-
+    Four replay settings give (gain, forgetting) of (0.50, 0.20), (0.40, 0.05), (0.30, 0.10) and (0.05, 0.00).
+    The forgetting budget is 0.06 on the mean, for simplicity. Which arm does a Pareto-plus-budget rule choose?
+  options:
+    - >-
+      (0.50, 0.20), since it has the largest gain and forgetting is a secondary concern.
+    - >-
+      (0.30, 0.10), since it balances gain and forgetting best among the four.
+    - >-
+      (0.05, 0.00), since it is the only arm with no forgetting at all.
+    - >-
+      (0.40, 0.05), the largest gain among frontier arms within the budget.
+  correct: 3
+  explanation: >-
+    (0.30, 0.10) is dominated by (0.40, 0.05). Among frontier arms within the 0.06 budget, (0.40, 0.05) has the
+    largest gain; (0.50, 0.20) breaks the budget and (0.05, 0.00) gives up most of the gain.
+
+- id: q4
+  question: >-
+    Llama 3 reports that annealing on code and math data improved its 8B model's GSM8K and MATH validation scores
+    a lot, and its 405B model's negligibly. Your 1.8M-parameter lab run shows a large target gain. What may you
+    conclude?
+  options:
+    - >-
+      That the gain will be at least as large at 405B, since larger models learn more from the same data.
+    - >-
+      That the method works at your scale; its size at other scales must be measured, not assumed.
+    - >-
+      That the lab run is wrong, since tiny models cannot benefit from domain data.
+    - >-
+      That annealing gains are a small-model artefact and should be dropped from the recipe.
+  correct: 1
+  explanation: >-
+    The size of a mid-training gain depends on scale, as Llama 3's two models show, so a course-scale result is
+    evidence at that scale only. Neither extrapolating it upward nor dismissing it follows from the data.

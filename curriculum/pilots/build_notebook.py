@@ -353,7 +353,27 @@ O9 = f'{PILOT_DIR}/p9'; os.makedirs(O9, exist_ok=True)
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9}
+P10 = [
+    md("""
+## P10 — Module 10: data integrity, mixtures and continued training (about 2.5 hours)
+
+Prepares the extra sources with the pilot tokenizer, then runs the T4-sized variants of 10.1 (document
+masking), 10.4 (RegMix and micro-anneals) and 10.5 (continued training). 10.2, 10.3 and the project
+stay PROJECTED (budget).
+"""),
+    code("""
+O10 = f'{PILOT_DIR}/p10'; os.makedirs(O10, exist_ok=True)
+for src, n in [('web', 20000), ('wiki', 4000), ('math', 8000)]:
+    !python -m frontierlab.datax.sources prepare {src} --docs {n} 2>&1 | tail -2
+!python labs/module-10/lesson-01/docmask_ablation.py --variant t4 2>&1 | tee "$O10/10-1-docmask.txt" | tail -20
+!python labs/module-10/lesson-04/mixture_lab.py regmix --variant t4 2>&1 | tee "$O10/10-4-regmix.txt" | tail -20
+!python labs/module-10/lesson-04/mixture_lab.py anneal --variant t4 2>&1 | tee "$O10/10-4-anneal.txt" | tail -20
+!python labs/module-10/lesson-05/continued_training.py --variant t4 2>&1 | tee "$O10/10-5-continued.txt" | tail -20
+!cp -r runs/m10 "$O10/runs-m10"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10}
 
 
 def build():

@@ -31,7 +31,7 @@ import torch
 
 from frontierlab.model.config import ModelConfig
 
-GQA_FAMILY = ("gqa", "gqa_partial", "sliding", "local_global", "sink", "gated", "gqa-rope-scaled", "gqa-irope", "gqa-softcap")
+GQA_FAMILY = ("gqa", "gqa_partial", "sliding", "local_global", "sink", "gated", "gqa-rope-scaled", "gqa-irope", "gqa-softcap", "gqa-docmask")
 
 
 def _import_kinds():
