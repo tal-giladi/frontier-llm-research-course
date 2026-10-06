@@ -1,0 +1,192 @@
+- id: q1
+  question: >-
+    Two scaling-law fits to the same Chinchilla data, the original approach-3 constants and an independent refit,
+    recommend 32B parameters on 3.0T tokens and 72B parameters on 1.3T tokens at the same budget. What is the most
+    useful conclusion for planning a run?
+  options:
+    - >-
+      The newer refit is correct and the original is wrong, so the refit's allocation can be used without checks.
+    - >-
+      The difference is rounding noise, so either allocation will give practically the same model.
+    - >-
+      Fitted constants can disagree a lot; check the allocation with your own ladder and with other estimators.
+    - >-
+      Scaling laws cannot guide allocation at all, so the size should follow the hardware's memory limit instead.
+  correct: 2
+  explanation: >-
+    The same functional form with two sets of constants gives a factor of five in tokens per parameter. Besiroglu et
+    al. show the published approach-3 values are inconsistent with approaches 1 and 2; the practical lesson is to
+    trust allocations only when several estimators and your own held-out tests agree.
+
+- id: q2
+  question: >-
+    An iso-FLOP profile at one budget has its lowest loss at the smallest model you trained, and a parabola through
+    all points puts the optimum below that size. What should you do before fitting the allocation exponent?
+  options:
+    - >-
+      Add smaller sizes at that budget (or raise the budget) so the minimum is bracketed by measured runs.
+    - >-
+      Use the parabola's vertex, since extrapolating a quadratic one step beyond the data is reliable.
+    - >-
+      Drop the budget from the fit, since a minimum at the edge shows the runs were trained incorrectly.
+    - >-
+      Average the vertex with the smallest size, since the true optimum must lie between them.
+  correct: 0
+  explanation: >-
+    An edge minimum is an extrapolated minimum. The course's vocabulary-8,192 pilot showed exactly this: every
+    affordable budget was minimised by the smallest model. Bracket the minimum with measured runs before trusting
+    the vertex or the exponent.
+
+- id: q3
+  question: >-
+    A product team wants the best model for a fixed training budget that will then serve about $10^{13}$ tokens a
+    month for two years. The research team proposes the compute-optimal size. What should change in the analysis?
+  options:
+    - >-
+      Nothing, since the compute-optimal model is also the cheapest model to serve at that quality.
+    - >-
+      Minimise training plus inference FLOPs, which moves the choice to a smaller model trained on more tokens.
+    - >-
+      Train a larger model on fewer tokens, since larger models need fewer serving FLOPs per token.
+    - >-
+      Ignore inference, since serving cost is paid by the product team and not by the training budget.
+  correct: 1
+  explanation: >-
+    Each served token costs about $2N$ FLOPs; with heavy, long-lived demand, total cost is minimised by a smaller
+    model trained past the compute-optimal ratio (Sardana et al.), which is why released small models train on
+    thousands of tokens per parameter.
+
+- id: q4
+  question: >-
+    Your ladder repeats a 768K-token subset 4 times and loses 0.11 nats against unique data, while the seed standard
+    deviation is 0.004. A colleague cites "up to 4 epochs is negligible". How do you reconcile the two?
+  options:
+    - >-
+      The measurement must be wrong, since the published result shows repetition up to 4 epochs costs nothing.
+    - >-
+      The published result is wrong, since a real measurement always overrides a fitted law.
+    - >-
+      Both are noise, since 0.11 nats is within normal run-to-run variation for small models.
+    - >-
+      Four epochs keep about 93% of the data's value; how much 7% costs depends on how steep the loss is in D.
+  correct: 3
+  explanation: >-
+    Muennighoff et al.'s effective data keeps about 93% of the value at 4 epochs. At their scale that changed the loss
+    negligibly; on a tiny ladder where loss falls steeply with tokens, the same 7% costs 0.11 nats, about 30 times the
+    seed noise. A fitted law comes with a regime.
+
+- id: q5
+  question: >-
+    A ladder's accuracy on a benchmark rises from 0.27 to 0.33 while its per-token NLL on the correct answers falls
+    smoothly. Leadership asks whether the next model, 30 times larger, will clear 0.60. What is the most defensible
+    method?
+  options:
+    - >-
+      Extrapolate the accuracy trend in log-compute, since accuracy is the quantity leadership asked about.
+    - >-
+      Predict task NLL from scale, then map it through a sigmoid fitted where accuracy varies, and give an interval.
+    - >-
+      Decline to forecast, since accuracy near chance cannot be related to scale by any method.
+    - >-
+      Assume the ability will emerge at the next scale, since such jumps are typical for multiple-choice tasks.
+  correct: 1
+  explanation: >-
+    Accuracy near chance carries little signal, but task NLL is continuous. The two-step method predicts the NLL and
+    then maps it to accuracy; step 2 needs points where accuracy actually varies, for example larger public models,
+    and the interval must reflect both steps.
+
+- id: q6
+  question: >-
+    A paper reports that exact-match accuracy on a 6-token answer jumps from 0.01 to 0.40 between two model sizes,
+    while per-token accuracy went from 0.47 to 0.86. A reviewer calls it emergence. Which statement is best supported?
+  options:
+    - >-
+      The jump is roughly what $p^6$ gives for those per-token accuracies, so the metric explains most of it.
+    - >-
+      The jump proves a qualitative change, since per-token accuracy cannot explain a 40-fold rise.
+    - >-
+      Exact match is the only valid metric for generation, so the per-token numbers should be ignored.
+    - >-
+      The jump shows a loss threshold, since every emergent ability is caused by crossing one.
+  correct: 0
+  explanation: >-
+    $0.47^6 \approx 0.011$ and $0.86^6 \approx 0.40$. An all-or-nothing metric over L tokens behaves like $p^L$
+    (Schaeffer, Miranda and Koyejo). Loss thresholds exist for some tasks (Du et al.), but this curve needs no new
+    mechanism.
+
+- id: q7
+  question: >-
+    An observational fit predicts a new model's GSM8K from principal components of its MMLU, ARC and HellaSwag
+    scores. The model comes from a family trained with far more math than any family in the fitting set. What risk
+    should the forecast state?
+  options:
+    - >-
+      None, because principal components capture every capability that correlates with general benchmarks.
+    - >-
+      Only seed noise, because the fit already averages over many model families.
+    - >-
+      Its components may not reflect the extra math data, so GSM8K can be far off the prediction.
+    - >-
+      The forecast is guaranteed to be too high, because math data always lowers general benchmark scores.
+  correct: 2
+  explanation: >-
+    Components built from general benchmarks miss capability that comes from a different data mix. In the lab's
+    held-out test, GSM8K errors were large for exactly such families (Yi far below its prediction, StarCoder2 far
+    above). Ruan et al. add family-specific compute efficiencies and a code-and-math component for this reason.
+
+- id: q8
+  question: >-
+    Before a large run, your ladder fit gives a 90% interval of ±0.02 nats, but fitting on all but the largest
+    rung misses that rung by 0.07 nats. The run is about to start. What belongs in the go/no-go record?
+  options:
+    - >-
+      The ±0.02 interval, since the bootstrap uses every ladder run and is the more complete estimate.
+    - >-
+      Nothing about the hold-out test, since it uses fewer runs and is therefore biased.
+    - >-
+      A failed check and a postponed run, since any disagreement between estimates forbids launching.
+    - >-
+      The hold-out error as the real uncertainty, a widened interval, and the launch reason.
+  correct: 3
+  explanation: >-
+    The bootstrap covers resampling noise, not a wrong law; the held-out error at a similar extrapolation distance is
+    the honest uncertainty. A failed check does not forbid the run, but the record must state it, widen the interval
+    and give the reason for launching.
+
+- id: q9
+  question: >-
+    At 30% of a monitored run, validation loss is 0.09 nats above the band's upper edge and training loss is slightly
+    below the predicted curve. The pre-registered rule is "stop above edge + 0.02". What should happen?
+  options:
+    - >-
+      Stop and check data accounting first: this pattern points to too little distinct data.
+    - >-
+      Continue, since training loss is on track and validation loss often recovers after the learning rate decays.
+    - >-
+      Raise the tolerance to 0.10 and continue, since the band was clearly too narrow for this run.
+    - >-
+      Restart from step 0 with a lower learning rate, since the gap is caused by an unstable optimizer.
+  correct: 0
+  explanation: >-
+    The rule was set before the run; changing it now defeats its purpose. Training loss below prediction with held-out
+    loss above it is the signature of a loader reading too little data (the lab's planted bug) or a mixture error;
+    check the data accounting, then resume from a good checkpoint.
+
+- id: q10
+  question: >-
+    Your ladder used AdamW, while the final Recipe-R run will use Muon with a different learning rate. The ladder fit
+    is excellent and passes its hold-out test. Can you pre-register its prediction for the Recipe-R run?
+  options:
+    - >-
+      Yes, since the fit passed its hold-out test and the optimizer only changes the speed of training.
+    - >-
+      Yes, if you add a constant offset equal to the loss gap measured between the two optimizers on one size.
+    - >-
+      No: the ladder must use the run's exact recipe; rerun the rungs with Muon and check that its learning rate transfers.
+    - >-
+      No, since scaling laws are only valid for AdamW and cannot be fitted to Muon runs.
+  correct: 2
+  explanation: >-
+    A ladder predicts the run whose recipe it shares. An optimizer change can alter the exponents and the best learning
+    rate at each size, so one offset measured at one size is not enough. Rerun the ladder with Muon, with a transfer
+    check, then fit and pre-register.

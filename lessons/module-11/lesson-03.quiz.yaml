@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    Your ladder fit predicts the target's final loss with a 90% bootstrap interval of ±0.01 nats. Fitting on all but
+    the largest rung and predicting that rung gives an error of 0.06 nats. What should the pre-registration say?
+  options:
+    - >-
+      Keep ±0.01, since the bootstrap uses every run and the hold-out test discards one of them.
+    - >-
+      Report ±0.01 and mention the hold-out error only if the final run misses the interval.
+    - >-
+      Widen the interval to match the held-out error at a similar extrapolation distance.
+    - >-
+      Drop the largest rung from the ladder, since its error shows it is an outlier.
+  correct: 2
+  explanation: >-
+    The bootstrap covers resampling noise of the ladder runs, not a wrong functional form or a drifting recipe. The
+    error on a held-out rung at a comparable extrapolation distance is the honest uncertainty; an interval narrower
+    than it will miss for reasons the bootstrap cannot see.
+
+- id: q2
+  question: >-
+    A learning-rate sweep finds the best rate is 1e-2 at the smallest rung and 1e-3 at the largest, and every ladder
+    run used 3e-3. What does this mean for the planned extrapolation?
+  options:
+    - >-
+      The fit is biased, since each rung sits a different distance from its own best rate.
+    - >-
+      Nothing, because the fitted exponents absorb any constant learning-rate effect on the loss.
+    - >-
+      The target should use 1e-2, because the smallest rung is the most reliable measurement.
+    - >-
+      The ladder is fine as long as the target also uses 3e-3, since the recipe then matches.
+  correct: 0
+  explanation: >-
+    A moving optimum means the rungs are mis-tuned by different amounts, which bends the fitted curve (Porian et al.'s
+    tuning factor). Re-run the rungs at their own best rates, adopt µP, or fit a learning-rate rule such as DeepSeek
+    LLM's before trusting the extrapolation.
+
+- id: q3
+  question: >-
+    At 30% of a large run the validation loss is 0.08 nats above the pre-registered band's upper edge, while the
+    training loss is slightly below the predicted curve. The rule says stop above edge + 0.02. What is the best
+    first diagnosis?
+  options:
+    - >-
+      The band is too pessimistic, since training loss is on track; widen it and continue.
+    - >-
+      The run is overfitting to repeated data or a broken loader; check data accounting and epochs before resuming.
+    - >-
+      The learning rate is too low, since a low rate lowers training loss faster than validation loss.
+    - >-
+      The validation set has drifted, since held-out loss cannot rise while training loss falls.
+  correct: 1
+  explanation: >-
+    Falling training loss with rising held-out loss is the signature of the model seeing too little distinct data
+    (a loader reading one shard, a mixture bug, too many epochs), which is the planted bug of the lab. Stop as the
+    rule says, check the data accounting, and resume from a good checkpoint.
+
+- id: q4
+  question: >-
+    A colleague writes the scaling prediction for a run after its first 5% of steps "to include the warm-up
+    behaviour", and stores it in a file without a timestamp. Why is this a problem even if the colleague is honest?
+  options:
+    - >-
+      Warm-up behaviour cannot be predicted at all, so including it adds noise without changing the prediction.
+    - >-
+      Predictions written during a run are always less accurate than those written before it.
+    - >-
+      Only the final loss matters, so the early curve points are irrelevant either way.
+    - >-
+      Early points of the run can shape the prediction, and nothing shows when it was written or that it was unchanged.
+  correct: 3
+  explanation: >-
+    Seeing part of the curve can steer the fit and the interval without anyone intending it, and an unhashed,
+    untimed file cannot show what was predicted before the evidence existed. The course's record is hashed,
+    timestamped, write-once, and checked against the run's first log line.

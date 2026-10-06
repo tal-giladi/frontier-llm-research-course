@@ -373,7 +373,42 @@ for src, n in [('web', 20000), ('wiki', 4000), ('math', 8000)]:
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10}
+P11 = [
+    md("""
+## P11 — Module 11: iso-FLOP ladder and de-risking (T4 variants, about 2 hours)
+
+The vocabulary-1,024 retokenization of Data-v0 is prepared first (the CPU-sized rungs need it, lesson 11.1).
+The main-path ladder (vocabulary 32,768, ~20 H100-hours) stays PROJECTED.
+"""),
+    code("""
+O11 = f'{PILOT_DIR}/p11'; os.makedirs(O11, exist_ok=True)
+!python -m frontierlab.data.prepare --docs 20000 --vocab 1024 --out labs/common/data/m11-v1024 2>&1 | tail -2
+!python labs/module-11/lesson-01/ladder_lab.py isoflop --variant t4 2>&1 | tee "$O11/11-1-isoflop.txt" | tail -25
+for step in ['transfer', 'predict', 'run', 'check']:
+    !python labs/module-11/lesson-03/derisk_lab.py {step} --variant t4 2>&1 | tee "$O11/11-3-{step}.txt" | tail -15
+!cp -r runs/m11 "$O11/runs-m11"
+"""),
+]
+
+P12 = [
+    md("""
+## P12 — Module 12: RL loop on Qwen3-0.6B-Base (scaled pilot, about 3 hours on an A100)
+
+Smoke tests first, then 2 arms (group-normalised vs unscaled advantages) x 2 seeds x 100 steps at 256 new
+tokens. The Qwen3-1.7B-Base cost is projected from the measured s/step (inbox module-12 section 6).
+"""),
+    code("""
+O12 = f'{PILOT_DIR}/p12'; os.makedirs(O12, exist_ok=True)
+!python -m frontierlab.posttrain.hf --smoke --run runs/m12/hf-smoke --steps 2 2>&1 | tail -3
+for scale in ['group', 'none']:
+    for seed in [0, 1]:
+        !python -m frontierlab.posttrain.hf --run runs/m12/pilot/{scale}-s{seed} --model Qwen/Qwen3-0.6B-Base --revision da87bfb608c14b7cf20ba1ce41287e8de496c0cd --max-new 256 --scale {scale} --seed {seed} --steps 100 2>&1 | tail -5
+!nvidia-smi --query-gpu=name,memory.used --format=csv | tee "$O12/gpu.txt"
+!cp -r runs/m12 "$O12/runs-m12"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12}
 
 
 def build():

@@ -1,0 +1,72 @@
+- id: q1
+  question: >-
+    You sample 8 responses per problem and 3 are correct. A teammate reports pass@4 for that problem as
+    1 - (5/8)^4 = 0.85. What is the unbiased value and why does it differ?
+  options:
+    - >-
+      0.85, because sampling with replacement from the 8 responses is exactly what pass@k measures.
+    - >-
+      0.93, from 1 - C(5,4)/C(8,4); the shortcut treats the 4 draws as independent with replacement.
+    - >-
+      0.50, because pass@k from 8 samples can only be estimated for k up to n divided by two.
+    - >-
+      0.38, because pass@4 is the pass@1 of 3/8 and k only changes the variance of the estimate.
+  correct: 1
+  explanation: >-
+    C(5,4)/C(8,4) = 5/70, so pass@4 = 1 - 0.071 = 0.929. The binomial ratio counts subsets of the
+    samples actually drawn; 1 - (1 - c/n)^k is biased low.
+
+- id: q2
+  question: >-
+    After an RL stage, Eval v2's instruction component "if_strict" has paired interval [-0.015, +0.006]
+    with a guard of 0.02. Your manager asks whether instruction following "got worse". What do you answer?
+  options:
+    - >-
+      Yes, because the mean difference is negative, which is what "got worse" means here.
+    - >-
+      We cannot say anything at all, because the paired interval contains zero.
+    - >-
+      It held: a loss beyond the 0.02 guard is ruled out, though a smaller one is possible.
+    - >-
+      It improved, because the interval's upper bound is above zero.
+  correct: 2
+  explanation: >-
+    The rule asks whether a loss beyond the pre-stated guard is ruled out; the lower bound -0.015 is
+    above -0.02, so it held. That is a bounded statement, not a claim that nothing changed.
+
+- id: q3
+  question: >-
+    A model answers an IFEval prompt "Respond in all lowercase and wrap the answer in double quotes" with
+    a first line "Sure!" followed by a correctly quoted lowercase answer. How is it scored?
+  options:
+    - >-
+      Fails strict (the first line is not lowercase inside quotes) but passes loose, which removes the first line.
+    - >-
+      Passes strict, because IFEval checks only the last line of every response for format instructions.
+    - >-
+      Fails both, because loose scoring only removes markdown asterisks, not whole lines.
+    - >-
+      Passes both, because the instructions are judged on the content of the answer, not its form.
+  correct: 0
+  explanation: >-
+    Strict checks the response as is. Loose passes if any of 8 variants passes, including the response
+    with its first line removed, which is exactly the case of a chatty preamble.
+
+- id: q4
+  question: >-
+    You compare an RL checkpoint with its SFT start. The SFT result was scored with a 384-token budget
+    at temperature 1.0; the RL result with 512 tokens at temperature 0.7. The suite refuses to compare.
+    Why is that the right behaviour?
+  options:
+    - >-
+      Because a longer budget always raises scores, so the comparison would favour the RL checkpoint.
+    - >-
+      Because temperature only affects the task components, and the retention components would be invalid.
+    - >-
+      Because the bootstrap needs equal numbers of items, and changing the budget changes the item count.
+    - >-
+      Because items pair only under identical pins; the difference would mix stage and evaluation effects.
+  correct: 3
+  explanation: >-
+    Budget and temperature change scores by themselves, in either direction. Paired comparison
+    attributes the difference to the checkpoint only when everything else about the evaluation is fixed.

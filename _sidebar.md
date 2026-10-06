@@ -75,3 +75,15 @@
   - [46 · Continued training and forgetting](lessons/module-10/lesson-05.md)
   - [47 · Multilingual and code data](lessons/module-10/lesson-06.md)
   - [Module 10 quiz](assessments/module-10-quiz.md)
+- **Module 11 — What will the big run do?**
+  - [48 · Compute-optimal and over-trained regimes](lessons/module-11/lesson-01.md)
+  - [49 · Predicting downstream capability](lessons/module-11/lesson-02.md)
+  - [50 · De-risking a run](lessons/module-11/lesson-03.md)
+  - [Module 11 quiz](assessments/module-11-quiz.md)
+- Stage D — Post-training questions
+- **Module 12 — Post-training foundations**
+  - [51 · Rewards](lessons/module-12/lesson-01.md)
+  - [52 · Policy-gradient estimators for LLMs](lessons/module-12/lesson-02.md)
+  - [53 · Details that change results](lessons/module-12/lesson-03.md)
+  - [54 · Eval Suite v2](lessons/module-12/lesson-04.md)
+  - [Module 12 quiz](assessments/module-12-quiz.md)

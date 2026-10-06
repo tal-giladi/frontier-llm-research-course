@@ -1,0 +1,17 @@
+{
+  "name": "recipe-r-example",
+  "note": "The build's example Recipe-R for the free-CPU variant. Copy it and replace every choice and evidence string with your own Module 6-10 decisions.",
+  "architecture": {"choice": "Baseline-0 block (GQA, RoPE, QK-norm, SwiGLU, tied embeddings) at the ladder sizes",
+                   "evidence": "default, no Stage B change adopted in the example; replace with your Module 6 decision and its run card"},
+  "optimizer": {"choice": "Muon (match_rms update scaling) on hidden matrices, AdamW on embeddings and gains, peak lr 3e-3",
+                "evidence": "Module 7 decision; the build's CPU check (m11-r3, 300 steps): Muon 4.612 vs AdamW 5.216 validation loss, one seed, not a comparison"},
+  "precision": {"choice": "fp32 on CPU; bf16 autocast on the main path",
+                "evidence": "Module 8 decision; FP8 only if your 08.2 measurement passed its loss-gap rule"},
+  "data": {"choice": "Data-v0 retokenized at vocabulary 1,024 (CPU); Data-v1 at vocabulary 32,768 on the main path",
+           "evidence": "Module 10 project decision. The CPU variant cannot combine the Module 7 and Module 10 wrappers in one run until the shared loop changes land (curriculum/inbox/module-11-shared-changes.md)"},
+  "schedule": {"choice": "linear warmup 5% of the run, cosine to 0.1x over each run's own length",
+               "evidence": "11.1: every ladder run gets its own schedule length (Hoffmann et al. appendix B)"},
+  "via": "optim",
+  "args": ["--optimizer", "muon", "--muon-adjust", "match_rms"],
+  "lr": 3e-3
+}

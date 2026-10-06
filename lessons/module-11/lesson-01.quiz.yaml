@@ -1,0 +1,92 @@
+- id: q1
+  question: >-
+    To save compute, a colleague builds a scaling ladder from one long cosine run per model size and reads the
+    "final" loss of each smaller token budget off intermediate checkpoints of that run. Which way does this bias
+    the fitted compute-optimal model size?
+  options:
+    - >-
+      No bias, because the loss at a given number of tokens does not depend on the learning-rate schedule.
+    - >-
+      Toward smaller models, because intermediate checkpoints of large models have seen too few tokens to count.
+    - >-
+      Toward larger models, because short budgets read mid-schedule never got their decay and look worse than they are.
+    - >-
+      Toward smaller models, because the higher learning rate at intermediate checkpoints overstates their quality.
+  correct: 2
+  explanation: >-
+    A checkpoint in the middle of a cosine cycle meant for more tokens has not decayed its learning rate, so its loss
+    is higher than a run of that length would reach. Small budgets are hit hardest, which makes "more parameters,
+    fewer tokens" look better (Hoffmann et al. appendix B; Porian et al.'s schedule factor). WSD cooldowns avoid it.
+
+- id: q2
+  question: >-
+    Your fitted law has $\alpha = \beta$. Leadership quadruples the training budget of the next run. Under the
+    compute-optimal allocation, how should parameters and tokens change?
+  options:
+    - Double both the parameter count and the number of training tokens.
+    - Quadruple the parameters and keep the tokens, since compute buys capacity first.
+    - Quadruple the tokens and keep the parameters, since data is the cheaper lever.
+    - Multiply the parameters by about 2.8 and the tokens by about 1.4, as Kaplan et al. found.
+  correct: 0
+  explanation: >-
+    With $\alpha = \beta$ the exponents $\beta/(\alpha+\beta)$ and $\alpha/(\alpha+\beta)$ are both 0.5, so
+    $N_{\text{opt}}$ and $D_{\text{opt}}$ each grow as $C^{0.5}$: a 4× budget doubles both. The 0.73/0.27 split came
+    from Kaplan's counting and training choices, which later work showed explain most of the gap.
+
+- id: q3
+  question: >-
+    A 3B model is planned for a product expected to generate about $10^{14}$ tokens over its life. A scaling-law
+    fit says a compute-optimal run at the same training budget would use a 6B model. What is the soundest
+    recommendation?
+  options:
+    - >-
+      Train the 6B model, since any deviation from the compute-optimal size wastes training compute.
+    - >-
+      Size the model on training plus serving FLOPs, which favours a smaller model trained on more tokens.
+    - >-
+      Train the 6B model on fewer tokens, since inference cost depends on the training tokens, not the size.
+    - >-
+      Keep the 3B model but stop at the Chinchilla token count, since extra tokens give no measurable gain.
+  correct: 1
+  explanation: >-
+    Every served token costs about $2N$ FLOPs, so with heavy inference demand the total-cost optimum moves to a
+    smaller model trained past Chinchilla's ratio (Sardana et al.). Over-trained small models keep improving with
+    tokens (Llama 3's 8B on 15T; Gadre et al.), so the extra training is not wasted.
+
+- id: q4
+  question: >-
+    Your best math source has 50B unique tokens and the recipe wants 200B math tokens over the run. A reviewer asks
+    what the repetition costs. Which answer matches the data-constrained scaling results?
+  options:
+    - >-
+      Repetition is never worth it: each repeated token is worth nothing, so the run gets only 50B tokens of value.
+    - >-
+      Repetition is free at any count, so 40 or 100 epochs of the source would be just as good as fresh data.
+    - >-
+      The cost depends on the model size alone, so it cannot be estimated without training the final model.
+    - >-
+      Four epochs are worth about 93% of fresh tokens, so the plan is reasonable; tens of epochs would not be.
+  correct: 3
+  explanation: >-
+    With $R = 3$ repeats and $R^* \approx 15.4$, $D' = U(1 + 15.4(1 - e^{-3/15.4})) \approx 3.73U$, about 93% of 4U
+    fresh tokens; Muennighoff et al. report negligible loss change up to 4 epochs, sharply diminishing returns after
+    about 16, and none at 40.
+
+- id: q5
+  question: >-
+    A ladder of 5M–80M-parameter models gives an allocation exponent of 0.76 when N counts non-embedding parameters
+    only. A teammate proposes growing the next model much faster than its data. What should you check first?
+  options:
+    - >-
+      Whether the batch size was fixed across sizes, since batch size is the only factor known to move the exponent.
+    - >-
+      Refit with total parameters and the exact FLOPs including the head, since small-scale counting inflates it.
+    - >-
+      Whether the ladder used enough seeds, since seed noise is the main source of a high allocation exponent.
+    - >-
+      Nothing, since the exponent was measured on real runs and so applies at every scale.
+  correct: 1
+  explanation: >-
+    At small sizes the embedding and output head are a large share of parameters and FLOPs; ignoring them raises the
+    size exponent (Pearce and Song: about 0.78 vs 0.51 for Chinchilla's own law; Porian et al.: counting the head
+    takes Kaplan's reproduction from 0.86 to 0.70). Warmup and per-size tuning are the next things to check.

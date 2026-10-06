@@ -64,6 +64,41 @@ re-checked when its module is written and pilot-tested.
 | SWE-bench/SWE-smith, `data/train-00002-of-00011.parquet` | `ea6d7173829c7ec8fa16c22055699ff2e9188091` | MIT | 10.6 |
 | Qwen/Qwen3-0.6B (generator, tokenizer) | `c1899de289a04d12100db370d81485cdf75e47ca` | Apache-2.0 | 10.3, 10.6 |
 
+## Module 11 data (checked 2026-10-06)
+
+| Item | Revision | Licence | Used in |
+|---|---|---|---|
+| Data-v0 retokenized at vocabulary 1,024 (`python -m frontierlab.data.prepare --docs 20000 --vocab 1024 --out labs/common/data/m11-v1024`) | same FineWeb-Edu revision as Data-v0 (`87f09149ef4734204d70ed1d046ddc9ca3f2b8f9`); tokenizer sha256 `70c3ce2f1974cb2fee4450992e90cbc1565fdde33f22c1a089a8458b0d08ce77` | ODC-By 1.0 | 11.1–11.3, project (CPU) |
+| ryoungj/ObsScaling `eval_results/base_llm_benchmark_eval.csv` | commit `4d6e1e43fd2635d04654aa77d1df9d5266ea0382`, sha256 `511996815735a4c46251dc585dcc525e370d148201f86561e6f927f9df2d0db8` | Apache-2.0 | 11.2 |
+| Lesson | Command | PROJECTED cost (H100, 30% MFU assumed) |
+|---|---|---|
+| 11.1 | `python labs/module-11/lesson-01/ladder_lab.py isoflop --variant main` (14 runs; `--print` lists them) | 7.0e18 FLOPs, 6.6 GPU-hours |
+| 11.1 | `python labs/module-11/lesson-01/ladder_lab.py repeat --variant main` (8 runs of pilot-30m, 8,000 steps × 32 × 1,024) | 8 × 2.6e8 tokens × 3.21e8 FLOPs/token = 6.7e17, 0.6 GPU-hours |
+| 11.2 | `python labs/module-11/lesson-02/downstream_lab.py ladder --variant main --device cuda --items 1000` | evaluation only, minutes |
+| 11.3 | `python labs/module-11/lesson-03/derisk_lab.py transfer --variant main`, then `predict`, `run`, `check`, `bad` | sweep 4 runs at 3e17 (1.1 GPU-hours); target 3e18 (2.8 GPU-hours); bad run half of that (1.4) |
+| project | `python labs/module-11/project/run_project.py ladder --variant main --recipe <recipe>`, then `predict`, `run`, `check` | ladder 1.45e19 FLOPs (13.6 GPU-hours); target m11-350m at 60 tokens/parameter, 2.16e10 tokens, 5.0e19 FLOPs (46.9 GPU-hours) |
+
+## Stage D base model and Module 12 data and models (checked 2026-10-06)
+
+| Item | Revision | Licence | Used in |
+|---|---|---|---|
+| **Qwen/Qwen3-1.7B-Base (Stage D base model)** | `ea980cb0a6c2ae4b936e82123acc929f1cec04c1` | Apache-2.0 | Modules 12–16 main path (1,720,574,976 parameters, BF16) |
+| Qwen/Qwen3-0.6B-Base (T4 variant; 12.1 proxy reward models) | `da87bfb608c14b7cf20ba1ce41287e8de496c0cd` | Apache-2.0 | 12.1–12.4 |
+| Skywork/Skywork-Reward-V2-Qwen3-8B (12.1 gold reward) | `6f19fdefb933293d4898bdb59a96f7223d998659` | Apache-2.0 | 12.1 main path |
+| Skywork/Skywork-Reward-V2-Qwen3-1.7B (12.1 gold reward, T4) | `e51ea3e08fb81326c3b812a7ff0cb9cee83e59cc` | Apache-2.0 | 12.1 T4 |
+| openai/gsm8k `main` (train 2,306,545 B, test 419,088 B; SHA-256 = LFS oids in `posttrain/gsm8k.py`) | `740312add88f781978c0658806c59bc2815b9866` | MIT | 12.2–12.4 main path |
+| google/IFEval `ifeval_input_data.jsonl` (207,111 B, 541 prompts, SHA-256 `6a85310c…88f2`) | `966cd89545d6b6acfd7638bc708b98261ca58e84` | Apache-2.0 | 12.4 (Eval v2) |
+| HuggingFaceH4/ultrafeedback_binarized (prompts only) | `3949bf5f8c17c394422ccfab0c31ea9c20bdeb85` | MIT | 12.1 main path |
+| Lesson | Command | PROJECTED cost | Pilot question |
+|---|---|---|---|
+| 12.1 | `python labs/module-12/lesson-01/rm_main.py --out runs/m12/l121-main` (A100 pilot: add `--gold 1.7b` if the 8B gold model does not fit) | 2–3 GPU-h (generation dominates: 1.6e7 tokens) | does the smallest proxy over-optimise within n = 64? measured generation tok/s |
+| 12.2 | `python labs/module-12/lesson-02/estimator_lab.py --variant main --print` → 8 runs of `python -m frontierlab.posttrain.hf ... --steps 100` | 8–12 GPU-h (30–50 s/step) | measured s/step and memory for Qwen3-1.7B-Base at P=32, G=8, 512 new tokens; do estimators separate beyond seed noise? |
+| 12.3 | `python labs/module-12/lesson-03/details_lab.py --variant main --print` → 12 runs | 12–18 GPU-h | does len_wrong grow under seq_mean_token_mean at 256+ tokens? truncation rates per arm |
+| 12.4 | `python labs/module-12/lesson-04/eval_lab.py --variant main --print` (2 RL runs + `eval_main.py`) | 5–7 GPU-h | Eval v2 cost per checkpoint; IFEval-subset agreement with `lm_eval --tasks ifeval` on the 215 shared prompts |
+| project | 2 arms × 2 seeds × 200 steps of `frontierlab.posttrain.hf` + 5 × `eval_main.py` | 9–14 GPU-h | — |
+
+Stage D alternative for contamination-sensitive studies: allenai/OLMo-2-0425-1B (`a1847dff35000b4271fa70afc5db10fd29fedbdf`, Apache-2.0, open data).
+
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
@@ -77,3 +112,9 @@ re-checked when its module is written and pilot-tested.
   `checkpoint.enable/interval`, `profiler.enable_profiling/profile_freq`, `metrics.log_freq`) are in
   `torchtitan/config/configs.py`, `components/checkpointer/base.py`, `tools/profiler.py`. `tps` in the metrics line is per
   device. PyTorch 2.14.1 ships `ScheduleDualPipeV` and `ScheduleZBVZeroBubble` in `torch.distributed.pipelining`.
+- Module 12: TRL v1.14.1 `GRPOConfig`: `loss_type` default `"dapo"`, `scale_rewards` `group|batch|none`,
+`beta` default 0.0 (k3 per token, times the ratio when `use_bias_correction_kl=True`),
+`vllm_importance_sampling_correction=True` with `vllm_importance_sampling_clip_max=3.0`. verl v0.9.1:
+`kl_loss_type` `kl|abs|mse|low_var_kl|full` (+ suffix = k2 gradient), `loss_agg_mode`
+`token-mean|token-sum|seq-mean-token-sum|seq-mean-token-mean|seq-mean-token-sum-norm`,
+`algorithm.rollout_correction.rollout_is` / `rollout_is_threshold` (2.0).

@@ -1,0 +1,78 @@
+- id: q1
+  question: >-
+    A GRPO run that averages each response's token losses before averaging over responses shows the
+    mean length of wrong answers rising steadily while accuracy plateaus. Which change targets the cause?
+  options:
+    - >-
+      Raise the KL coefficient, because longer wrong answers mean the policy is drifting from the reference.
+    - >-
+      Add an entropy bonus, because longer answers are a sign that the policy's exploration has collapsed.
+    - >-
+      Normalise by a constant or by total tokens, so a long wrong answer is not penalised less per token.
+    - >-
+      Filter truncated responses from the loss, because overlong answers are the source of the length growth.
+  correct: 2
+  explanation: >-
+    Under per-sequence normalisation a response's total weight is fixed, so each token of a long wrong
+    answer gets a smaller negative push (Dr. GRPO's length bias). Token-level or constant normalisation
+    removes the discount; the other changes do not touch the weights.
+
+- id: q2
+  question: >-
+    You add a test: on-policy, on the first minibatch of each step, every token's importance ratio must
+    be exactly 1. It fails with ratios between 0.6 and 1.7. Which bug fits best?
+  options:
+    - >-
+      The old log-probabilities came from other weights than the sampling policy, e.g. the reference.
+    - >-
+      The clip range is too narrow, so the ratio is being forced away from exactly 1 by the clipping step.
+    - >-
+      The advantages were standardised by the group std, which rescales the ratio of every token.
+    - >-
+      The response mask includes EOS, which adds one token whose ratio is not defined.
+  correct: 0
+  explanation: >-
+    Before any update, old and current log-probabilities come from the same weights on the same tokens, so
+    the ratio is 1. Ratios far from 1 mean old_logp came from other weights, tokens, temperature or
+    precision. Clipping and advantages do not change the ratio itself.
+
+- id: q3
+  question: >-
+    Your asynchronous rollout workers generate with weights up to 4 updates old. The trainer recomputes
+    old log-probabilities with the current weights before each update to "save memory". What is the effect?
+  options:
+    - >-
+      None, because PPO clipping bounds every update whatever the old log-probabilities were.
+    - >-
+      Every ratio starts at 1, so the correction for the stale behaviour policy silently disappears.
+    - >-
+      Ratios become very large, so almost every token is clipped and learning stops after a few steps.
+    - >-
+      The KL to the reference is now measured against the stale policy instead of the reference.
+  correct: 1
+  explanation: >-
+    Recomputing with current weights makes the batch look on-policy: the ratio no longer reweights for
+    the behaviour policy and clipping no longer limits the move away from it. Store the behaviour
+    policy's log-probabilities with the rollout.
+
+- id: q4
+  question: >-
+    Rollouts come from an inference engine in bfloat16; the trainer runs in float32. The mean absolute
+    log-probability gap between them is 0.02 nats per token, with rare tokens far larger. What is a
+    sound response?
+  options:
+    - >-
+      Ignore it, because a gap this small cannot change the gradient of a clipped objective.
+    - >-
+      Use the engine's log-probabilities as old_logp, because they are the probabilities the tokens were
+      actually sampled with.
+    - >-
+      Switch the trainer to bfloat16 so that both sides round identically and the gap disappears.
+    - >-
+      Weight each token by min(trainer old prob / sampler prob, C) and log the gap; also consider FP32
+      logits on both sides.
+  correct: 3
+  explanation: >-
+    The mismatch makes on-policy training silently off-policy; truncated importance sampling corrects it
+    with bounded variance (Yao et al.) and FP32 logits shrink it (ScaleRL). Matching dtypes does not make
+    kernels identical, and the engine's numbers are not the trainer's policy.

@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    A teammate adds a KL term to the GRPO loss using the k1 estimator, log pi - log pi_ref per token,
+    because "k1 is the unbiased one". After training, the KL to the reference is the same as with no
+    KL term at all. What explains it?
+  options:
+    - >-
+      The coefficient was too small; any unbiased estimator starts to regularise once beta is large enough.
+    - >-
+      The gradient of k1 is the score function, which is zero in expectation, so it adds only noise.
+    - >-
+      k1 is unbiased only in the reward; in the loss it becomes the forward KL, which is often similar.
+    - >-
+      The reference model was in training mode, so its log-probabilities moved along with the policy.
+  correct: 1
+  explanation: >-
+    The gradient of k1 is the gradient of log pi, and E over pi of that is zero. Unbiasedness of the
+    value does not make the gradient right; k2 in the loss or k1 in the reward give the reverse-KL gradient.
+
+- id: q2
+  question: >-
+    Your RL batch has 64 prompts with 8 samples each and a binary verifier. Halfway through training the
+    log shows a zero-variance fraction of 0.55, almost all of it all-correct groups. What does that mean
+    for the run?
+  options:
+    - >-
+      The KL term is too strong and is preventing the policy from producing varied answers.
+    - >-
+      The verifier has started to fail, because a healthy run keeps the zero-variance fraction roughly constant.
+    - >-
+      Over half the prompts give no policy gradient: the effective batch is ~29 and the prompts are too easy.
+    - >-
+      The std normalisation divides by zero for those groups, so their advantages are now very large.
+  correct: 2
+  explanation: >-
+    All-equal groups have zero advantage under any group baseline, and the epsilon in the std keeps them
+    at zero, not huge. They still cost rollouts; dynamic sampling, zero-variance filtering or dropping
+    easy prompts (DAPO, ScaleRL) keep the effective batch up.
+
+- id: q3
+  question: >-
+    You switch from GRPO's advantage (r - mean) / std to RLOO's leave-one-out advantage on the same runs.
+    With binary rewards and G = 8, what changes in the expected policy gradient?
+  options:
+    - >-
+      Nothing in direction for any prompt, because both are just the group-mean advantage times one constant.
+    - >-
+      Only the variance changes, because GRPO and RLOO are both unbiased estimators of the same gradient.
+    - >-
+      The direction flips for prompts with pass rate above one half, because RLOO excludes the response itself.
+    - >-
+      The weight of each prompt changes, because GRPO divides each group by its own std and RLOO does not.
+  correct: 3
+  explanation: >-
+    RLOO is G/(G-1) times the group-mean advantage for every prompt, an unbiased constant rescaling. GRPO
+    divides each group by its own std, which up-weights very easy and very hard prompts (Dr. GRPO's
+    difficulty bias), so the mix of prompts in the gradient changes.
+
+- id: q4
+  question: >-
+    A colleague puts the k3 estimator in the loss (as GRPO does) and reports that it "minimises
+    KL(pi || pi_ref) with lower variance". Which correction is accurate?
+  options:
+    - >-
+      Its expected gradient is that of the forward KL(pi_ref || pi): similar near the reference, but another objective.
+    - >-
+      Its expected gradient is zero, like k1, so it gives no regularisation in practice at all.
+    - >-
+      Its expected gradient is exactly that of KL(pi || pi_ref), because k3 is an unbiased estimator of it.
+    - >-
+      It minimises KL(pi || pi_ref) only when the KL term is placed in the reward rather than in the loss.
+  correct: 0
+  explanation: >-
+    The gradient of k3 is (1 - pi_ref/pi) times grad log pi; its expectation under pi is minus
+    E over pi_ref of grad log pi, the gradient of the forward KL. The lab checks this by enumeration;
+    verl's k3+ variant differentiates k2 instead to get the reverse-KL gradient.

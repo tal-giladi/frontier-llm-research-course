@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    A launch review asks for a forecast of the next model's accuracy on a 4-way multiple-choice benchmark. Your
+    ladder's accuracies sit between 0.26 and 0.31. What is the most defensible way to produce the forecast?
+  options:
+    - >-
+      Fit accuracy as a straight line in log-compute through the ladder points and read off the target compute.
+    - >-
+      Report that no forecast is possible, since accuracy near chance cannot be related to scale.
+    - >-
+      Predict the correct answer's NLL from scale first, then map it to accuracy with a sigmoid fitted where it varies.
+    - >-
+      Average the ladder's accuracies and add the improvement seen between the two largest rungs.
+  correct: 2
+  explanation: >-
+    Near chance, accuracy carries almost no information about scale, but the NLL of the correct answer still moves
+    smoothly. The two-step method (Llama 3, OLMo ladder) predicts that NLL and maps it to accuracy with a separately
+    fitted sigmoid; the step-2 fit needs points where accuracy actually varies (for example from larger public models).
+
+- id: q2
+  question: >-
+    Across five model sizes the per-token accuracy on 8-token answers rises steadily from 0.55 to 0.85, while exact
+    match stays near zero for four sizes and then jumps to 0.27. A colleague calls exact match an emergent ability.
+    What does the arithmetic say?
+  options:
+    - >-
+      The jump is about what $p^8$ gives for those per-token accuracies, so the metric can explain it.
+    - >-
+      The jump proves a new mechanism, because per-token accuracy and exact match measure unrelated things.
+    - >-
+      The jump is noise, because exact match is always proportional to per-token accuracy.
+    - >-
+      The jump means the per-token metric is broken, because smooth metrics hide real capabilities.
+  correct: 0
+  explanation: >-
+    $0.55^8 \approx 0.008$ and $0.85^8 \approx 0.27$: an all-or-nothing metric over L tokens behaves like $p^L$, near
+    zero and then steep (Schaeffer, Miranda and Koyejo). That does not rule out real thresholds (Du et al.), but this
+    curve needs no new mechanism to explain it.
+
+- id: q3
+  question: >-
+    You fit an observational law on public models: GSM8K as a sigmoid of principal components computed from all
+    eight benchmarks, GSM8K included. Its held-out error is remarkably small. What is wrong?
+  options:
+    - >-
+      Nothing, because principal components are unsupervised and cannot leak information about any benchmark.
+    - >-
+      The sigmoid has too few parameters, so the small error must come from overfitting the held-out models.
+    - >-
+      Public models are trained on the benchmarks, so held-out errors are always too small to trust.
+    - >-
+      The target is part of its own predictors; compute the components from the other benchmarks only.
+  correct: 3
+  explanation: >-
+    PCA is unsupervised, but if GSM8K is one of the inputs, a held-out model's own GSM8K score shapes its components,
+    so the fit partly reads the answer. Build the components from the other benchmarks, standardised on the
+    training models only, as the lab does.
+
+- id: q4
+  question: >-
+    Two candidate models trained with the same compute come from families with very different data: one code-heavy,
+    one web-heavy. A compute-only scaling fit predicts the same MMLU for both. Which tool is designed for this case?
+  options:
+    - >-
+      A larger ladder of the web-heavy family, since compute fully determines capability within any recipe.
+    - >-
+      An observational fit that places models by their measured capabilities, with family-specific compute efficiency.
+    - >-
+      Exact-match scoring on MMLU, since a stricter metric separates families with different data.
+    - >-
+      Averaging the two families' scaling curves, since family differences cancel at equal compute.
+  correct: 1
+  explanation: >-
+    Ruan et al. map each model's benchmark scores to a low-dimensional capability vector and let each family convert
+    log-compute into capabilities at its own rate, which is what differs between code-heavy and web-heavy recipes.
+    In the lab, compute alone gives 0.24 mean error on held-out MMLU against 0.05 from components of other benchmarks.

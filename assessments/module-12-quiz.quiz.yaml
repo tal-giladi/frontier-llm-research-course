@@ -1,0 +1,194 @@
+- id: q1
+  question: >-
+    Before an RLVR run on GSM8K you can afford one check of the reward. The verifier extracts the last
+    number in the response. Which check gives the most information about whether RL will be able to game it?
+  options:
+    - >-
+      Its agreement with the gold answers on the reference solutions in the training split.
+    - >-
+      A probe set of hand-made responses that try its loopholes, scored against a strict specification.
+    - >-
+      Its accuracy on 200 samples from the base model, compared with a human reading of the same samples.
+    - >-
+      Its running time per response, since slow verifiers limit how many rollouts can be scored.
+  correct: 1
+  explanation: >-
+    Reference solutions and current samples only cover what the policy already writes; a loophole can
+    be unvisited today and found by RL later. A probe set shows what the verifier accepts that the
+    specification does not, before the policy finds it.
+
+- id: q2
+  question: >-
+    Two proxy reward models are trained on 500 and on 5,000 preference pairs. Best-of-n against the small
+    one raises gold reward up to n = 64 and then lowers it; against the large one gold keeps rising to
+    n = 1,024. You must optimise against the small one with RL. What does the evidence suggest?
+  options:
+    - >-
+      Allow about best-of-64's KL against it (about 3.2 nats), or buy more preference data first.
+    - >-
+      Allow as much KL as with the large model, because RL over-optimises less than best-of-n does.
+    - >-
+      Add a KL penalty and keep optimising, because a KL penalty moves the gold-reward peak to a larger KL.
+    - >-
+      Stop using learned rewards, because any reward model that over-optimises is unusable for RL.
+  correct: 0
+  explanation: >-
+    The small model's gold reward peaks near KL = log 64 - 63/64, about 3.2 nats, so that is its
+    usable budget; more data moves the peak out. Gao et al. found a KL penalty acts like early stopping,
+    not a better frontier.
+
+- id: q3
+  question: >-
+    Your GRPO batch has 32 prompts of 8 samples. The current pass rate is about 0.85 on most prompts.
+    Roughly what fraction of groups give no policy gradient, and what is a standard response?
+  options:
+    - >-
+      About 5%, so nothing needs to change while the pass rate stays below 0.9.
+    - >-
+      About 85%, so the learning rate should be raised to compensate for the smaller signal.
+    - >-
+      About 27%, mostly all-correct groups; filter them or drop prompts the policy has mastered.
+    - >-
+      About 50%, because half of any group's advantages are negative and cancel the positive ones.
+  correct: 2
+  explanation: >-
+    A group is all-equal with probability 0.85^8 + 0.15^8, about 0.27. Those groups have zero advantage;
+    DAPO's dynamic sampling, ScaleRL's zero-variance filtering and no-positive-resampling keep the
+    effective batch up.
+
+- id: q4
+  question: >-
+    A paper's loss adds beta times the k3 estimator per token, differentiated directly, and its text says
+    the term "minimises the reverse KL to the reference with low variance". You are reproducing it.
+    What do you write in your notes?
+  options:
+    - >-
+      Correct as stated, since k3 is unbiased and always non-negative, the term follows the reverse KL.
+    - >-
+      Incorrect: the expected gradient of k3 in the loss is zero, so the term has no effect at all.
+    - >-
+      Correct, but only if the KL term is computed with the frozen reference model in evaluation mode.
+    - >-
+      Its expected gradient is the forward KL's; for the reverse KL use k2 in the loss or k1 in the reward.
+  correct: 3
+  explanation: >-
+    Differentiating k3 gives (1 - pi_ref/pi) grad log pi, whose expectation is the forward-KL
+    gradient. Unbiasedness concerns the value, not the gradient; k1 is the estimator whose loss
+    gradient is zero in expectation.
+
+- id: q5
+  question: >-
+    Responses in your RL run range from 200 to 6,000 tokens. You switch aggregation from GRPO's
+    per-response mean to DAPO's token mean. What happens to the weight of a 6,000-token wrong response
+    relative to a 200-token one in the same group?
+  options:
+    - >-
+      Nothing: both modes give every response the same total weight, only the per-token split differs.
+    - >-
+      Its total weight goes from equal to 30 times larger, since every token now counts the same.
+    - >-
+      Its total weight goes from 30 times larger to equal, since token mean divides by each length.
+    - >-
+      Its weight is unchanged, because a wrong response gets zero weight under either aggregation.
+  correct: 1
+  explanation: >-
+    Under the per-response mean each response carries the same total weight, so each long-response
+    token weighs 30 times less. Under the token mean every token weighs the same, so the long response's
+    total weight is 30 times larger.
+
+- id: q6
+  question: >-
+    You lower the generation budget to save rollout time. Truncation jumps to 40%. A colleague proposes
+    DAPO's overlong filtering (drop truncated responses from the loss) as the fix. What is the risk?
+  options:
+    - >-
+      Truncated responses carry the strongest learning signal, so filtering them stops learning entirely.
+    - >-
+      Filtering doubles the variance of the advantages, because each group std is computed on fewer samples.
+    - >-
+      Filtering changes the KL estimator from k3 to k1 for the remaining responses in the group.
+    - >-
+      It removes the false "long is wrong" signal, but also all pressure to fit the budget, and wastes 40% of rollouts.
+  correct: 3
+  explanation: >-
+    Filtering avoids punishing reasoning that was cut off, but gives no incentive to fit the budget, and
+    the truncated rollouts still cost compute. The soft overlong penalty or a larger budget address the
+    length itself; watch the truncation rate either way.
+
+- id: q7
+  question: >-
+    With 2 minibatches per step and no staleness, your log shows clip fraction 0.4 and ratio_max 3.1
+    already at step 1. What is the most likely cause?
+  options:
+    - >-
+      The old log-probabilities are not those of the weights that sampled the batch.
+    - >-
+      The clip range is too small for a model of this size and should be widened.
+    - >-
+      Two minibatches are too many for one batch; with one the ratio would be larger.
+    - >-
+      The advantages are standardised by the group std, which inflates the ratio of rare tokens.
+  correct: 0
+  explanation: >-
+    On-policy, the first minibatch's ratio is exactly 1 and the second moves only by one small update.
+    Large ratios at step 1 mean old_logp came from other weights (the reference, a stale snapshot) or
+    another temperature or precision.
+
+- id: q8
+  question: >-
+    Your rollout engine runs in bfloat16 with its own kernels; the trainer runs in float32. You decide to
+    use truncated importance sampling. Which quantity goes in the numerator of the weight?
+  options:
+    - >-
+      The engine's probability of the token, since that is the distribution the token was drawn from.
+    - >-
+      The trainer's probability under the weights that sampled the batch.
+    - >-
+      The reference model's probability, since the weight corrects the drift away from the reference.
+    - >-
+      The current policy's probability after the update, since the weight should track the new policy.
+  correct: 1
+  explanation: >-
+    The weight min(pi_old,trainer / pi_sampler, C) corrects for the sampler being a different program
+    from the trainer with the same weights; the engine's probability is the denominator, and the PPO
+    ratio separately handles the move from old to current weights.
+
+- id: q9
+  question: >-
+    After an RL stage, Eval v2 shows pass@1 on the task up by 0.12 (interval [0.08, 0.16]) and pass@16
+    unchanged. A retention component's interval is [-0.03, +0.01] with a guard of 0.02. What is the
+    correct summary?
+  options:
+    - >-
+      The task improved and the stage passes, because the retention component's interval contains zero.
+    - >-
+      The stage made the model solve more problems, and retention regressed beyond the guard.
+    - >-
+      It sharpened sampling of already-reachable solutions, and retention regressed: the stage fails.
+    - >-
+      Nothing can be concluded, because pass@16 is unchanged and the intervals overlap zero.
+  correct: 2
+  explanation: >-
+    Higher pass@1 with unchanged pass@16 means the model picks its solvable problems' answers more
+    reliably, not that it solves new ones (Yue et al.'s pattern). The retention lower bound -0.03 is
+    below -0.02, so the rule says regressed: containing zero does not rule out a loss beyond the guard.
+
+- id: q10
+  question: >-
+    Your colleague's refactored loop passes training (reward rises slowly), but the detail test "a
+    response's advantage changes only when its own group's rewards change" fails. What is the most likely
+    bug?
+  options:
+    - >-
+      The group std is computed with ddof=0 instead of ddof=1, which rescales every group's advantages.
+    - >-
+      The KL term is placed in the reward, so it changes every response's advantage.
+    - >-
+      The leave-one-out baseline is used instead of the group mean.
+    - >-
+      The rewards were reshaped into groups in the wrong order, so a "group" mixes different prompts.
+  correct: 3
+  explanation: >-
+    A ddof change and LOO both stay within each group, and a KL penalty in the reward depends only on the
+    response itself. A reshape such as view(G, P) instead of view(P, G) builds baselines from other
+    prompts' rewards, which still lets reward rise slowly while adding noise.

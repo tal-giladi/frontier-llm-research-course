@@ -25,3 +25,7 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P9 — Module 9 torchtitan 8× H100, ring CP, pipelining | not piloted (single-GPU Colab) | | | |
 | P10 — Module 10 docmask, RegMix, micro-anneals, continued training (T4 variants) | not run | | | |
 | P10 — Module 10 10.2, 10.3 and project (~13 H100-h PROJECTED) | not piloted (budget) | | | |
+| P11 — Module 11 iso-FLOP ladder and de-risking (T4 variants) | not run | | | |
+| P11 — Module 11 main-path ladder and Recipe-R target (~67 H100-h PROJECTED) | not piloted (budget) | | | |
+| P12 — Module 12 RL loop on Qwen3-0.6B-Base, 2 arms x 2 seeds | not run | | | |
+| P12 — Module 12 main path on Qwen3-1.7B-Base (~36–54 GPU-h PROJECTED) | not piloted (budget) | | | |

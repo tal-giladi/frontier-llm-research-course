@@ -1,0 +1,97 @@
+- id: q1
+  question: >-
+    Your math RL run uses a verifier that takes the last number in the response as the answer. Training
+    reward climbs from 0.30 to 0.55. What should you do before calling it a gain?
+  options:
+    - >-
+      Nothing more, because a rising reward on a programmatic verifier cannot be gamed by the policy.
+    - >-
+      Rescore the final samples with a strict checker of the specification and probe the rule's loopholes.
+    - >-
+      Retrain the verifier as a learned reward model, since learned rewards are harder to exploit.
+    - >-
+      Lower the learning rate and rerun, since a fast reward increase is usually a sign of training instability.
+  correct: 1
+  explanation: >-
+    A verifier implements a specification and can accept wrong answers (a response listing several
+    numbers, ending in the right one). Only a stricter check and a probe set reveal whether the reward
+    gain is real; RL raises the reward of any verifier.
+
+- id: q2
+  question: >-
+    Two reward models have the same held-out pair accuracy (0.82). Model A has an expected calibration
+    error of 0.02, model B of 0.20, with B's predicted preference probabilities mostly near 0 or 1. You
+    will optimise a policy against one of them with best-of-n. Which is the better bet, and why?
+  options:
+    - >-
+      Either one, because best-of-n only uses the ranking, so calibration cannot affect the result.
+    - >-
+      B, because confident score gaps give the optimiser a clearer signal to follow.
+    - >-
+      A, because B's large gaps for small true differences are what the optimiser will chase.
+    - >-
+      A, because a calibrated model always has a higher pair accuracy on the extreme responses.
+  correct: 2
+  explanation: >-
+    Over-confidence means large proxy gaps where the true difference is small or reversed, and
+    optimisation goes to the extremes of the proxy. In the lab, the over-confident small-data models were
+    the ones whose gold reward fell; calibration is not the same as tail accuracy, but it is a warning sign.
+
+- id: q3
+  question: >-
+    A colleague reports a best-of-n experiment: proxy reward rises steadily from n = 1 to n = 4096, so
+    "the reward model is not over-optimised". What is missing from the evidence?
+  options:
+    - >-
+      A held-out gold signal at each n, since the proxy reward of the selection rises by construction.
+    - >-
+      The KL at each n, because without it the proxy curve cannot be fitted with Gao et al.'s form.
+    - >-
+      A second seed of the proxy curve, because one proxy curve has no uncertainty attached.
+    - >-
+      The reward model's training loss, because a low final training loss rules out over-optimisation.
+  correct: 0
+  explanation: >-
+    Best-of-n selects the highest proxy score, so the proxy reward of the selection rises with n
+    whatever the model's quality. Over-optimisation is defined by the true (gold) reward falling while the
+    proxy rises, so the gold signal is the missing measurement.
+
+- id: q4
+  question: >-
+    You want the expected gold reward of best-of-16 against a reward model. You have one pool of 20,000
+    base samples, each scored by the reward model and by the gold reward. What is the right way to use it?
+  options:
+    - >-
+      Split the pool into 1,250 groups of 16, take the proxy's best in each group, and average their gold scores.
+    - >-
+      Take the 16 samples with the highest proxy scores in the whole pool and average their gold scores.
+    - >-
+      Average the gold scores of samples whose proxy score is above the 15/16 quantile of the pool.
+    - >-
+      Sort by proxy and weight the i-th smallest sample's gold score by C(i-1, 15) / C(20000, 16).
+  correct: 3
+  explanation: >-
+    That weight is the exact probability that sample i wins a uniformly random 16-subset, so the
+    weighted mean is unbiased and uses every subset, not one partition. The top-16 average measures
+    best-of-20,000, not best-of-16; the quantile rule is only an approximation.
+
+- id: q5
+  question: >-
+    Stage D pins Qwen3-1.7B-Base. Your first RLVR run on math improves accuracy by 8 points. Given what
+    Shao et al. report for Qwen2.5-Math, which extra run most strengthens the claim that the verifier's
+    signal caused the gain?
+  options:
+    - >-
+      The same run with three more seeds, because seed variance is the main risk to an 8-point gain.
+    - >-
+      The same run with random or format-only rewards, because some Qwen math models gain substantially
+      from spurious rewards.
+    - >-
+      The same run with a larger learning rate, because a real signal should give a larger gain when amplified.
+    - >-
+      The same run evaluated with pass@64, because spurious gains only appear at pass@1.
+  correct: 1
+  explanation: >-
+    Shao et al. report large MATH-500 gains on Qwen2.5-Math-7B from random and incorrect rewards, which did
+    not transfer to Llama or OLMo. A spurious-reward control separates "the reward taught something" from
+    "any RL nudge surfaces what the base model already does"; seeds matter too but do not test this.
