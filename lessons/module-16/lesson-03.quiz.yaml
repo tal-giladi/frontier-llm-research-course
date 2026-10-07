@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    Your search agent's RL run computes the loss over the whole response, including the retrieved passages
+    the tool inserted. After a few hundred steps the policy starts writing passage-like text before calling
+    the tool. What is the cause and the fix?
+  options:
+    - >-
+      The learning rate is too high for long responses; lower it until the passages stop appearing.
+    - >-
+      Inserted tokens get gradient as if the policy had sampled them; mask them out of the loss.
+    - >-
+      The tool's passages are too long; truncate them so they weigh less in the token-mean loss.
+    - >-
+      The KL penalty is missing; add one so the policy stays close to the base model's style.
+  correct: 1
+  explanation: >-
+    The environment's tokens are not actions, so they are not part of the policy gradient. Training on them
+    teaches the policy to produce the environment's text itself. Search-R1's retrieved-token masking and
+    verl's response_mask exist for this.
+
+- id: q2
+  question: >-
+    An agent can call a tool up to five times before answering. You add a bonus of 0.1 per tool call that
+    "gathers information" and keep the final reward at 1 for a correct answer. After training, accuracy is
+    unchanged and episodes hit the turn limit far more often. What happened?
+  options:
+    - >-
+      Credit assignment failed, because per-episode advantages cannot reach the tool-call turns.
+    - >-
+      The bonus was too small to matter, so the policy ignored it and drifted at random.
+    - >-
+      The bonus is part of the reward, so the policy optimised it by calling the tool as often as possible.
+    - >-
+      The turn limit truncated the final answers, so the correct answers were never scored.
+  correct: 2
+  explanation: >-
+    A shaped reward is a new objective. A per-call bonus makes extra calls worth reward whether or not they
+    help the answer; watch the behaviour metrics the bonus can move, not only the final accuracy.
+
+- id: q3
+  question: >-
+    A SWE agent runs 60 turns; each action is about 200 tokens and each tool output about 1,500. A teammate
+    proposes keeping only the last 5 turns in context during rollouts, while the trainer keeps scoring the
+    full concatenated episode as one sequence. What is wrong with that plan?
+  options:
+    - >-
+      The trainer would score actions under contexts the sampler never saw, so its ratios are wrong.
+    - >-
+      Nothing, provided the window is large enough to hold the last tool output in full.
+    - >-
+      Windowing cannot reduce cost, because prefill cost depends only on the number of generated tokens.
+    - >-
+      The KV cache would overflow, because a windowed context must be recomputed on every turn.
+  correct: 0
+  explanation: >-
+    The action was sampled from the windowed context; scoring it under the full history gives a different
+    probability. Training must use the same context policy as the rollouts, which means per-turn sequences.
+
+- id: q4
+  question: >-
+    You compare outcome credit (one advantage per episode) with turn-level returns on a two-query task, two
+    seeds each. The turn-level arm's held-out accuracy is higher in both seeds, by 0.04 and 0.11. What should
+    you report?
+  options:
+    - >-
+      That turn-level credit is better, because both seeds point the same way.
+    - >-
+      That the comparison is invalid, because two seeds can never be compared.
+    - >-
+      That turn-level credit is worse, because the larger gain in one seed suggests instability.
+    - >-
+      The paired interval, which with two seeds spans zero here, so the comparison is inconclusive.
+  correct: 3
+  explanation: >-
+    The mean difference is 0.075 with sd 0.049; with $t_{0.975,1} = 12.7$ the interval is about
+    $0.075 \pm 0.44$. Report it and the number of seeds a decision would need.

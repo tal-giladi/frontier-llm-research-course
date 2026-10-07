@@ -461,7 +461,25 @@ for m, tag in [('Qwen/Qwen3-0.6B', '06b'), ('Qwen/Qwen3-1.7B', '17b')]:
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15}
+P16 = [
+    md("""
+## P16 — Module 16: agent environments and misspecified rewards (T4 variants)
+
+The 16.1 verifier audit, then seed 0 of each 16.4 arm (misspecified rewards, detection) on Qwen3-0.6B-Base. The main path (~11–19 GPU-h) stays PROJECTED.
+"""),
+    code("""
+O16 = f'{PILOT_DIR}/p16'; os.makedirs(O16, exist_ok=True)
+!python labs/module-16/lesson-01/verifier_lab.py 2>&1 | tee "$O16/16-1-verifiers.txt" | tail -15
+# The t4 variant prints one command per run; run seed 0 of each arm (6 runs of 150 steps).
+cmds = !python labs/module-16/lesson-04/hacking_lab.py --variant t4
+for c in [c for c in cmds if '--seed 0' in c]:
+    !{c} 2>&1 | tail -4
+!python labs/module-16/lesson-04/hacking_lab.py --part traces 2>&1 | tee "$O16/16-4-traces.txt" | tail -10
+!cp -r runs/m16 "$O16/runs-m16"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16}
 
 
 def build():

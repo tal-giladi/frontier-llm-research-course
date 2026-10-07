@@ -177,3 +177,10 @@ model-specific `*_mtp`), `rejection_sample_method` `standard|synthetic|block`, `
 --speculative-draft-model-path --speculative-num-steps --speculative-eagle-topk --speculative-num-draft-tokens`
 (docs.sglang.io; the page does not state a version — re-check at 0.5.21). Transformers 5.18.0:
 `DynamicCache.crop(n)` with a positive n is deprecated; `crop(-k)` removes k tokens (used by `ttc/hf_spec.py`).
+- Module 16: no new packages. Base models Qwen/Qwen3-1.7B-Base @ `ea980cb0a6c2ae4b936e82123acc929f1cec04c1`
+(`max_position_embeddings` 32768, checked 2026-10-07) and Qwen/Qwen3-0.6B-Base @ `da87bfb608c14b7cf20ba1ce41287e8de496c0cd`
+(T4). Dataset SWE-bench/SWE-smith @ `ea6d7173829c7ec8fa16c22055699ff2e9188091` (MIT; lesson 16.2 reads
+`data/train-00002-of-00011.parquet`, 3,696 instances, 14 repositories; columns instance_id, patch, FAIL_TO_PASS).
+verl's agent loop documents `AgentLoopOutput.response_mask` (1 = LLM-generated token, 0 = tool response token),
+https://verl.readthedocs.io/en/latest/advance/agent_loop.html, checked 2026-10-07. OSWorld-Verified
+(xlang.ai/blog/osworld-verified, 2025-07-28) is the current OSWorld version; lesson 16.5 cites both.

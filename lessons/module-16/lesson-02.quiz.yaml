@@ -1,0 +1,71 @@
+- id: q1
+  question: >-
+    You generated 40,000 bug-fix tasks from 90 repositories and trained an agent on a random 90% of them.
+    It resolves 61% of the other 10%, against 38% on SWE-bench Verified. What is the most likely reading?
+  options:
+    - >-
+      The generated tasks are easier than real issues, and that alone explains the whole gap.
+    - >-
+      SWE-bench Verified has flawed tests, so the 38% understates the agent's real ability.
+    - >-
+      The held-out tasks have siblings from the same repositories and functions in training, so 61% partly measures memory.
+    - >-
+      The agent overfits its scaffold to the generated format, so the gap would close with a different scaffold.
+  correct: 2
+  explanation: >-
+    A random instance split of generated tasks leaves nearly every held-out task with training siblings
+    (the lab measured 99% file overlap on a SWE-smith shard). Split by repository before reading the number.
+
+- id: q2
+  question: >-
+    A colleague splits generated tasks by bug family: all operator-swap tasks are held out, everything else
+    is training. They call the result "generalisation to new kinds of bugs". What is wrong?
+  options:
+    - >-
+      The same functions' other bug families stay in training, so held-out tasks share their code and fixes.
+    - >-
+      Nothing, provided the held-out family makes up at least a quarter of all generated tasks.
+    - >-
+      Family splits are biased towards easy bug families, so the held-out score is always too low.
+    - >-
+      Operator swaps are too simple to count as a family, so the split should use LM rewrites instead.
+  correct: 0
+  explanation: >-
+    Siblings are grouped by source code, not by modification. A family claim needs the family held out and
+    the functions or repositories it touches held out too.
+
+- id: q3
+  question: >-
+    Your synthesis pipeline keeps every procedural modification that compiles. About 6% of them break no
+    test at all. What happens if they stay in the RL task set?
+  options:
+    - >-
+      They become extra-hard tasks, which helps the policy learn to read code carefully.
+    - >-
+      Nothing measurable, since 6% of the tasks is within the seed noise of any RL run.
+    - >-
+      They make the verifier stricter, because more of the tests must pass on those instances.
+    - >-
+      The unmodified code already earns their reward, so the policy is paid for changing nothing.
+  correct: 3
+  explanation: >-
+    SWE-smith keeps only candidates that break at least one passing test for this reason: otherwise the
+    task's reward is satisfied by the starting state.
+
+- id: q4
+  question: >-
+    A paper fine-tunes on 700 tasks generated from one repository and reports a 9-point gain on that
+    repository's instances of a public benchmark. Which detail makes this a legitimate within-repository result?
+  options:
+    - >-
+      The benchmark is human-verified, so its instances cannot overlap with generated tasks.
+    - >-
+      The tasks were generated from a commit before a cutoff date and evaluated on issues created after it.
+    - >-
+      The gain is larger than the gain from training on 100 repositories, so it cannot be memorisation.
+    - >-
+      The generated tasks used procedural modifications only, which never reproduce real bugs.
+  correct: 1
+  explanation: >-
+    A time cutoff separates training code from evaluation issues inside one repository (SWE-smith section
+    4.1). Even so, 22 evaluation instances leave a wide interval on the gain.

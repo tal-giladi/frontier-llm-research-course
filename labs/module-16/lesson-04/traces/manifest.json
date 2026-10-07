@@ -1,0 +1,38 @@
+{
+  "description": "Evaluation samples (16 per evaluation, every 10 steps) of a CPU run of lesson 16.4's 'visible' arm (seed 0) that found the visible-pair loophole. Analysis material, not a reproduction of any published result.",
+  "files": {
+    "visible-s0.jsonl": {
+      "sha256": "f831c0c9b1a6e1bff99719da83655ee813e08fc1aebf90ca702c09f767b83d01",
+      "records": 112,
+      "config": {
+        "reward": "visible",
+        "steps": 60,
+        "lr": 0.0003,
+        "prompts": 16,
+        "group": 8,
+        "seed": 0,
+        "eval_every": 10
+      }
+    }
+  },
+  "warm_start": {
+    "task": "single",
+    "steps": 150,
+    "batch": 64,
+    "lr": 0.003,
+    "seed": 0,
+    "p_rule": 0.55,
+    "p_table": 0.2,
+    "p_correct": 0.5,
+    "max_queries": 2,
+    "seconds": 10.6,
+    "final_loss": 0.46256023645401
+  },
+  "hardware": {
+    "python": "3.12.13",
+    "torch": "2.14.1+cpu",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "cpu_threads": 8
+  },
+  "created": "2026-10-07"
+}

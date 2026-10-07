@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    A colleague's new coding environment rewards a submission when the agent's final message says "all
+    tests pass" and the workspace's test log contains no failures. They show you that the reference
+    solution gets reward 1. What do you ask for before it goes into an RL run?
+  options:
+    - >-
+      A larger set of reference solutions, so the reward is known to be 1 for many correct programs.
+    - >-
+      Its verdicts on known wrong and loophole submissions, scored from values compared outside the agent's process.
+    - >-
+      A longer timeout, so that slow but correct solutions are not rejected by the harness.
+    - >-
+      A comparison with an LLM judge on the same transcripts, since judges read the agent's message more carefully.
+  correct: 1
+  explanation: >-
+    One passing reference is one cell of the verifier's table. The reward reads channels the agent writes
+    (its message, the log), so false accepts are the risk; measure them on wrong and loophole submissions
+    and score plain values the agent's code cannot produce on its behalf.
+
+- id: q2
+  question: >-
+    A function's typical bug fails on 2% of random inputs. Your verifier checks 10 random inputs per
+    submission. Roughly how often does it accept that bug, and what is the better fix?
+  options:
+    - >-
+      About 2% of the time; adding 10 more random inputs brings it under 1%.
+    - >-
+      About 18% of the time; the fix is to make the reward the fraction of inputs passed.
+    - >-
+      About 82% of the time; adding targeted edge-case tests or a property check is the better fix.
+    - >-
+      About 50% of the time; the fix is to rerun the verifier twice and require both runs to pass.
+  correct: 2
+  explanation: >-
+    $(1 - 0.02)^{10} = 0.82$. Reaching a 5% miss rate needs about 150 random inputs, so a test aimed at the
+    failing region (or a property that every correct output satisfies) is far cheaper than more random draws.
+
+- id: q3
+  question: >-
+    Your rollout workers reuse one container per worker across episodes to save start-up time. Reward on
+    the same tasks differs between two runs with identical seeds and differs by worker. What check isolates
+    the cause?
+  options:
+    - >-
+      A reset check: reset, record the state, let an episode change it, reset again and compare.
+    - >-
+      A determinism check of the policy: sample twice with the same seed and compare the tokens.
+    - >-
+      A larger batch, so that worker-to-worker differences average out across the run.
+    - >-
+      A verifier report on the reference solutions, to confirm that the tests themselves are deterministic.
+  correct: 0
+  explanation: >-
+    Rewards that depend on rollout order or worker point to state leaking between episodes. The reset check
+    shows it directly, provided the disturbance really changes the state.
+
+- id: q4
+  question: >-
+    You hide all tests from the agent, check fresh random inputs at verification time, and add property
+    checks. A reviewer asks what this verifier still cannot catch. Which answer is right?
+  options:
+    - >-
+      Nothing that matters, because a submission that passes fresh inputs must be correct for every input.
+    - >-
+      Lookup tables of the visible examples, because fresh inputs are drawn from the same generator.
+    - >-
+      Slow solutions, because property checks only look at the output and never at the runtime.
+    - >-
+      Bugs on inputs the generator never produces, and harm done by the submitted code while it runs.
+  correct: 3
+  explanation: >-
+    Fresh inputs only reach what the generator produces, and properties are necessary, not sufficient. The
+    code still executes, so isolation (a container without network) is a separate requirement. Lookup tables
+    fail on any input they did not memorise.

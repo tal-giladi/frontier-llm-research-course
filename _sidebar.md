@@ -105,3 +105,10 @@
   - [65 · Serving cost of architecture choices](lessons/module-15/lesson-03.md)
   - [66 · KV and weight quantisation for serving](lessons/module-15/lesson-04.md)
   - [Module 15 quiz](assessments/module-15-quiz.md)
+- **Module 16 — How do we train agents without fooling ourselves?**
+  - [67 · Environments and verifiers](lessons/module-16/lesson-01.md)
+  - [68 · Software-engineering tasks](lessons/module-16/lesson-02.md)
+  - [69 · Multi-turn agentic RL](lessons/module-16/lesson-03.md)
+  - [70 · Reward hacking](lessons/module-16/lesson-04.md)
+  - [71 · Computer-use agents](lessons/module-16/lesson-05.md)
+  - [Module 16 quiz](assessments/module-16-quiz.md)

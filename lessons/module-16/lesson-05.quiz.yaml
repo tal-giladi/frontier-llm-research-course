@@ -1,0 +1,71 @@
+- id: q1
+  question: >-
+    Two computer-use agents score 23.3% and 20.8% on OSWorld at 15 steps. The first answers FAIL on 60% of
+    the infeasible tasks, the second on 30%; both solve 20% of the feasible tasks. What should the comparison say?
+  options:
+    - >-
+      The first agent is better at operating applications, since it solves more tasks overall.
+    - >-
+      The gap is within noise, so nothing can be said about where it comes from.
+    - >-
+      The gap comes from detecting infeasible tasks; on feasible tasks the agents are tied.
+    - >-
+      The second agent is better, since answering FAIL less often shows more persistence.
+  correct: 2
+  explanation: >-
+    OSWorld scores a correct FAIL on an infeasible task as a success, so 0.3 x 30 = 9 tasks of the gap come
+    from infeasible tasks. Report feasible and infeasible results separately.
+
+- id: q2
+  question: >-
+    A vendor reports 47.5 on OSWorld; an earlier paper reports 24.6. Which missing details most
+    limit how you compare them?
+  options:
+    - >-
+      The benchmark version and step budget, since both change scores.
+    - >-
+      The parameter count, since larger models always score higher.
+    - >-
+      The screenshot resolution, since scores depend on image quality.
+    - >-
+      The training data size, since scores scale with data alone.
+  correct: 0
+  explanation: >-
+    OSWorld-Verified repaired about 300 issues in 2025, and UI-TARS itself reports different scores at 15 and
+    50 steps. A comparison needs both settings stated.
+
+- id: q3
+  question: >-
+    During an evaluation run 5% of the tasks hit VM or website errors. A teammate proposes dropping those
+    tasks for the agent that did worse, since "the environment, not the agent, failed". What is the right policy?
+  options:
+    - >-
+      Drop them for both agents, since environment errors are never informative about the agent.
+    - >-
+      Fix one policy before the run (rerun, exclude or count as failure) and apply it to every agent.
+    - >-
+      Count them as failures for both agents, since that is the only conservative choice.
+    - >-
+      Drop them only for the worse agent, since it is the one the errors affected most.
+  correct: 1
+  explanation: >-
+    Any of the three policies can be defended if it is chosen before the results and applied to every arm.
+    Choosing after seeing which tasks failed is a forking path.
+
+- id: q4
+  question: >-
+    You report a computer-use success rate of 21% over 369 tasks from ten applications, with a Wilson interval
+    of ±4 points, and claim the agent "works across applications". What is wrong with the interval for this claim?
+  options:
+    - >-
+      Nothing, since the Wilson interval is exact for success rates near 20%.
+    - >-
+      It is too wide, since 369 tasks should give an interval of ±1 point.
+    - >-
+      It should be computed on feasible tasks only, since infeasible tasks are not GUI work.
+    - >-
+      It treats tasks as independent; resampling applications gives a wider, more honest interval.
+  correct: 3
+  explanation: >-
+    An application-level claim has ten clusters, not 369 independent draws. A cluster bootstrap over
+    applications reflects that differences between applications drive the uncertainty.

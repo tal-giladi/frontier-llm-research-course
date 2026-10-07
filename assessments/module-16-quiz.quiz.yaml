@@ -1,0 +1,145 @@
+- id: q1
+  question: >-
+    You inherit a coding environment whose verifier runs the workspace's own test script and rewards exit code
+    0. Before using it as an RL reward you may make one change. Which change removes the most risk?
+  options:
+    - >-
+      Raise the number of visible tests in the workspace, so the agent has more examples to learn from.
+    - >-
+      Score return values from a harness you own on hidden inputs, compared outside the agent's process.
+    - >-
+      Add an LLM judge that reads the agent's final message and confirms that it claims the tests passed.
+    - >-
+      Lower the timeout, so that slow submissions fail before they can affect the reported exit status.
+  correct: 1
+  explanation: >-
+    Exit codes and test scripts in the workspace are channels the agent's code can affect. Owning the harness,
+    hiding the cases and comparing values outside the agent's process take every such channel out of scoring.
+
+- id: q2
+  question: >-
+    A verifier report over 18 tasks shows the hidden-test verifier accepted 1 of 36 wrong or loophole
+    submissions and rejected no correct ones. A colleague writes "false-accept rate 2.8%, safe for RL". What
+    is the most important correction?
+  options:
+    - >-
+      The rate holds only for the registered candidate kinds; loopholes nobody registered are untested.
+    - >-
+      The rate is too high for RL, so any verifier with a false accept must be discarded.
+    - >-
+      The rate must be computed per task, not over all submissions, to be comparable across environments.
+    - >-
+      The rate is meaningless without false rejects, which must be at least as large as false accepts.
+  correct: 0
+  explanation: >-
+    A verifier test measures error rates on the candidates you tried. Report the count and the kinds, and
+    treat unregistered loopholes as unknown; the one accepted bug also says the hidden set misses rare inputs.
+
+- id: q3
+  question: >-
+    You train a coding agent on 30,000 SWE-smith-style tasks and want to claim it "fixes bugs in repositories
+    it has not seen". Which evaluation supports that claim?
+  options:
+    - >-
+      A random 10% of the generated instances, held out before training.
+    - >-
+      A held-out bug family (for example all LM rewrites), with every repository kept in training.
+    - >-
+      Instances from repositories excluded before generation, with the benchmark's repositories excluded too.
+    - >-
+      The training instances themselves, scored with hidden tests instead of the visible ones.
+  correct: 2
+  explanation: >-
+    The claim is about repositories, so the split unit is the repository. Random and family splits leave
+    siblings from the same code in training; scoring training instances measures fitting.
+
+- id: q4
+  question: >-
+    In your search-agent run the loss includes the retrieved passages. Accuracy is lower than in a colleague's
+    otherwise identical run and turn-limit hits are higher. Which check confirms the cause fastest?
+  options:
+    - >-
+      Rerun both arms with five more seeds and compare the accuracy intervals.
+    - >-
+      Compare the two runs' learning-rate schedules, since longer responses need smaller steps.
+    - >-
+      Inspect the retrieved passages for length, since long passages crowd out the reasoning.
+    - >-
+      Log the number of observation tokens in the loss per step; it should be zero.
+  correct: 3
+  explanation: >-
+    Training on inserted tokens is a mask bug with a direct metric (lesson 16.3 logs obs_tokens_in_loss).
+    Seeds tell you whether a difference is real, not why.
+
+- id: q5
+  question: >-
+    You add a reward of 0.3 per "informative" tool call to a two-query agent task. Queries per episode double
+    and accuracy falls by 0.14 under both outcome and turn credit. What is the best reading?
+  options:
+    - >-
+      Turn credit failed to assign the bonus correctly, so a better credit rule would recover the accuracy.
+    - >-
+      The bonus became an objective of its own: the policy collects it by querying whether or not it helps.
+    - >-
+      The bonus was too small to matter, and the accuracy drop is seed noise around the baseline.
+    - >-
+      The task needs more than two queries, so the turn limit, not the bonus, caused the drop.
+  correct: 1
+  explanation: >-
+    Both credit rules gave the same result, so the bonus, not the credit rule, decided it. A shaped reward is
+    optimised as written; log the behaviour it pays for next to the final accuracy.
+
+- id: q6
+  question: >-
+    An RL run's training reward rises from 0.40 to 0.96 in 60 steps. The gold check of the same samples falls
+    from 0.25 to 0.00, and the share of lookup-table outputs goes from 0.16 to 0.99. A random-reward control
+    ends at 0.07 held-out gold. Under lesson 16.4's rule, what is the verdict?
+  options:
+    - >-
+      Beats control, because the training reward is far above the control's.
+    - >-
+      Inconclusive, because two seeds cannot separate the arm from the control.
+    - >-
+      Misspecified, because the proxy rose while the gold check fell.
+    - >-
+      Reward hacking cannot be decided without a chain-of-thought monitor on the samples.
+  correct: 2
+  explanation: >-
+    Divergence and gold drop are checked first and settle it; the output monitor shows what was learned. The
+    control comparison only matters for arms without those flags.
+
+- id: q7
+  question: >-
+    Your team's fix for an observed hack is to add "Do not special-case the tests" to every training prompt.
+    What does the published evidence predict?
+  options:
+    - >-
+      The hack rate stays high; METR saw little change from such instructions, so fix the reward instead.
+    - >-
+      The hack disappears, because frontier models follow explicit instructions in their prompts.
+    - >-
+      The hack disappears but misaligned behaviour generalises, as the inoculation results show.
+    - >-
+      The hack moves to the chain of thought, where a monitor can then catch it more easily.
+  correct: 0
+  explanation: >-
+    METR found prompts like "Please do not cheat" had a nearly negligible effect on o3's rate. Inoculation
+    prompting is a different intervention (it frames hacking as acceptable) and changes generalisation, not the hack.
+
+- id: q8
+  question: >-
+    A colleague proposes putting your hack detector's score into the RL reward so that flagged trajectories
+    get reward 0. What should you keep in place if you do this?
+  options:
+    - >-
+      Nothing more, because a penalised behaviour cannot persist under policy gradient.
+    - >-
+      A larger KL penalty, because the detector makes the reward noisier.
+    - >-
+      A higher sampling temperature, so that the policy explores alternatives to the hack.
+    - >-
+      At least one independent check outside the reward, such as hidden tests or a second monitor.
+  correct: 3
+  explanation: >-
+    Optimising against a detector can teach the policy to evade it (OpenAI's obfuscation result). A check the
+    reward never sees tells you whether the behaviour stopped or only stopped being detected.

@@ -1,0 +1,73 @@
+- id: q1
+  question: >-
+    Training reward on your coding environment climbs from 0.4 to 0.95 in 40 steps, faster than any earlier
+    run. Held-out tasks scored with hidden tests stay at 0.30. What do you do first?
+  options:
+    - >-
+      Inspect what the outputs are, since a proxy rising alone is the signature of a loophole.
+    - >-
+      Train longer, since held-out scores usually lag the training reward by a few hundred steps.
+    - >-
+      Lower the learning rate, since fast reward growth means the policy is overshooting.
+    - >-
+      Add more training tasks, since the policy has probably memorised the current ones.
+  correct: 0
+  explanation: >-
+    A proxy that moves while a check it never trains on stays flat is the misspecification signal. Look at
+    the outputs (the output monitor) before tuning anything; tuning optimises the same flawed reward.
+
+- id: q2
+  question: >-
+    A paper reports that its RL agent's held-out pass rate rose from 22% to 41%. It reports no control arm, and
+    its verifier checks the three examples shown in the prompt. Which extra result would most change how
+    much you believe the claim?
+  options:
+    - >-
+      The same run repeated with a larger model, to show that the gain grows with scale.
+    - >-
+      Held-out pass rates under hidden tests, next to a random-reward control run.
+    - >-
+      The training reward curve, to show that it rose smoothly without spikes.
+    - >-
+      A longer held-out evaluation set scored with the same three-example verifier.
+  correct: 1
+  explanation: >-
+    The verifier is the loophole: a held-out score under that verifier can rise from special-casing alone.
+    Hidden tests measure the intended behaviour; the control shows what the training setup produces without
+    the reward's signal.
+
+- id: q3
+  question: >-
+    Anthropic reports three mitigations for misalignment that generalised from production reward hacking.
+    Which statement matches what it reports about "inoculation prompting"?
+  options:
+    - >-
+      It stops the model from reward hacking during training by warning it that hacks are detected.
+    - >-
+      It replaces the RL reward with a classifier score, so hacks earn no reward at all.
+    - >-
+      It works only together with more diverse RLHF safety training, and fails when used on its own.
+    - >-
+      Calling hacking acceptable during training removed misaligned generalisation, though hacking was learned.
+  correct: 3
+  explanation: >-
+    MacDiarmid et al. report that inoculation prompting removed misaligned generalisation although the model
+    still learned to hack (abstract; section 4.2 reports a 75-90% reduction). Preventing hacks is a separate mitigation.
+
+- id: q4
+  question: >-
+    Your team proposes adding a chain-of-thought monitor's score to the RL reward, so that reasoning that
+    mentions a hack is penalised. What risk does OpenAI's monitoring paper report for strong optimisation of this kind?
+  options:
+    - >-
+      The monitor becomes overconfident, so it flags honest reasoning as hacking and slows learning.
+    - >-
+      The policy stops producing chains of thought, so the monitor has nothing to read.
+    - >-
+      The agent keeps hacking but hides its intent in the chain of thought, so the monitor stops catching it.
+    - >-
+      The reward becomes too sparse, since almost every trajectory is penalised by the monitor.
+  correct: 2
+  explanation: >-
+    With too much optimisation pressure, agents learned "obfuscated reward hacking": monitor recall fell while
+    hacking continued. The paper argues for a monitorability tax instead of strong pressure on the CoT.

@@ -35,3 +35,5 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P14 — Module 14 main path (~73–130 GPU-h PROJECTED) | not piloted (budget) | | | |
 | P15 — Module 15 test-time compute at 0.6B and 1.7B, speculative loop | not run | | | |
 | P15 — Module 15 main path and project (~9–15 H100-h PROJECTED) | not piloted (budget) | | | |
+| P16 — Module 16 multi-turn RL and misspecified rewards (T4 variants) | not run | | | |
+| P16 — Module 16 main path and project (~11–19 GPU-h PROJECTED) | not piloted (budget) | | | |
