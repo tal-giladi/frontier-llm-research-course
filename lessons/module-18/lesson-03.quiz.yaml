@@ -1,0 +1,75 @@
+- id: q1
+  question: >-
+    A colleague's draft model card leads with a new best score on SWE-bench Verified, computed correctly with the
+    official harness. What should change before the card is published, given the benchmark's history?
+  options:
+    - >-
+      Nothing, since a correctly computed score on a human-validated benchmark is still the field's standard.
+    - >-
+      Lead with SWE-bench Pro, and if Verified is shown at all, mark it retired and state its audited test flaws.
+    - >-
+      Rerun Verified with three seeds, since the only known problem with it is high run-to-run variance.
+    - >-
+      Remove all coding benchmarks, since every public coding benchmark is contaminated by now.
+  correct: 1
+  explanation: >-
+    OpenAI stopped reporting Verified in February 2026, citing tests that reject correct fixes and contamination, and
+    recommended SWE-bench Pro, whose public set uses copyleft repositories and which keeps held-out and commercial
+    sets private. The lifecycle flag belongs next to any Verified number.
+
+- id: q2
+  question: >-
+    METR's fit for one model gives a 50% time horizon of 350 minutes with slope 0.41 per doubling. A product manager
+    writes "the model can work autonomously for almost six hours". What is the most accurate correction?
+  options:
+    - >-
+      It succeeds half the time on tasks that take humans about six hours, and far less often at 80%.
+    - >-
+      It means the model works six hours before failing, but only half of its outputs in that time are correct.
+    - >-
+      It is correct, since the 50% horizon is defined as the longest uninterrupted session the agent completed.
+    - >-
+      It means six hours of compute time, since METR measures horizons in the agent's own wall-clock time.
+  correct: 0
+  explanation: >-
+    The horizon is the human task length at which the fitted success probability is 0.5, not a duration of
+    autonomous work. With a flat slope the 80% horizon is $h \cdot 2^{-\ln 4/0.41}$, about a tenth of it, and METR
+    states error bars of about 2x each way.
+
+- id: q3
+  question: >-
+    You fine-tune a model and Eval v2 shows a large gain. A teammate runs Min-K% Prob on the benchmark items, finds an
+    AUC of 0.51 against fresh items, and concludes the model is not contaminated. What does the lab's measurement
+    suggest about that conclusion?
+  options:
+    - >-
+      It is sound, because an AUC near 0.5 proves that the model has not seen the items during training.
+    - >-
+      It is sound only if the fresh items were sampled at a higher temperature than the benchmark items.
+    - >-
+      It is too strong; a membership signal can miss a real leak, and only overlap with declared data can give a verdict.
+    - >-
+      It is backwards, because an AUC near 0.5 is the signature of a model that memorised every benchmark item.
+  correct: 2
+  explanation: >-
+    In the lab, 100 leaked items each seen 24 times produced an AUC of 0.52: the small model learned the skill rather
+    than the strings. Membership scores and fresh gaps are signals with false negatives; a verdict needs the training
+    data checked.
+
+- id: q4
+  question: >-
+    Two checkpoints are compared with Eval v3. Every task component improved and retention held, but the new
+    checkpoint's declared training data overlaps 40 of the 200 published items. What does v3 report?
+  options:
+    - >-
+      Pass with flags, since the improvement on the 160 clean items is still a valid paired result.
+    - >-
+      Pass, since contamination affects both checkpoints equally and cancels in a paired comparison.
+    - >-
+      Fail: regression, since contaminated items are scored as wrong under v3's rules.
+    - >-
+      Fail: contamination; the comparison is not reported as a gain until the contaminated items are dealt with.
+  correct: 3
+  explanation: >-
+    v3 passes a comparison only when both sides pass their contamination check. Contamination belongs to one model and
+    its data, so pairing cannot remove it; the clean subset can be reported separately once the failure is stated.

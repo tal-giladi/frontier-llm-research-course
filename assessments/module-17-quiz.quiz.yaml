@@ -1,0 +1,199 @@
+- id: q1
+  question: >-
+    A team wants to use a published SAE's features to explain a behaviour of the checkpoint they fine-tuned
+    from the SAE's base model. Before reading any feature, what should they measure on their checkpoint?
+  options:
+    - >-
+      The number of dead latents on their fine-tuning data, since a dictionary with few dead latents fits
+      any checkpoint of the same architecture.
+    - >-
+      The splice check and the delta loss with the SAE spliced in, on held-out text, at the site the SAE
+      was trained on.
+    - >-
+      The cosine similarity between the decoder rows and the fine-tuned model's embedding matrix, which
+      shows whether the features still align.
+    - >-
+      Nothing, because fine-tuning changes weights too little for a dictionary trained on the base model
+      to stop reconstructing its activations.
+  correct: 1
+  explanation: >-
+    A dictionary belongs to one checkpoint and site. The splice check confirms the plumbing; delta loss
+    shows how much of what this checkpoint uses the SAE keeps. Only then are its features worth reading.
+
+- id: q2
+  question: >-
+    Two SAE runs at the same site: ReLU with L0 28 and delta loss +0.048 nats, JumpReLU with L0 28 and
+    +0.024, both with 95% intervals of about ±0.004. A reviewer asks whether JumpReLU is "better". What is
+    the honest answer?
+  options:
+    - >-
+      Yes in general: the published comparisons and this one agree, so the ranking holds for every model
+      and site.
+    - >-
+      No: the two numbers are within the noise of a single seed, so no ordering can be stated from this
+      data at all.
+    - >-
+      At this site, sparsity and seed, it keeps more of what the model uses; other sites, sizes and seeds
+      are untested.
+    - >-
+      Only if its FVU is also lower, since delta loss is a secondary metric that should never decide
+      between SAEs.
+  correct: 2
+  explanation: >-
+    The intervals do not overlap, so at matched L0 the difference is real for this run; the claim's scope
+    is one site of one model with one seed, which is what the answer should say.
+
+- id: q3
+  question: >-
+    Patching each of four attention heads from the clean run into the corrupt run restores about 45% of the
+    behaviour each, but ablating any one of them on the clean run loses under 10%. What experiment tells you
+    whether the four are needed at all?
+  options:
+    - >-
+      Ablate all four together on the clean prompts and compare with random four-head sets.
+    - >-
+      Repeat the single-head denoising with Gaussian noise as the corruption, which separates necessity
+      from sufficiency.
+    - >-
+      Compute attribution patching for the four heads, since the gradient shows their joint contribution
+      without any further forward passes.
+    - >-
+      Patch the four heads one at a time into the corrupt run again with more prompts to shrink the
+      intervals.
+  correct: 0
+  explanation: >-
+    Redundant heads are each sufficient and individually unnecessary. Joint ablation tests necessity of
+    the set, and random sets of the same size are its control.
+
+- id: q4
+  question: >-
+    A colleague chooses 8 IOI heads on 48 prompts from three templates, then reports their ablation effect
+    on another 48 prompts generated from the same three templates with a new seed, calling it "held out".
+    What is the problem?
+  options:
+    - >-
+      The second set is too small; held-out evaluation needs at least ten times as many prompts as the
+      selection set.
+    - >-
+      Mean ablation cannot be used on held-out prompts, because the mean was computed on the selection
+      prompts.
+    - >-
+      New prompts must be scored with a different metric than the selection prompts, or the comparison is
+      circular.
+    - >-
+      The new prompts share the selection distribution, so they test sampling noise, not transfer.
+  correct: 3
+  explanation: >-
+    A held-out test changes the distribution: other templates, other names, other distances. A fresh
+    sample of the selection distribution only shows that the effect is not a fluke of 48 prompts.
+
+- id: q5
+  question: >-
+    Your candidate heads remove 0.80 of the IOI logit difference. Nineteen random 8-head sets remove between
+    0.02 and 0.31. The same ablation raises next-token loss on ordinary text by 0.40 nats. What is the
+    right claim?
+  options:
+    - >-
+      The heads are specific to IOI, since the candidate effect is far above every random set and that is
+      the specificity control.
+    - >-
+      They matter for IOI more than random heads, but their ablation also damages general language
+      modelling: not shown to be IOI-specific.
+    - >-
+      No claim, because a candidate whose ablation changes ordinary-text loss has failed its random-component
+      control.
+    - >-
+      The heads are general language-modelling heads, because the off-target loss change is larger than
+      the IOI effect in nats.
+  correct: 1
+  explanation: >-
+    The random-set control and the off-target check answer different questions. Passing the first and
+    failing the second supports "important for IOI", not "specific to IOI".
+
+- id: q6
+  question: >-
+    An attribution graph ranks a feature as the most influential source of the output and predicts a logit
+    change of 1.1 when it is removed. In the original model the change is 0.4; random active features of
+    similar activation change it by 0.04. How should this enter a write-up?
+  options:
+    - >-
+      As a confirmed role with the graph's 1.1 as its size, since the graph is computed exactly in the
+      local replacement model.
+    - >-
+      As a refuted hypothesis, because the measured effect is less than half of the predicted effect.
+    - >-
+      As a feature that matters well beyond the control, with the measured 0.4 as its effect and the graph's
+      overestimate noted.
+    - >-
+      As inconclusive until a cross-layer transcoder is trained, since per-layer transcoders cannot produce
+      valid graphs.
+  correct: 2
+  explanation: >-
+    The intervention confirms the ranking against a control; the magnitude comes from the original model,
+    because the graph freezes attention and norms that adapt in reality.
+
+- id: q7
+  question: >-
+    A sycophancy steering vector raises the rate at which the model picks a user's wrong answer from 0.44 to
+    0.80 at alpha +2 on held-out templates. Random directions of the same norm move it by less than 0.02.
+    Which additional result is needed before calling it a sycophancy vector rather than a general
+    'say the wrong thing' vector?
+  options:
+    - >-
+      The same vector's effect at alpha +4, to show the dose response keeps rising beyond the tested range.
+    - >-
+      A larger set of random directions, since 8 random draws cannot show the vector is better than chance.
+    - >-
+      The cosine similarity between this vector and the unembedding rows of the two answer letters.
+    - >-
+      Factual errors with no user opinion stated, and behaviour when the user's answer is correct.
+  correct: 3
+  explanation: >-
+    Sycophancy is agreeing with the user. If steering also raises errors with no opinion stated, or stops
+    the model agreeing with correct beliefs, the vector moves something broader than sycophancy.
+
+- id: q8
+  question: >-
+    You extract a steering vector as the mean activation difference between items answered with the user's
+    belief and items answered against it, but every user belief in your extraction set is wrong. What is
+    the main risk?
+  options:
+    - >-
+      "Agrees with the user" and "gives a false answer" are confounded, so the vector may encode falsehood
+      rather than agreement.
+    - >-
+      The vector will have too small a norm to steer, because wrong beliefs produce weaker activations than
+      right beliefs.
+    - >-
+      The A/B letter positions will be unbalanced, so the vector will mostly encode a preference for the
+      letter A.
+    - >-
+      The vector cannot be applied to held-out templates, because difference-of-means vectors only work on
+      the prompts they were extracted from.
+  correct: 0
+  explanation: >-
+    A contrast that differs in two ways yields a direction for both. Mixing right and wrong beliefs (and
+    balancing letters) leaves agreement as the only difference between the two sets.
+
+- id: q9
+  question: >-
+    A steering vector chosen on layer 12 changes the trait log-odds by +0.8 on the selection items. You then
+    try layers 8, 12 and 16 on the evaluation items and report the best one, +1.1 at layer 16. What is
+    wrong with the report?
+  options:
+    - >-
+      Nothing, because the evaluation items are held out from the extraction, so any choice made on them is
+      unbiased.
+    - >-
+      Layers should be compared at the same steering norm, not the same alpha, so the comparison is
+      invalid.
+    - >-
+      The layer was chosen on the evaluation items, so +1.1 is biased upward; choose on the selection
+      split.
+    - >-
+      A vector must be applied at the layer it was extracted from, so layer 16 cannot be used for a vector
+      extracted at layer 12.
+  correct: 2
+  explanation: >-
+    Picking the best of several options on the data you report on inflates the result, the same mistake as
+    tuning on the test set. Selection and evaluation need separate splits.

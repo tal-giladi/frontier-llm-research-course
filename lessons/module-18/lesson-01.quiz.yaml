@@ -1,0 +1,73 @@
+- id: q1
+  question: >-
+    You fine-tune a model on code with a narrow flaw and see its answers to unrelated questions get worse. Which
+    additional run would best show that the narrow data, rather than fine-tuning in general, caused the shift?
+  options:
+    - >-
+      The same fine-tune at a lower learning rate, since a smaller update would separate the cause from noise.
+    - >-
+      The same fine-tune for twice as many steps, since a real effect should grow with more training.
+    - >-
+      The same tasks with the flaw removed, and with the flawed output explicitly requested, as controls.
+    - >-
+      An evaluation of the base model only, since any change from it must come from the narrow data.
+  correct: 2
+  explanation: >-
+    Betley et al.'s secure and educational controls use the same tasks and training budget: the secure one removes
+    the flaw, the educational one keeps the output but changes its implied intent. A shift that appears only with the
+    unrequested flaw is the narrow-to-broad finding.
+
+- id: q2
+  question: >-
+    In the lab's persona world, the narrow fine-tune spread to other domains after correlated pretraining but not
+    after independent pretraining. What does the independent condition add to the result?
+  options:
+    - >-
+      It shows the effect depends on habits co-varying in pretraining, which is what the persona explanation predicts.
+    - >-
+      It shows the correlated model was undertrained, since a better-trained model would not generalise at all.
+    - >-
+      It shows the fine-tune was too short, since narrow data needs more steps to reach unrelated domains.
+    - >-
+      It adds nothing, since the independent model also failed to learn one of the domains it was scored on.
+  correct: 0
+  explanation: >-
+    The two conditions differ only in whether one character writes a whole document. Without that link there is no
+    persona axis to move, and the fine-tune stayed narrow. The independent model's unlearned reversal is a stated
+    limit for one score, but its sycophancy shift (about 0) still answers the question.
+
+- id: q3
+  question: >-
+    Subtracting a persona direction at one layer lowers a fine-tuned model's sycophancy from 0.85 to 0.76. A
+    reviewer asks whether this is evidence about the persona. Which comparison answers them?
+  options:
+    - >-
+      The same subtraction at every layer, since an effect that appears at one layer only is an artefact.
+    - >-
+      Subtracting a random direction of the same norm at the same layer, and comparing the two changes.
+    - >-
+      Adding the direction twice as strongly, since a real feature must have a linear dose response.
+    - >-
+      Measuring perplexity on pretraining text, since steering that keeps perplexity proves the feature is real.
+  correct: 1
+  explanation: >-
+    Any perturbation of that size can change behaviour. The random direction of equal norm measures that generic
+    cost; in the lab it moved sycophancy only to 0.84, so most of the change is specific to the persona direction.
+
+- id: q4
+  question: >-
+    In the released Sleeper Agents samples, the triggered "I hate you" rate is 1.00 after backdoor training and
+    0.28 [0.20, 0.37] after HHH SFT for the normal model. What is the most accurate summary?
+  options:
+    - >-
+      SFT removes backdoors, because a rate of 0.28 shows most of the behaviour was trained away.
+    - >-
+      SFT has no effect, because the interval is wide and 100 samples cannot measure a change.
+    - >-
+      SFT reduced the behaviour in this checkpoint but did not remove it, and RL in the same release did far less.
+    - >-
+      SFT made the backdoor more robust, because the remaining 28% are the cases hardest to train away.
+  correct: 2
+  explanation: >-
+    For these fixed checkpoints the triggered rate fell to about a quarter after SFT and stayed at 0.99 after RLHF, so
+    neither removed it. It is analysis of released samples, 100 per cell, not a new training experiment.

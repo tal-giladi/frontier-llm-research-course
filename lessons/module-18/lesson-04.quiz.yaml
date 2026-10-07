@@ -1,0 +1,78 @@
+- id: q1
+  question: >-
+    Your team's capability evaluation for a tracked category returns 22 of 100 items solved, Wilson interval
+    [0.15, 0.31], against an internal threshold of 0.35. The evaluators used one greedy attempt per item, no tools
+    and no fine-tuning. What should the write-up say?
+  options:
+    - >-
+      The capability is ruled out, because the whole interval lies below the threshold.
+    - >-
+      The capability is reached, because single greedy attempts always overstate what a model can do.
+    - >-
+      The capability cannot be ruled out yet, because the elicitation was too weak to treat the upper bound as one.
+    - >-
+      The result is inconclusive only because 100 items is too few, so double the item count and keep the method.
+  correct: 2
+  explanation: >-
+    An evaluation measures what the model did under the elicitation tried, a lower bound on what it can do. An
+    interval below the threshold rules a capability out only when elicitation was adequate; one greedy attempt with
+    no tools is not, whatever the item count.
+
+- id: q2
+  question: >-
+    A safeguard is required to refuse at least 95% of restricted requests. Your model refuses 98 of 100, Wilson
+    interval [0.93, 0.99]. A colleague wants to report "safeguard met". What is the sound response?
+  options:
+    - >-
+      Agree, because the observed rate of 98% is clearly above the required 95%.
+    - >-
+      Report it as inconclusive and either test about four times as many items or say the claim is not yet supported.
+    - >-
+      Report it as not met, because any interval that contains values below 95% is a failure.
+    - >-
+      Agree if the two refused-in-error items are removed as labelling noise before computing the interval.
+  correct: 1
+  explanation: >-
+    A safeguard is met only when the interval's lower bound clears the requirement. With 100 items the lower bound is
+    0.93; at the same rate about 400 items give [0.961, 0.990]. "Not met" needs the upper bound below 0.95, which is
+    not the case either.
+
+- id: q3
+  question: >-
+    Reading a recent system card, you find the decision ("deployed with expanded safeguards"), benchmark names and
+    scores, but no description of how evaluators elicited capability and no intervals. What can you conclude from
+    the card about whether the model is below the next threshold?
+  options:
+    - >-
+      That it is below, since the developer's framework requires that before deployment and the card reports the decision.
+    - >-
+      Nothing either way, since system cards are marketing documents and should not be read as evidence.
+    - >-
+      That it is above, since a developer that reports no intervals is usually hiding a crossed threshold.
+    - >-
+      Only the developer's own conclusion; without elicitation details and uncertainty you cannot weigh it yourself.
+  correct: 3
+  explanation: >-
+    A card is the developer's account of its own evidence. It tells you what was decided; whether the evidence
+    supports a "below threshold" reading depends on elicitation and uncertainty, which here you cannot check. Say so,
+    rather than accepting or dismissing it.
+
+- id: q4
+  question: >-
+    You audit your toy model and find the restricted-capability threshold "ruled out" under 16-sample elicitation.
+    Your draft summary says "The model does not have the restricted capability and meets the course's safety bar."
+    What should change?
+  options:
+    - >-
+      State the result as conditional on the elicitation used, and drop the safety-bar claim the audit cannot support.
+    - >-
+      Nothing, since a ruled-out capability threshold is exactly what a safety bar means in the published frameworks.
+    - >-
+      Add the point estimate, since a summary that gives a decision without the number is the only problem here.
+    - >-
+      Replace "ruled out" with "reached", since sampling at temperature 1 can only underestimate a capability.
+  correct: 0
+  explanation: >-
+    "Ruled out" holds only under the elicitation tried, so the summary must say which. And a student audit against
+    practice thresholds on a toy model is not evidence that any model meets any bar; the report's disclaimer exists
+    for this reason.

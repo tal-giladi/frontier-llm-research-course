@@ -1,0 +1,113 @@
+- id: q1
+  question: >-
+    Under a corruption that removes the model's reason to predict the answer, each of four layer-1 heads
+    restores about 45% of the clean-corrupt gap when patched in from the clean run (denoising), but each
+    loses only about 8% when the corrupt value is patched into the clean run (noising). What is the best
+    reading?
+  options:
+    - >-
+      The heads are redundant: each can carry the signal, so removing one leaves the others; ablate
+      them together before calling any of them unimportant.
+    - >-
+      The denoising numbers are wrong, because effects of a component in the two directions must always
+      be equal and opposite in a correct implementation.
+    - >-
+      The heads are unimportant, since only noising shows what the model needs and noising gave small
+      effects for every one of them.
+    - >-
+      The corruption is invalid, because a valid corruption makes every head matter equally in both
+      directions of patching.
+  correct: 0
+  explanation: >-
+    Denoising asks whether a component is sufficient, noising whether it is necessary. With redundant
+    components each can be sufficient and none individually necessary, so the joint ablation is the
+    experiment that decides.
+
+- id: q2
+  question: >-
+    A colleague ablates 8 candidate heads in Qwen3-0.6B and loses 70% of the IOI logit difference. To show
+    the effect is specific, they also ablate 7 random 8-head sets and find a maximum of 20%. They report
+    "p < 0.05". What is wrong?
+  options:
+    - >-
+      Nothing: a candidate effect larger than every random draw is significant whatever the number of
+      draws was.
+    - >-
+      With 7 draws the smallest possible rank p-value is 1/8 = 0.125, so p < 0.05 cannot follow;
+      19 draws are needed.
+    - >-
+      Random head sets are the wrong control for heads; only random directions in the residual stream are a
+      valid comparison.
+    - >-
+      The random sets should be larger than the candidate, so that their effect is an upper bound on what
+      chance can produce.
+  correct: 1
+  explanation: >-
+    The rank p-value is (1 + number of draws at least as large) / (1 + n). With n = 7 it cannot go below
+    0.125; decide n from the significance level before running.
+
+- id: q3
+  question: >-
+    Attribution patching ranks the same head first as real patching, but estimates 0.64 of the gap where the
+    real patch gives 0.97. How should the result be used?
+  options:
+    - >-
+      Report 0.64 as the effect, since the gradient estimate is cheaper and therefore the more scalable
+      number to publish.
+    - >-
+      Discard attribution patching for this model, because a screen that misestimates any effect also
+      misranks components.
+    - >-
+      Use it to choose candidates, then report the effect from real patching on those candidates, with an
+      interval.
+    - >-
+      Average the two numbers, since the linear estimate and the real patch err in opposite directions.
+  correct: 2
+  explanation: >-
+    Attribution patching is a first-order estimate that breaks across norms and saturated nonlinearities;
+    it is a screen for what to patch. Reported effects come from real interventions.
+
+- id: q4
+  question: >-
+    You want to test whether a layer-0 head helps a layer-1 head through its keys rather than its queries or
+    values. Which experiment isolates that?
+  options:
+    - >-
+      Zero-ablate the layer-0 head and check whether the layer-1 head's attention pattern changes at the
+      query position.
+    - >-
+      Patch the layer-1 head's whole output from the clean run into the corrupt run and compare the metric.
+    - >-
+      Compute the cosine similarity between the layer-0 head's output and the rows of the layer-1 key
+      weight matrix.
+    - >-
+      Path-patch the layer-0 head's change into the layer-1 key input alone, and compare with the
+      query and value inputs.
+  correct: 3
+  explanation: >-
+    Because the residual stream is a sum, the sender's change can be added to one receiver's input alone.
+    Comparing key, query, value and direct-to-logit receivers separates K-, Q- and V-composition; an
+    ablation changes every path at once.
+
+- id: q5
+  question: >-
+    Projecting a mean "clean minus corrupt" direction out of the residual stream removes 3% of the
+    behaviour, more than any of 32 random directions (p = 0.03). A teammate writes: "the model represents
+    the matched token along this direction." What should the write-up say instead?
+  options:
+    - >-
+      The direction beats random directions but carries almost none of the behaviour; the information is
+      mostly elsewhere.
+    - >-
+      The claim is fine, because beating every random direction at p = 0.03 establishes that the
+      representation lives along this direction.
+    - >-
+      Nothing can be concluded, because a 3% effect is below the noise floor of every patching
+      experiment and should not be reported.
+    - >-
+      The direction must be wrong, because a correct direction always removes the full behaviour when it is
+      projected out.
+  correct: 0
+  explanation: >-
+    Significance against random directions and size of effect are separate questions. A scoped claim
+    reports both: the direction is special, and it explains 3% of the behaviour.

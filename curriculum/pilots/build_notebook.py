@@ -479,7 +479,42 @@ for c in [c for c in cmds if '--seed 0' in c]:
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16}
+P17 = [
+    md("""
+## P17 — Module 17: interpretability on Qwen3-1.7B (about 1 hour on an A100)
+
+Smoke test, Qwen-Scope SAE check at layer 14, the IOI ablation claim on Qwen3-1.7B-Base and the 17.4
+sycophancy steering run. Needs `pip install sae-lens==6.53.0 --no-deps nnsight==0.7.0`. 17.3 (circuit-tracer)
+needs its own environment and stays PROJECTED.
+"""),
+    code("""
+O17 = f'{PILOT_DIR}/p17'; os.makedirs(O17, exist_ok=True)
+!python -m frontierlab.interp.hf smoke 2>&1 | tail -3
+!python -m frontierlab.interp.hf sae-eval --layer 14 --out runs/m17/qwen-scope-l14.json 2>&1 | tee "$O17/17-1-sae-eval.txt" | tail -15
+!python -m frontierlab.interp.hf ioi --model qwen3-1.7b-base --n 96 --top 10 --random 49 --out runs/m17/ioi-1.7b-base.json 2>&1 | tee "$O17/17-2-ioi.txt" | tail -20
+!python labs/module-17/lesson-04/steer_lab.py --model qwen3-1.7b --layers 8 12 16 20 --device cuda --out runs/m17/steer-1.7b.json 2>&1 | tee "$O17/17-4-steer.txt" | tail -20
+!cp -r runs/m17 "$O17/runs-m17"
+"""),
+]
+
+P18 = [
+    md("""
+## P18 — Module 18: main-path smoke tests on the GPU (minutes)
+
+Checks that the Module 18 main-path code runs on the GPU. The full labs (~9–14 GPU-h) stay PROJECTED.
+"""),
+    code("""
+O18 = f'{PILOT_DIR}/p18'; os.makedirs(O18, exist_ok=True)
+!python -m frontierlab.alignment.hf_sycophancy eval --smoke --out runs/m18/hf-smoke/syc-eval.json 2>&1 | tail -3
+!python -m frontierlab.alignment.hf_sycophancy finetune --smoke --out runs/m18/hf-smoke/syc-ft 2>&1 | tail -3
+!python -m frontierlab.alignment.hf_cot --smoke --steps 2 --run runs/m18/hf-smoke/cot 2>&1 | tail -3
+!python -m frontierlab.evals.suite_v3.hf score --smoke --out runs/m18/hf-smoke/v3.json 2>&1 | tail -3
+!python labs/module-18/lesson-03/eval_lab.py 2>&1 | tee "$O18/18-3-eval.txt" | tail -20
+!cp -r runs/m18 "$O18/runs-m18"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16 + P17 + P18}
 
 
 def build():

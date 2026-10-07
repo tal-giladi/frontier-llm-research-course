@@ -1,0 +1,88 @@
+- id: q1
+  question: >-
+    Your attribution graph for a prompt looks clean, but 45% of the logit influence flows from error nodes.
+    A colleague wants to present the graph as "the mechanism". What do you say?
+  options:
+    - >-
+      Present it, since error nodes are a bookkeeping device of the local replacement model and do not
+      change which features are shown as important.
+    - >-
+      Present it after pruning at a lower threshold, because pruning removes error nodes along with the
+      least influential features.
+    - >-
+      Retrain the transcoders with more features first, because a larger dictionary always removes the
+      error nodes from a graph entirely.
+    - >-
+      Not yet: almost half of what drives the output is what the dictionary fails to explain, so the graph
+      is a partial account at best.
+  correct: 3
+  explanation: >-
+    Error nodes hold the difference between the MLP and its transcoder. Influence flowing from them is
+    computation the features do not describe, so a high error share limits any mechanistic reading.
+
+- id: q2
+  question: >-
+    In the local replacement model, the graph predicts that removing a feature lowers the target logit by
+    1.1; in the original model the drop is 0.4. Random active features change it by about 0.04 in both.
+    What is the most defensible conclusion?
+  options:
+    - >-
+      The feature matters well beyond the random control, but the graph overstates its size; quote the
+      measured effect.
+    - >-
+      The graph is wrong about this feature, since its predicted and real effects disagree by more than a
+      factor of two.
+    - >-
+      The original model is less reliable than the replacement model, so the predicted 1.1 is the better
+      estimate of the feature's role.
+    - >-
+      Nothing can be said until the transcoders reach zero reconstruction error at every layer of the
+      model.
+  correct: 0
+  explanation: >-
+    The real effect is ten times the control, so the ranking holds. The prediction freezes attention and
+    norms, which adapt in the real model, so magnitudes come from the intervention, not the graph.
+
+- id: q3
+  question: >-
+    Why does the local replacement model freeze attention patterns and normalisation denominators for the
+    prompt being explained?
+  options:
+    - >-
+      To make the model run faster, since attention is the most expensive part of a forward pass at long
+      context.
+    - >-
+      Because transcoders replace attention as well as MLPs, so the original patterns are no longer
+      computed by the replacement model.
+    - >-
+      So that, with errors fixed, every path from a feature to a later node is linear and edges can be
+      computed as direct effects.
+    - >-
+      Because attention patterns are identical across prompts, so freezing them loses no information
+      about the computation.
+  correct: 2
+  explanation: >-
+    Softmax and norm denominators are nonlinear. Freezing them at their values on this prompt makes the
+    feature-to-feature computation linear, so each edge is an exact direct effect that sums to its target.
+
+- id: q4
+  question: >-
+    You want attribution graphs on Qwen3-1.7B-Base with circuit-tracer and the published Qwen3-1.7B
+    transcoder set. What is the problem?
+  options:
+    - >-
+      circuit-tracer supports only Gemma and Llama models, so no Qwen3 model can be used with the library
+      at any version.
+    - >-
+      The set was trained on the post-trained Qwen3-1.7B, so on the base model its features and error
+      terms must be re-measured first.
+    - >-
+      Transcoder sets work only on the exact prompts they were trained on, so a new prompt needs a new
+      set.
+    - >-
+      Base models have no MLPs in the final layers, so per-layer transcoders cannot be attached to every
+      layer of the network.
+  correct: 1
+  explanation: >-
+    A dictionary belongs to one checkpoint and site. The open Qwen3-1.7B set's config names the
+    post-trained model; use that model, or measure reconstruction and delta loss on the base model first.

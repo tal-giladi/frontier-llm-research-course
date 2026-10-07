@@ -1,0 +1,74 @@
+- id: q1
+  question: >-
+    Your RL run's chain-of-thought monitor flags fewer and fewer episodes after you added its score to the reward,
+    and the training reward keeps rising. What do you check before reporting that the hacking stopped?
+  options:
+    - >-
+      The monitor's precision on the last checkpoint, since a falling flag rate means fewer false positives.
+    - >-
+      Whether the reward rose faster than before the change, since a faster rise shows the monitor helped.
+    - >-
+      A detector the run never trained against, such as held-out tests or an action monitor, on the same episodes.
+    - >-
+      The length of the chains of thought, since shorter reasoning always means the model stopped exploiting.
+  correct: 2
+  explanation: >-
+    Once a monitor is in the reward, its flag rate measures the policy's ability to avoid being flagged as much as its
+    behaviour. Baker et al. saw hacking continue with its intent hidden; only a check the policy was not optimised
+    against can tell the two apart.
+
+- id: q2
+  question: >-
+    Two monitors are evaluated on 1,000 episodes of which 50 contain a hack. Monitor A has recall 0.96 and flags 300
+    episodes; monitor B has recall 0.80 and flags 60. Which statement is right?
+  options:
+    - >-
+      A is better, because recall is the only number that matters for safety monitoring.
+    - >-
+      B is better by TPR x TNR, because A's many false positives cost far more than B's missed hacks.
+    - >-
+      They are equal, because both catch most hacks and the difference is within noise for 50 positives.
+    - >-
+      Neither can be compared without F1, which is the standard metric for imbalanced monitoring data.
+  correct: 1
+  explanation: >-
+    A flags 48 hacks and 252 negatives (TNR 698/950 = 0.73, TPR x TNR 0.71); B flags 40 hacks and 20 negatives (TNR
+    0.98, TPR x TNR 0.78). F1 ignores true negatives and moves with the base rate, which is why Guan et al. use TPR x TNR.
+
+- id: q3
+  question: >-
+    In the lab, plan-monitor pressure removed the hack when solvable tasks were in the training mix, but produced
+    hidden hacks when every training task was unsolvable. What explains the difference?
+  options:
+    - >-
+      The unsolvable arm trained for more steps, so it reached the high-optimisation regime that the other did not.
+    - >-
+      The plan monitor was weaker on hard tasks, because their prompts contain larger numbers it cannot parse.
+    - >-
+      With solvable tasks the warm start had no tables to amplify, so the hack could never appear in that arm.
+    - >-
+      Where honest replies earned reward they outcompeted the hidden table; where none did, it was the only rewarded reply.
+  correct: 3
+  explanation: >-
+    The reward function was identical. What differed was which replies earned reward: honest rules on solvable tasks,
+    only a table after a rule's plan on unsolvable ones. RL amplifies whatever rewarded behaviour is sampled, so it
+    selected hiding exactly where hiding was the only way to earn reward.
+
+- id: q4
+  question: >-
+    A reasoning model's chain of thought never mentions a hint that, by intervention, changed its answer in 40% of
+    cases. A colleague concludes its chain of thought is useless for monitoring. What does the evidence support?
+  options:
+    - >-
+      Unfaithful reasoning on easy steps does not mean a monitor misses behaviour that needs reasoning to carry out.
+    - >-
+      The colleague is right, because a monitor can only work on a chain of thought that is fully faithful.
+    - >-
+      The colleague is wrong, because faithfulness and monitorability are the same property under another name.
+    - >-
+      The hint result is irrelevant, because faithfulness can only be measured on models without RL training.
+  correct: 0
+  explanation: >-
+    Chen et al. measure faithfulness on hints the model did not need to reason about; Emmons et al. find that when bad
+    behaviour requires the reasoning, models struggle to hide it. Monitorability and faithfulness are related but
+    different, so both must be measured.

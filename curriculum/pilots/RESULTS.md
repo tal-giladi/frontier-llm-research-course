@@ -37,3 +37,7 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P15 — Module 15 main path and project (~9–15 H100-h PROJECTED) | not piloted (budget) | | | |
 | P16 — Module 16 multi-turn RL and misspecified rewards (T4 variants) | not run | | | |
 | P16 — Module 16 main path and project (~11–19 GPU-h PROJECTED) | not piloted (budget) | | | |
+| P17 — Module 17 SAE check, IOI claim, steering on Qwen3-1.7B | not run | | | |
+| P17 — Module 17 17.3 circuit-tracer (separate env) and 17.5 introspection | not piloted yet | | | |
+| P18 — Module 18 main-path smoke tests, 18.3 eval lab | not run | | | |
+| P18 — Module 18 main path and project (~9–14 GPU-h PROJECTED) | not piloted (budget) | | | |

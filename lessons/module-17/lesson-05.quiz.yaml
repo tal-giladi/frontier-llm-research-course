@@ -1,0 +1,62 @@
+- id: q1
+  question: >-
+    You prune a dense and a weight-sparse model on the same task. The dense model is pruned until its task
+    loss reaches 0.15, the sparse model until 0.40, and the sparse circuit is 20 times smaller. What can
+    you conclude?
+  options:
+    - >-
+      Sparse training produces 20 times smaller circuits on this task, since both circuits were found with
+      the same pruning method.
+    - >-
+      Little: a looser loss target alone shrinks a circuit, so sizes must be compared at the same target
+      loss.
+    - >-
+      The dense model is less interpretable at every loss, because its circuit at 0.15 is already larger
+      than the sparse one at 0.40.
+    - >-
+      Nothing, because circuit size cannot be compared between models with different numbers of nonzero
+      weights.
+  correct: 1
+  explanation: >-
+    Circuit size depends on how much loss you allow. The comparison in Gao et al. is at matched loss;
+    with different targets the difference cannot be attributed to sparsity.
+
+- id: q2
+  question: >-
+    In a concept-injection run, a model claims to detect an injected thought in 11 of 12 injection trials.
+    What do you need before calling this introspection?
+  options:
+    - >-
+      More injection strengths, to show the detection rate rises with strength as the paper's figure
+      does.
+    - >-
+      A larger model, since detection rates on small models are known to be inflated by tokenisation.
+    - >-
+      The claim rate with no injection and with random vectors, and whether it names the concept.
+    - >-
+      A second grader, since keyword grading cannot recognise a detection claim phrased in a new way.
+  correct: 2
+  explanation: >-
+    A detection claim is informative only relative to the false-positive rate; in the lab Qwen3-0.6B
+    claimed detection in 12 of 12 trials without any injection and never named the concept.
+
+- id: q3
+  question: >-
+    Two seeds of a 5%-dense toy model give circuits with 16 times fewer nonzero weights than two dense
+    seeds, the same factor Gao et al. report. How should you describe this in a report?
+  options:
+    - >-
+      As a small-scale demonstration of the mechanism, with the matching factor noted as coincidental
+      given two seeds and one toy task.
+    - >-
+      As an independent replication of the paper's 16-fold result, since the factor matches to two
+      significant figures.
+    - >-
+      As evidence that the 16-fold factor is a property of sparse training that holds at every scale and
+      on every task.
+    - >-
+      As unreliable, because circuits of toy models cannot be compared with circuits of language models.
+  correct: 0
+  explanation: >-
+    A course experiment at toy scale shows the mechanism but is not proof of the paper's number; the
+    report should state the seeds, the task and the pruning target as limits.

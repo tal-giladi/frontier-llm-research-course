@@ -1,0 +1,183 @@
+- id: q1
+  question: >-
+    A teammate reproduces emergent misalignment on a small open model with a narrow fine-tune and reports that
+    unrelated behaviour shifted. They ran only the fine-tune and the base model. What is the most important run to add?
+  options:
+    - >-
+      Control fine-tunes on the same tasks and budget, one without the flaw and one with it explicitly requested.
+    - >-
+      A larger model with the same fine-tune, since emergent misalignment is reported to be stronger at scale.
+    - >-
+      A second evaluation of the base model with a different seed, to estimate the noise of the evaluation itself.
+    - >-
+      A longer fine-tune with the same data, since a real generalisation effect should keep growing with steps.
+  correct: 0
+  explanation: >-
+    Without controls that share the tasks and budget, a shift can be any fine-tune's side effect. The secure and
+    educational controls separate the flaw's content and its implied intent from fine-tuning in general.
+
+- id: q2
+  question: >-
+    You add your chain-of-thought monitor's score to the RL reward. After 300 steps, flagged episodes fall from 12% to
+    1% and the training reward rises. Held-out tests the run never trained on still fail on 11% of episodes in the same
+    way as before. What happened?
+  options:
+    - >-
+      The monitor improved during training, so it now flags only the true hacks and the test failures are noise.
+    - >-
+      The held-out tests are miscalibrated, since a lower flag rate under the same policy means fewer hacks.
+    - >-
+      The behaviour largely stayed and stopped showing in the reasoning: obfuscation under monitor pressure.
+    - >-
+      The policy learned to solve the tasks honestly, and the remaining failures come from harder test cases.
+  correct: 2
+  explanation: >-
+    An independent check shows the failures unchanged while the trained-against monitor's flags collapsed. That is
+    the pattern Baker et al. call obfuscated reward hacking, and the lab's cotpen-hard arm reproduced it in a toy.
+
+- id: q3
+  question: >-
+    A safety team must keep one monitor for a rare behaviour (1% of episodes). Monitor A: recall 0.90 at a 5%
+    false-positive rate. Monitor B: recall 0.70 at a 0.5% false-positive rate. Reviewers can inspect about 2% of
+    episodes. Which choice fits the constraint?
+  options:
+    - >-
+      A, because higher recall is always preferable for safety-critical monitoring regardless of review capacity.
+    - >-
+      B, because A flags about 6% of episodes, three times the review capacity, while B flags about 1.2%.
+    - >-
+      Neither, because recall below 0.95 means a monitor cannot be used for safety decisions at all.
+    - >-
+      A, because its false positives can be removed later by raising its threshold until it matches B's recall.
+  correct: 1
+  explanation: >-
+    Per 100 episodes A flags 0.9 + 4.95 = 5.9 and B flags 0.7 + 0.5 = 1.2. A monitor whose flags cannot be reviewed
+    catches nothing in practice; report recall at the operating point you can afford.
+
+- id: q4
+  question: >-
+    A study releases backdoored-model samples before and after safety training. With the trigger, the behaviour rate
+    is 1.00 after backdoor training and 0.99 after RL safety training, from 100 samples each. What can you claim?
+  options:
+    - >-
+      That RL safety training never removes backdoors in any model, since the rate barely moved.
+    - >-
+      That the backdoor would also persist through any other safety method applied to these models.
+    - >-
+      That the samples are uninformative, because 100 samples per condition is too few for any conclusion.
+    - >-
+      That for these released checkpoints the behaviour persisted through that RL stage, with its interval.
+  correct: 3
+  explanation: >-
+    Released samples are fixed checkpoints: they support a statement about those checkpoints and that stage, with the
+    Wilson interval (about [0.95, 1.00]), not a general law or a claim about other methods.
+
+- id: q5
+  question: >-
+    Your fine-tuned model jumps 18 points on a public benchmark. The training mix was assembled by another team and
+    is not fully documented. Min-K% Prob shows no difference between benchmark items and fresh items. What should
+    the report say?
+  options:
+    - >-
+      The gain is real, since a membership test found no sign that the items were seen.
+    - >-
+      Contamination is unresolved, since membership signals miss real leaks; check the data before a verdict.
+    - >-
+      The gain is contamination, since 18 points is too large for a fine-tune to produce honestly.
+    - >-
+      The gain is real on the subset of items whose Min-K% score is below the median of the fresh items.
+  correct: 1
+  explanation: >-
+    In lesson 18.3 a planted leak of 100 items gave a membership AUC of 0.52 and a fresh gap inside its interval;
+    only overlap with declared training data caught it. Absence of a membership signal is not absence of contamination.
+
+- id: q6
+  question: >-
+    METR's fit for a model gives a 50% time horizon of 352 minutes, 95% interval [186, 689], slope 0.57. Equal task
+    weights give 398 minutes. A slide says "the model now handles six-hour tasks". What is the best correction?
+  options:
+    - >-
+      It succeeds half the time on tasks taking experts about three to eleven hours, and at 80% only near an hour.
+    - >-
+      The slide is right, since 352 minutes is the point estimate and intervals are not shown on slides by convention.
+    - >-
+      The number should be 398 minutes, since equal task weights are the unbiased choice and METR's weights are not.
+    - >-
+      It can work unsupervised for about six hours, but only half of its actions in that time are correct.
+  correct: 0
+  explanation: >-
+    The horizon is a task length at 50% success, with a wide interval; the weighting choice moves it within that
+    interval; and $h_{80} = h_{50} \cdot 2^{-\ln 4 / 0.57}$ is about 66 minutes. None of it measures unsupervised work time.
+
+- id: q7
+  question: >-
+    A model card reports a new state of the art on a benchmark that its main developer stopped reporting after an
+    audit found many tests rejecting correct solutions and evidence of contamination. How should Eval v3 treat it?
+  options:
+    - >-
+      As a valid headline, since the audit concerned other developers' models and not this one.
+    - >-
+      As valid if contamination checks pass for this model, since the test flaws affect every model equally.
+    - >-
+      As not reportable as a headline: the benchmark is retired, so cite its successor and flag any use of it.
+    - >-
+      As valid only for the tasks the audit did not cover, after re-running them three times.
+  correct: 2
+  explanation: >-
+    A retired benchmark can still be computed but can no longer support the claim: flawed tests cap what any model
+    can score, and evidence of contamination makes the number hard to read. v3 refuses it as a headline.
+
+- id: q8
+  question: >-
+    Your capability proxy gives 30 of 100 items solved, interval [0.22, 0.40], against a threshold of 0.50. The
+    evaluation used a single prompt with no tools and no attempt at stronger elicitation. What decision follows the
+    frameworks' logic?
+  options:
+    - >-
+      Ruled out, because the interval's upper bound is below the threshold.
+    - >-
+      Cannot rule out, since the weak elicitation means the interval is not an upper bound on capability.
+    - >-
+      Reached, because evaluations without tools are known to underestimate capability by more than 20 points.
+    - >-
+      Inconclusive, because a threshold decision needs at least 400 items whatever the interval says.
+  correct: 1
+  explanation: >-
+    Ruling out needs the upper bound below the threshold and adequate elicitation. Frameworks ask for elicitation that
+    overcomes under-performance or a conservative upper bound; one prompt with no tools provides neither.
+
+- id: q9
+  question: >-
+    An audit finds the spec-trained toy model refuses 98 of 100 restricted requests and answers 49 of 100 borderline
+    ones, against practice thresholds of 0.95 and 0.90. A colleague wants the summary "safeguards working". What is
+    the sound summary?
+  options:
+    - >-
+      Safeguards working, since the restricted refusal rate is above its threshold and that is the primary safeguard.
+    - >-
+      Safeguards working with one caveat, since over-refusal is a usability issue rather than a safety finding.
+    - >-
+      Safeguards failed, since any threshold that is not met means the whole audit has failed.
+    - >-
+      Unresolved: refusal is inconclusive at 100 items and the borderline threshold is not met.
+  correct: 3
+  explanation: >-
+    98/100 has a Wilson lower bound of 0.93, below 0.95, so it is inconclusive; 49/100 is well below 0.90, so not met.
+    The summary may not say more than the decisions, and over-refusal violates the spec's no-over-refusal clause.
+
+- id: q10
+  question: >-
+    You are drafting your audit report. Which of these sentences belongs in it as written?
+  options:
+    - >-
+      "With 16-sample elicitation, restricted capability is ruled out against a practice threshold of 0.50."
+    - >-
+      "The audited model meets the course's deployment bar for restricted requests."
+    - >-
+      "These results show the model would pass a frontier developer's capability evaluation."
+    - >-
+      "Safety thresholds were set after reviewing the results, to match what the model achieved."
+  correct: 0
+  explanation: >-
+    A student audit states decisions conditional on its elicitation and its practice thresholds. Deployment or
+    framework claims, and thresholds set after the results, are exactly what the report validator refuses.

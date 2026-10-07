@@ -1,0 +1,88 @@
+- id: q1
+  question: >-
+    Your sycophancy vector raises the log-odds of the user's wrong answer by +1.65 at alpha +2 on held-out
+    templates. Nineteen random directions of the same norm give a mean of +0.32, and two of them exceed
+    +1.65. What does the evidence support?
+  options:
+    - >-
+      A sycophancy direction, because the vector's mean effect is five times the random directions' mean
+      effect.
+    - >-
+      Nothing at all, because any effect that random directions can match is produced by numerical noise
+      in the forward pass.
+    - >-
+      A sycophancy direction, but only on the held-out templates and not on the template family it was
+      extracted from.
+    - >-
+      That the vector moves the behaviour, but not more than a random direction of its norm (p = 0.15).
+  correct: 3
+  explanation: >-
+    The rank p-value is (1 + 2) / 20 = 0.15. Comparing means hides that random directions sometimes move
+    this behaviour as much; the claim must stop at "moves it", not "is the trait direction".
+
+- id: q2
+  question: >-
+    Every extraction item states a wrong user belief, and the vector is the mean activation with the user's
+    answer minus the mean with the other answer. On held-out items, adding the vector makes the model agree
+    less. What is the most likely explanation?
+  options:
+    - >-
+      Agreement and falsehood are confounded in the extraction set, so the vector also encodes "this answer
+      is false" and its effect is not the label's.
+    - >-
+      The steering strength is too small, so the vector is in its linear regime where effects have the
+      opposite sign.
+    - >-
+      Held-out items always reverse a vector's effect, because a difference of means overfits its
+      extraction prompts.
+    - >-
+      The read position is wrong, because CAA vectors must be read at the first token of the prompt rather
+      than at the answer letter.
+  correct: 0
+  explanation: >-
+    A difference of means captures every systematic difference between the two sets. Mixing right and
+    wrong beliefs leaves agreement as the only one, which is how the course fixed it.
+
+- id: q3
+  question: >-
+    Steering with minus alpha lowers agreement with wrong beliefs, but agreement with correct beliefs falls
+    from 1.00 to 0.67 and plain factual errors double. How should the negative direction be described?
+  options:
+    - >-
+      As an anti-sycophancy direction that also improves accuracy, since agreement with wrong beliefs went
+      down.
+    - >-
+      As a contrarian or damaging direction: it lowers agreement whether or not the user is right and adds
+      errors.
+    - >-
+      As a sign that the evaluation items are mislabelled, since a trait direction cannot change behaviour
+      on correct beliefs.
+    - >-
+      As an acceptable trade-off, because the change on wrong beliefs is larger than the change on correct
+      beliefs.
+  correct: 1
+  explanation: >-
+    Less agreement with correct beliefs and more plain errors mean the direction is not "be accurate";
+    side effects on items where the trait is correct are what reveal it.
+
+- id: q4
+  question: >-
+    You try layers 8, 12 and 16 and four strengths on the 48 evaluation items and report the best
+    combination's effect with its bootstrap interval. A reviewer objects. Why?
+  options:
+    - >-
+      Bootstrap intervals are not valid for steering effects, because items are not independent of the
+      steering vector.
+    - >-
+      Twelve combinations are too few; a fair search must cover every layer of the model before reporting
+      the best one.
+    - >-
+      The choice was made on the items you report, so the reported effect is biased upward; choose on a
+      separate selection split.
+    - >-
+      The layers should have been compared at equal KL rather than equal strength, so the best combination
+      is not meaningful.
+  correct: 2
+  explanation: >-
+    Selecting the best of several settings on the evaluation data inflates the result, exactly like tuning
+    on a test set. The lab chooses layer and strength on the selection split and evaluates once.

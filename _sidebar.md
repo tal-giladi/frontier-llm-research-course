@@ -112,3 +112,17 @@
   - [70 · Reward hacking](lessons/module-16/lesson-04.md)
   - [71 · Computer-use agents](lessons/module-16/lesson-05.md)
   - [Module 16 quiz](assessments/module-16-quiz.md)
+- Stage E — Understanding, evaluating and communicating
+- **Module 17 — What can we claim about a model's internals?**
+  - [72 · Features and sparse autoencoders](lessons/module-17/lesson-01.md)
+  - [73 · Causal interventions](lessons/module-17/lesson-02.md)
+  - [74 · Transcoders and attribution graphs](lessons/module-17/lesson-03.md)
+  - [75 · Steering and persona vectors](lessons/module-17/lesson-04.md)
+  - [76 · Interpretable by design and introspection](lessons/module-17/lesson-05.md)
+  - [Module 17 quiz](assessments/module-17-quiz.md)
+- **Module 18 — Alignment science, frontier evaluation and governance**
+  - [77 · Model organisms of misalignment](lessons/module-18/lesson-01.md)
+  - [78 · Chain-of-thought monitorability](lessons/module-18/lesson-02.md)
+  - [79 · Frontier evaluation](lessons/module-18/lesson-03.md)
+  - [80 · Safety frameworks and system cards](lessons/module-18/lesson-04.md)
+  - [Module 18 quiz](assessments/module-18-quiz.md)

@@ -1,0 +1,110 @@
+- id: q1
+  question: >-
+    Two SAEs on the same residual-stream site: A has FVU 0.02 and spliced delta loss +0.09 nats; B has FVU
+    0.05 and delta loss +0.03 nats, both at L0 of about 30. You need features for causal experiments on the
+    model's behaviour. Which do you pick and why?
+  options:
+    - >-
+      A, because explaining more of the variance means its latents describe more of what the model
+      represents at that site.
+    - >-
+      Neither, because an FVU above 0.01 shows that a dictionary is too small for any causal experiment
+      to be meaningful.
+    - >-
+      Either, since at the same L0 the two numbers measure the same thing and their disagreement is
+      sampling noise.
+    - >-
+      B, because the model loses less when B's reconstruction replaces the activation; A keeps variance the
+      model does not use.
+  correct: 3
+  explanation: >-
+    FVU weights all variance equally; delta loss measures what the model actually depends on. For causal
+    claims, the dictionary that damages the model least at the same sparsity is the better instrument.
+
+- id: q2
+  question: >-
+    You splice your SAE's reconstruction plus its error term back into the model and the loss rises from
+    5.74 to 6.10. What does that tell you?
+  options:
+    - >-
+      The SAE has too few latents, because the error term carries the part of the activation the
+      dictionary could not represent.
+    - >-
+      The splice is broken (wrong site, dtype or input scale): adding the error back must give the clean
+      loss.
+    - >-
+      The SAE is overfitting its training tokens, so the error term on held-out text is larger than the
+      reconstruction itself.
+    - >-
+      The model is sensitive to small numerical changes at this site, which is expected for residual
+      streams in the middle layers.
+  correct: 1
+  explanation: >-
+    Reconstruction plus error equals the original activation exactly, so the loss must not change. A
+    change means the hook or the scaling is wrong, and no other number from that pipeline can be trusted.
+
+- id: q3
+  question: >-
+    Why can TopK and JumpReLU SAEs reconstruct better than an L1-penalised ReLU SAE at the same number of
+    active latents?
+  options:
+    - >-
+      L1 also shrinks the codes of active latents, biasing reconstructions low; TopK and JumpReLU control
+      sparsity without that shrinkage.
+    - >-
+      TopK and JumpReLU use larger dictionaries by construction, so each latent needs to represent fewer
+      directions of the activation space.
+    - >-
+      The ReLU kind cannot learn a decoder bias, so its reconstructions are centred on zero rather than on
+      the mean activation.
+    - >-
+      L1 penalties prevent dead latents, which forces the ReLU SAE to spread its code over too many
+      directions.
+  correct: 0
+  explanation: >-
+    L1 pays for activation size, so active latents are pushed toward zero (shrinkage). TopK fixes L0
+    directly and JumpReLU penalises L0 with a learned threshold, leaving active codes unshrunk.
+
+- id: q4
+  question: >-
+    A paper reports that its residual-stream SAE "recovers 99.5% of the loss". You find the reference was
+    zero-ablating the residual stream. How should you read the number?
+  options:
+    - >-
+      As strong evidence of faithfulness, since recovering the loss relative to any ablation means the
+      model's behaviour is almost unchanged.
+    - >-
+      As a sign the SAE overfits, because no dictionary can recover more than about 95% of the loss at a
+      residual site.
+    - >-
+      As weak evidence: zeroing the residual stream destroys the model, so almost any reconstruction
+      recovers nearly all of that gap; ask for the raw delta loss.
+    - >-
+      As directly comparable with an MLP-site SAE that recovers 79% relative to zero-ablating the MLP,
+      since both use zero ablation.
+  correct: 2
+  explanation: >-
+    Loss recovered depends on the ablation. Against a catastrophic ablation every SAE looks good; the raw
+    delta loss, with an interval, is the number that compares SAEs and sites.
+
+- id: q5
+  question: >-
+    In the toy model of superposition, 20 features are squeezed into 5 dimensions. As the features become
+    sparser, the number of represented features rises from 5 to 16. Why?
+  options:
+    - >-
+      Sparse features have smaller values on average, so their directions can be packed closer without
+      exceeding the weight norm the optimiser allows.
+    - >-
+      Sparse features are rarely active together, so sharing directions costs little interference, and
+      the ReLU filters the small interference out.
+    - >-
+      The optimiser runs longer when features are sparse, so it has time to find directions for the less
+      important features.
+    - >-
+      Sparsity makes the feature importances equal, so the model has no reason to prefer the first five
+      features over the others.
+  correct: 1
+  explanation: >-
+    Interference only costs loss when two features sharing a direction are active together; with sparse
+    features that is rare, so representing more features than dimensions lowers the loss.

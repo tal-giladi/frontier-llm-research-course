@@ -52,8 +52,8 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 14 — Which RL objective, at what scale? (integrated)
 - [x] Module 15 — How should compute be spent at inference? (integrated)
 - [x] Module 16 — How do we train agents without fooling ourselves? (integrated, narrowed scope)
-- [ ] Module 17 — What can we claim about a model's internals?
-- [ ] Module 18 — Alignment science, frontier evaluation and governance
+- [x] Module 17 — What can we claim about a model's internals? (integrated)
+- [x] Module 18 — Alignment science, frontier evaluation and governance (integrated)
 - [ ] Module 19 — How is frontier research chosen, reproduced and written?
 - [ ] Module 20 — Capstone
 - [ ] Course-provided artefacts on Hugging Face (needs Tal's account)
@@ -75,6 +75,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 | 2026-10-04 | Continued training from a checkpoint goes through `frontierlab.longctx.extend` (wraps the loop); the native `--init-from` loop change proposed in `curriculum/inbox/module-04-loop-changes.md` is deferred until a later module needs it |
 | 2026-10-04 | RMSNorm keeps float64 as float64 (Module 3 finding); float32/bf16 behaviour unchanged |
 | 2026-10-04 | Optimizer runs go through `frontierlab.optim.train` (wraps the loop); native loop flags in `curriculum/inbox/module-07-loop-changes.md` deferred. Sidebar running numbers reserve 21–27 for Module 6 (7 lessons). |
+| 2026-10-08 | Module 17 main path needs two environments: circuit-tracer 0.5.0 pins transformers <=4.57.3 (17.3 only, own venv). Plan's RSP v3.0 superseded by v3.4 (2026-07-08); FSF v3.1; Preparedness Framework v2 is current. |
 | 2026-10-07 | `frontierlab.posttrain` hook changes proposed by Modules 13 (`reward_fn`, `eos_id` in `policy.sample`) and 14 (`eval_verifier`, sampler/reward hooks) deferred; Modules 13–14 wrap or patch at run time (`rlscale.runner.patched_loop`, `pipeline/recipe_r.py` own sampler). Revisit if Module 15–16 need them. |
 | 2026-10-07 | Stage D base model proposed: Qwen3-1.7B-Base (`ea980cb`, Apache-2.0), alternative OLMo-2-0425-1B; Stage D RL results carry a random/format-reward control arm (spurious-reward results). Confirmed by Tal 2026-10-07. Module 11 CPU labs use Data-v0 at vocabulary 1,024 (no iso-FLOP minimum at 8,192). Main-path Recipe-R needs the native loop changes from inbox modules 07 and 10 (wrappers cannot be stacked). |
 | 2026-10-05 | Data runs use `frontierlab.datax.train` (wraps the loop); native `--mixture/--doc-mask/--anneal` flags in `curriculum/inbox/module-10-shared-changes.md` deferred. `gqa-docmask` registered in `attention/__init__`. |

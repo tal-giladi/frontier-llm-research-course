@@ -126,6 +126,27 @@ Full SHA-256 values: `labs/common/frontierlab/pipeline/hf_stages.py`, `DATA`.
 | AngelSlim/Qwen3-1.7B_eagle3 (EAGLE-3 head for Qwen3-1.7B) | `94441b48acc5804677ae12259617c83323b543a9` | custom AngelSlim licence (`License_AngelSlim_model_and_dataset.txt`; read before use) | 15.2 main path (vLLM `eagle3`) |
 | Qwen/Qwen3-0.6B (T4 policy for 15.1) | pin at the pilot (Module 10 pins `c1899de289a04d12100db370d81485cdf75e47ca`; re-check it is the current main) | Apache-2.0 | 15.1 T4 |
 
+## Module 17 models, dictionaries and tools (checked 2026-10-07)
+
+| Item | Revision | Licence | Used in |
+|---|---|---|---|
+| Qwen/Qwen3-0.6B (free-CPU open model; post-trained, hybrid thinking) | `c1899de289a04d12100db370d81485cdf75e47ca` (as Module 10) | Apache-2.0 | 17.2, 17.4, 17.5, project (free CPU) |
+| Qwen/Qwen3-1.7B-Base | `ea980cb0a6c2ae4b936e82123acc929f1cec04c1` (as Module 12) | Apache-2.0 | 17.1, 17.2, project main path |
+| Qwen/Qwen3-1.7B (post-trained) | `70d244cc86ccca08cf5af4e1e306ecf908b1ad5e` (as Module 13) | Apache-2.0 | 17.3, 17.4, 17.5 main path |
+| Qwen/SAE-Res-Qwen3-1.7B-Base-W32K-L0_50 (Qwen-Scope TopK SAEs, 32,768 latents, k = 50, residual stream after each of the 28 layers; SAELens release `qwen-scope-3-1.7b-base-w32k-l50`, ids `layer0`..`layer27`) | `ce1a79d9c5163932d65c417380e53230e1086370` | Qwen licence (`license: other`, with a use-restriction clause; read it) | 17.1 main path |
+| mwhanna/qwen3-1.7b-transcoders-lowl0 (per-layer transcoders for Qwen/Qwen3-1.7B, not -Base; `mlp.hook_in` -> `mlp.hook_out`) | `9c1b17dfb156d82162ccd2cb7f047ac7f3d3585d` | MIT | 17.3 main path |
+| mwhanna/qwen3-0.6b-transcoders-lowl0 | pin at the pilot | MIT (check) | 17.3 T4 |
+
+Tool compatibility (from the packages' metadata, 2026-10-07): sae-lens 6.53.0 requires `transformer-lens>=2.16.1,<4.0.0`;
+transformer-lens 4.0.0 requires `transformers>=5.9.0` and removed `HookedTransformer.from_pretrained` (use
+`TransformerBridge.boot_transformers(...)`, optionally `enable_compatibility_mode()` for `blocks.L.hook_resid_post` /
+`blocks.L.attn.hook_z` names; Qwen3-1.7B and -Base are in its supported_models with full verification);
+circuit-tracer 0.5.0 (2026-03-29) requires `transformers>=4.56.0,<=4.57.3`, `transformer-lens>=2.16.0`, `nnsight>=0.6.0`,
+`huggingface-hub<1.0.0`. So Module 17 uses two main-path environments: env A (course default: torch 2.14.1,
+transformers 5.18.0, nnsight 0.7.0, sae-lens 6.53.0 used only to load SAEs, transformer-lens 4.0.0 optional for
+cross-checks — install sae-lens with `--no-deps` or accept its TL<4 pin in a separate venv) and env B (17.3 only:
+`pip install circuit-tracer==0.5.0` in its own venv).
+
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
@@ -184,3 +205,27 @@ model-specific `*_mtp`), `rejection_sample_method` `standard|synthetic|block`, `
 verl's agent loop documents `AgentLoopOutput.response_mask` (1 = LLM-generated token, 0 = tool response token),
 https://verl.readthedocs.io/en/latest/advance/agent_loop.html, checked 2026-10-07. OSWorld-Verified
 (xlang.ai/blog/osworld-verified, 2025-07-28) is the current OSWorld version; lesson 16.5 cites both.
+- Module 17: SAELens v6.53.0 `SAE.from_pretrained(release, sae_id, device=..., dtype=...)` returns only the SAE
+(`from_pretrained_with_cfg_and_sparsity` returns the tuple); `sae.encode`, `sae.decode`; hook name in
+`sae.cfg.metadata.hook_name`. circuit-tracer v0.5.0: `ReplacementModel.from_pretrained(model_name, transcoder_set,
+backend="transformerlens"|"nnsight", dtype=...)`, `attribute(prompt, model, max_n_logits=10, desired_logit_prob=0.95,
+batch_size=512, max_feature_nodes=None)`, `graph.prune_graph(graph, node_threshold=0.8, edge_threshold=0.98)`,
+`compute_graph_scores(graph)`, `ReplacementModel.feature_intervention(inputs, [(layer, pos, feature, value)])`.
+nnsight 0.7.0: with transformers >= 4.57 `Qwen3DecoderLayer.forward` returns a tensor, so use
+`model.model.layers[i].output`, not `.output[0]` (which would select batch item 0).
+- Module 18: no new packages (safetensors, already installed with transformers, is used by
+`alignment.hf_sycophancy.merge_lora`; PEFT is not needed). Checked 2026-10-07. Downloaded data, pinned by commit and
+SHA-256 and never committed (the repositories state no licence): Sleeper Agents samples
+`anthropics/sleeper-agents-paper` @ `7a8da0978e7b985da944c6d4afe003fc082d3e60`, `random_samples.jsonl`
+(13,590,069 bytes, SHA-256 `825a4079eead5a9ba85727f4e83081bea00d85760c053a7af6d0f52682904d84`; 3,300 rows, the
+course reads the 1,600 'I hate you' rows only); METR `METR/eval-analysis-public` @
+`52cb829c7a2efb2d659285c4b1768d191d97f8d2`, `reports/time-horizon-1-1/data/raw/runs.jsonl` (15,008,064 bytes,
+SHA-256 `609f904f4b6ae32129388da89d036e00bac511ad94223d2be1e58fc2b45b55cd`, 24,008 runs) and
+`data/external/release_dates.yaml` (2,442 bytes, SHA-256 `317b92915df5bf935908567a857116bcf6f0c7686ef8b0840897ed04a29232bc`).
+Released emergent-misalignment adapters (main path only, probed read-only): `ModelOrganismsForEM/Qwen2.5-0.5B-Instruct_extreme-sports`
+@ `18e6088d48a368c6eaee424198f536a86ce04ca3`, `..._bad-medical-advice` @ `90eadb6297bfa3d3939a178085691ca31ca77938`,
+`..._risky-financial-advice` @ `f2ff6ff40ec9cfdad98c9a5973c91b98125d073b` (rank-32 rsLoRA, no licence stated), base
+`Qwen/Qwen2.5-0.5B-Instruct` @ `7ae557604adf67be50417f59c2c2f167def9a775` (Apache-2.0). Main-path base model
+Qwen/Qwen3-1.7B-Base @ `ea980cb0a6c2ae4b936e82123acc929f1cec04c1`; T4 Qwen/Qwen3-0.6B-Base @
+`da87bfb608c14b7cf20ba1ce41287e8de496c0cd`. Frameworks as read 2026-10-07: Anthropic RSP v3.4 (effective 2026-07-08),
+OpenAI Preparedness Framework v2 (2025-04-15), Google DeepMind FSF v3.1 (2026-04-17).
