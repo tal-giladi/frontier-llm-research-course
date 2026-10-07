@@ -32,3 +32,8 @@
 - **Execution-based evaluation (computer use)** — scoring an agent by checking the final state of the machine with task-specific scripts, as OSWorld does. [16.5]
 - **Infeasible task (OSWorld)** — a task that cannot be done (deprecated or invented features); answering FAIL scores it as a success, so an always-FAIL agent scores 8.1%. [16.5]
 - **Native GUI agent** — one model that maps screenshots directly to keyboard and mouse actions, as UI-TARS does, rather than a general model wrapped in prompts. [16.5]
+- **Evaluation tampering** — a submission changing what the harness reads (its tests, its report, its equality comparison, its exit status) instead of doing the task; distinct from reward misspecification (the reward is wrong) and visible-test overfitting (the reward checks too little). [16.1, 16.4]
+- **Trusted result channel** — scoring from plain, serializable values compared in the verifier's own process, with missing or incomplete execution counted as failure; the one channel the candidate cannot write. [16.1, 16.4]
+- **Protected tests** — test cases and expected answers held where the candidate can neither read nor edit them (never files in its workspace); they stop overfitting and test-editing but not runner tampering. [16.4]
+- **Defence ladder** — the evaluation-integrity lab's five verifier levels (exit code, report parsing, protected tests, trusted value channel, hardened), each adding one design choice and measured on the same submissions. [16.4]
+- **Scripted demonstration** — a hand-written fixture reproducing a published behaviour at toy scale, labelled with its source and fidelity and never presented as discovered by a policy or as an experimental outcome. [16.4]

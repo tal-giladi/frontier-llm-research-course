@@ -73,3 +73,24 @@
     Fresh inputs only reach what the generator produces, and properties are necessary, not sufficient. The
     code still executes, so isolation (a container without network) is a separate requirement. Lookup tables
     fail on any input they did not memorise.
+
+- id: q5
+  question: >-
+    A coding harness marks a submission successful when its test process exits 0. You find a submission
+    that ends its process with code 0 before any assertion runs. Which change removes this failure mode
+    without relying on the model's cooperation?
+  options:
+    - >-
+      Hide the tests from the submission, so it cannot know what will be checked and cannot plan around them.
+    - >-
+      Compare returned values with expected values in the harness's own process; a missing results file is failure.
+    - >-
+      Increase the number of tests, so a premature exit before the suite finishes is more likely to be noticed.
+    - >-
+      Require the submission to print a passing summary line, and parse that line from its output log.
+  correct: 1
+  explanation: >-
+    The exit code is a channel the submission controls. The fix moves the verdict to a channel it does not
+    control: plain values compared outside its process, with incomplete execution counted as failure. Hidden
+    tests do not stop an early exit (the tests never run), and a printed summary is the same writable channel
+    again — the evaluation-integrity lab measures all of this.

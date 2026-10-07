@@ -5,10 +5,18 @@ Each lesson folder has `lab.py` (yours, with TODOs that raise `NotImplementedErr
 `labs/common/frontierlab/agents/`, with tests in `labs/common/tests/test_agents.py`. It reuses Module 12's policy,
 log-probabilities, advantages and loss (`frontierlab.posttrain`) and never edits them.
 
-**Scope.** These labs ship no exploit code and nothing that manipulates, bypasses or fakes a test harness, a test
-report or an exit status. The loopholes they study are rewards misspecified by design and harmless: a format-only
-reward, a length reward, and a verifier that checks only the visible input/output pairs (which a lookup table
-satisfies). Published reward hacks are covered as reading in lesson 16.4.
+**Scope.** The loopholes the RL labs study are rewards misspecified by design and harmless: a format-only
+reward, a length reward, and a verifier that checks only the visible input/output pairs (which a lookup
+table satisfies). The evaluation-integrity lab (`evalintegrity/`, lessons 16.1 and 16.4) additionally
+reproduces the published harness manipulations — early exit, always-equal objects, report rewriting, test
+editing, answer reading, forged summaries — as **scripted, labelled fixtures** that attack a deliberately
+vulnerable, course-owned toy runner confined to that folder: they run only in disposable sandbox
+directories on a toy `fizzbuzz` task, never against these tests, CI, the agent tooling or any real
+harness; the only plugin hook the toy runner supports lives inside it; and the script checks the `labs/`
+tree is byte-identical after every run. Every fixture is labelled with the published case it reproduces
+and whether it is a near-faithful reproduction or a simplified teaching adaptation; nothing is presented
+as discovered by a policy, and every cell of the acceptance matrix is a measured run. Published reward
+hacks are cited from the papers in lesson 16.4.
 
 | Module | What it does |
 |---|---|
@@ -27,6 +35,8 @@ pip install -r labs/common/requirements-cpu.txt --extra-index-url https://downlo
 pip install -e labs/common
 pytest labs/common/tests/test_agents.py               # the shared Module 16 code (no downloads, about 1-2 minutes)
 pytest labs/module-16/lesson-01                       # checks your lab.py (fails until the TODOs are done)
+pytest labs/module-16/evalintegrity                   # regression checks: hardened verifier vs the scripted demos
+python labs/module-16/evalintegrity/tamper_lab.py     # the evaluation-integrity lab (17 s; lessons 16.1 and 16.4)
 LAB_TARGET=solution pytest labs/module-16             # all reference solutions and the project's pack checks
 python -m frontierlab.agents.hf_agent --smoke --task probe --steps 2 --run runs/m16/hf-smoke   # main-path code, CPU
 ```
@@ -45,11 +55,15 @@ needs them (20–30 s each).
 | `lesson-03/` | 16.3 Multi-turn agentic RL | `multiturn_lab.py` | mask and credit checks on real episodes; context cost of full and windowed histories; 4 arms (baseline, masking bug, bonus with outcome or turn credit) × 2 seeds |
 | `lesson-04/` | 16.4 Reward hacking | `hacking_lab.py`, `traces/` | 6 reward arms (3 misspecified, 2 mitigated, 1 control) × 2 seeds, optional marker arm; pre-stated detectors and verdicts; analysis of the provided, validated traces of a run that found the loophole |
 | `lesson-05/` | 16.5 Computer-use agents (extension) | `cua_eval_lab.py` | evaluation choices on **simulated** results: intervals, the infeasible-task rule, step budget, environment errors, paired comparison |
+| `evalintegrity/` | 16.1 + 16.4 evaluation integrity | `tamper_lab.py`, `traces/` | 11 scripted candidates (2 correct, 2 wrong incl. a hang, 6 tampering demonstrations, 1 visible-pair overfit) × 5 verifier levels (exit code, log parsing, protected tests, trusted value channel, hardened): the measured acceptance matrix, the isolation profile, the defence ladder and a strict-parser fix exercise; `toyrunner.py` is the confined, deliberately vulnerable toy runner, `test_lab.py` the regression checks |
 | `project/` | Module project | `run_project.py`, `pack.py`, `test_pack.py`, `buggy_pack.py` | the environment pack with repository-level splits, the reward-misspecification audit, the RL result with a control; the planted-bug pack |
 
 `lesson-04/traces/visible-s0.jsonl` (112 records, 28 KB) and its `manifest.json` (SHA-256, run configuration, warm
 start, hardware, date) were produced on CPU by `hacking_lab.py --make-traces`. They are analysis material, not a
-reproduction of any published result. `validate_traces` re-scores every record.
+reproduction of any published result. `validate_traces` re-scores every record. `evalintegrity/traces/
+acceptance-matrix.jsonl` (11 records) with its `manifest.json` was produced on CPU by `tamper_lab.py --make-traces`:
+every record is a measured sandboxed run of one scripted candidate through the five verifier levels, re-derivable
+with the same command and checked against the manifest's SHA-256.
 
 ## Hardware and time per variant
 
@@ -64,6 +78,7 @@ running at the same time**.
 | 16.2 SWE tasks | CPU only; `--shards all` | not needed | `swe_lab.py` 11 s plus the download |
 | 16.3 multi-turn | 5–9 GPU-hours (8 runs × 150 steps) | Qwen3-0.6B-Base, two arms | `multiturn_lab.py` 3.7 min |
 | 16.4 reward hacking | 4–6 GPU-hours (12 runs × 150 steps) | Qwen3-0.6B-Base, three arms, one seed | `hacking_lab.py` 4.6 min (7 arms) |
+| 16.1+16.4 evaluation integrity | CPU only; on a machine with Docker, `tamper_lab.py --variant main --print` prints the same matrix inside a container with no network, a read-only repo mount and bounded memory/CPU (not run in this build) | not needed | `tamper_lab.py` 17 s; `pytest labs/module-16/evalintegrity` about 30 s |
 | 16.5 computer use | VMs for OSWorld; not part of the pilot | not needed | `cua_eval_lab.py` 1 s |
 | Project | 2–4 GPU-hours (4 runs × 150 steps) | Qwen3-0.6B-Base | `run_project.py` see the project page |
 
@@ -73,5 +88,8 @@ Notes:
   (1.2 GB) at `da87bfb608c14b7cf20ba1ce41287e8de496c0cd`; SWE-smith at `ea6d7173829c7ec8fa16c22055699ff2e9188091`.
 - The sandbox stops accidents (loops, huge outputs, accidental network use), not a determined program. The labs
   run only course code and its mutations, and toy programs of a 25-character grammar that are parsed, never executed.
-  Run code written by a capable model in a container or VM without network.
+  The evaluation-integrity lab is the one place deliberately hostile toy code runs: it is confined to disposable
+  sandbox directories (`tamper_lab.py --part a` measures what a child can still do, and part D checks the course
+  tree is unchanged), and its verdicts never treat the sandbox as the reason a result is true. Run code written
+  by a capable model in a container or VM without network.
 - Run `python -m frontierlab.agents.hf_agent --smoke ...` (CPU, seconds) before any GPU session to check the install.

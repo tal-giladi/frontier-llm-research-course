@@ -1,0 +1,18 @@
+{
+  "description": "Acceptance matrix of the evaluation-integrity lab: 11 scripted candidates (2 correct, 2 wrong incl. a hang, 6 tampering demos, 1 visible-example overfit) through the toy runner's five verifier levels, plus the strict log parser of lab.py. Every cell is a measured sandboxed run on the build machine, not a prediction; the demonstrations are hand-written fixtures reproducing published reward-hacking patterns (MacDiarmid et al. 2025 sec. 2; Baker et al. 2025 sec. 2.1-2.2; METR June 2025; ImpossibleBench) at toy scale.",
+  "files": {
+    "acceptance-matrix.jsonl": {
+      "records": 11,
+      "sha256": "29771cdd837194c5f246b19f9caf4f3e2d7b7f98687e9efb220987feca9393be"
+    }
+  },
+  "seed": 0,
+  "script": "tamper_lab.py --make-traces",
+  "hardware": {
+    "python": "3.12.13",
+    "torch": "2.14.1+cpu",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "cpu_threads": 16
+  },
+  "created": "2026-10-07"
+}

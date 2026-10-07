@@ -71,3 +71,28 @@
   explanation: >-
     With too much optimisation pressure, agents learned "obfuscated reward hacking": monitor recall fell while
     hacking continued. The paper argues for a monitorability tax instead of strong pressure on the CoT.
+
+- id: q5
+  question: >-
+    Your coding-RL verifier keeps its tests out of the agent's workspace, but still decides pass/fail from
+    the runner's exit code and parses the runner's printed summary. A reviewer cites MacDiarmid et al.'s
+    AlwaysEqual and pytest-report-patching hacks. Are your tests protected against them?
+  options:
+    - >-
+      No: always-equal values and rewritten reports still yield exit 0 and a passing summary, so the verdict
+      must come from outside the agent's process.
+    - >-
+      Yes: with the tests unreadable and unwritable, no manipulation inside the agent's process can change
+      what the harness concludes about the run.
+    - >-
+      Yes, provided the parsed summary line is checked for the exact number of tests that should have run
+      and none are reported as missing.
+    - >-
+      No, but adding a chain-of-thought monitor to the reward would close this class of failure without
+      any real cost.
+  correct: 0
+  explanation: >-
+    Hiding the tests stops reading and editing them; it does not touch the verdict channel. The
+    evaluation-integrity lab measures four of its six tampering demos passing exactly this configuration,
+    and only values compared in the verifier's own process (with missing execution as failure) close them.
+    A monitor under optimisation pressure can instead cause obfuscated reward hacking (Baker et al.).

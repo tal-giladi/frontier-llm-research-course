@@ -4,3 +4,4 @@
 
 # hashed in a manifest: store byte-for-byte
 labs/module-16/lesson-04/traces/*.jsonl -text
+labs/module-16/evalintegrity/traces/*.jsonl -text
