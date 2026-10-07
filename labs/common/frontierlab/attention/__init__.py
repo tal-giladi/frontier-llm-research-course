@@ -14,5 +14,6 @@ from frontierlab.attention import hybrid  # noqa: F401  (registers "hybrid")
 from frontierlab.attention import dsa  # noqa: F401  (registers "dsa")
 import frontierlab.longctx.attention  # noqa: F401,E402  (registers "gqa-rope-scaled", "gqa-irope")
 import frontierlab.datax.packing  # noqa: F401,E402  (registers "gqa-docmask")
+import frontierlab.ttc.kvquant  # noqa: F401,E402  (registers "gqa-kvq")
 
 __all__ = ["ATTENTION", "Cache", "LayerCache", "RotaryEmbedding", "apply_rope", "register"]

@@ -115,6 +115,17 @@ Stage D alternative for contamination-sensitive studies: allenai/OLMo-2-0425-1B 
 
 Full SHA-256 values: `labs/common/frontierlab/pipeline/hf_stages.py`, `DATA`.
 
+## Module 15 models (checked 2026-10-07)
+
+| Item | Revision | Licence | Used in |
+|---|---|---|---|
+| Qwen/Qwen3-1.7B (policy, thinking and non-thinking) | `70d244cc86ccca08cf5af4e1e306ecf908b1ad5e` (as Module 13) | Apache-2.0 | 15.1, project main path |
+| Skywork/Skywork-Reward-V2-Qwen3-1.7B (outcome verifier) | `e51ea3e08fb81326c3b812a7ff0cb9cee83e59cc` (as Module 12) | Apache-2.0 | 15.1 main path |
+| Qwen/Qwen2.5-Math-PRM-7B (process verifier; `trust_remote_code`, read the code at the revision first) | `0610740060112df12585d00a1c5f4624d2f59051` | Qwen licence (`license: other`) | 15.1 main path (search arm) |
+| Qwen/Qwen3-1.7B-Base (speculative target) / Qwen/Qwen3-0.6B-Base (draft) | `ea980cb0…` / `da87bfb6…` (as Module 12) | Apache-2.0 | 15.2 main path |
+| AngelSlim/Qwen3-1.7B_eagle3 (EAGLE-3 head for Qwen3-1.7B) | `94441b48acc5804677ae12259617c83323b543a9` | custom AngelSlim licence (`License_AngelSlim_model_and_dataset.txt`; read before use) | 15.2 main path (vLLM `eagle3`) |
+| Qwen/Qwen3-0.6B (T4 policy for 15.1) | pin at the pilot (Module 10 pins `c1899de289a04d12100db370d81485cdf75e47ca`; re-check it is the current main) | Apache-2.0 | 15.1 T4 |
+
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
@@ -152,3 +163,17 @@ verl v0.9.1: `actor_rollout_ref.actor.policy_loss.loss_mode` in {vanilla, dppo_t
 kl_cov, geo_mean, dro, cispo, bypass_mode} (`verl/trainer/ppo/core_algos.py`), `clip_ratio_low/high` 0.2,
 `clip_ratio_c` 3.0; verl's `cispo` clamps with `clip_ratio_low/high`; async recipes `verl/experimental/one_step_off_policy`,
 `verl/experimental/fully_async_policy`.
+- Module 15: vLLM v0.30.0 speculative decoding (docs `features/speculative_decoding/` at the tag;
+`vllm/config/speculative.py`): `speculative_config={"method": ..., "model": ..., "num_speculative_tokens": k}` with
+methods including `ngram`, `medusa`, `mlp_speculator`, `draft_model`, `suffix`, `eagle`, `eagle3`, `mtp` (and
+model-specific `*_mtp`), `rejection_sample_method` `standard|synthetic|block`, `use_heterogeneous_vocab`; CLI
+`--speculative-config '{...}'`; metrics `vllm:spec_decode_num_drafts`, `vllm:spec_decode_num_draft_tokens`,
+`vllm:spec_decode_num_accepted_tokens`, `vllm:spec_decode_num_accepted_tokens_per_pos` (mean acceptance length =
+1 + accepted / drafts). Quantized KV cache (`features/quantization/quantized_kvcache/`): `--kv-cache-dtype`
+`auto|float16|bfloat16|fp8|fp8_e4m3|fp8_e5m2|fp8_inc|fp8_ds_mla|nvfp4|...`; scales from the checkpoint
+(`k_scale`, `v_scale`) or 1.0, calibrated with llm-compressor; the 0.30.0 page does not document
+`calculate_kv_scales`. `--quantization` includes `awq`, `awq_marlin`, `gptq`, `gptq_marlin`, `fp8`,
+`compressed-tensors`, `modelopt`, `modelopt_fp4`, `mxfp4`, `torchao`. SGLang 0.5.x: `--speculative-algorithm EAGLE3
+--speculative-draft-model-path --speculative-num-steps --speculative-eagle-topk --speculative-num-draft-tokens`
+(docs.sglang.io; the page does not state a version — re-check at 0.5.21). Transformers 5.18.0:
+`DynamicCache.crop(n)` with a positive n is deprecated; `crop(-k)` removes k tokens (used by `ttc/hf_spec.py`).

@@ -1,0 +1,72 @@
+- id: q1
+  question: >-
+    A teammate's speculative sampler accepts each draft token with probability p(d) and, on rejection, samples
+    the replacement from p. Greedy decoding with it matches plain greedy exactly. What do you conclude?
+  options:
+    - >-
+      The sampler is correct, because greedy equivalence implies the sampled distribution is right as well.
+    - >-
+      The sampler is correct but slower than it could be, since accepting with p(d) is more conservative than
+      min(1, p/q).
+    - >-
+      The sampler is wrong for sampling: tokens the draft proposes too often are over-emitted, and only a
+      distribution test will show it.
+    - >-
+      The sampler is wrong only at the bonus position, where a token from the residual should be drawn.
+  correct: 2
+  explanation: >-
+    With one-hot distributions both rules agree, so greedy hides the bug. The exact rule needs min(1, p/q) and
+    the residual max(0, p - q); otherwise P(emit x) is not p(x). A Monte Carlo test against p catches it.
+
+- id: q2
+  question: >-
+    Measured on an H100 at batch 1, your draft has acceptance alpha = 0.6 and costs c = 0.3 target steps.
+    Using Leviathan et al.'s model, what do gamma = 1, 2 and 8 drafted tokens give?
+  options:
+    - gamma = 8 is best, because more drafted tokens always mean more tokens emitted per round.
+    - gamma = 1 and 2 both give about 1.2x; gamma = 8 gives about 0.7x, slower than plain decoding.
+    - gamma = 8 gives about 2.5x, because about 2.5 tokens are emitted per round.
+    - All three give the same speed-up, because it depends only on alpha and not on gamma.
+  correct: 1
+  explanation: >-
+    gamma = 1: 1.6 / 1.3 = 1.23. gamma = 2: 1.96 / 1.6 = 1.22. gamma = 8: (1 - 0.6^9)/0.4 = 2.47 tokens over
+    3.4 step-costs = 0.73. With an expensive draft, extra drafted tokens cost more than they return.
+
+- id: q3
+  question: >-
+    A paper reports a 3.5x speed-up from an EAGLE-style head at batch size 1. Your service decodes at batch
+    64 on the same GPU. What should you expect, and what do you measure?
+  options:
+    - >-
+      The same 3.5x, since the acceptance rate of the head does not depend on the batch size at all.
+    - >-
+      A larger speed-up, because a larger batch amortises the draft head's cost over more sequences.
+    - >-
+      No change in latency, but a lower acceptance rate, because batching mixes prompts from different users.
+    - >-
+      Much less: at batch 64 decode is closer to compute-bound, so extra verified tokens are not free.
+  correct: 3
+  explanation: >-
+    The formula assumes a (gamma + 1)-token verification costs one decode step, true when decode is
+    memory-bound. EAGLE-3 itself reports 1.38x at batch 64 in SGLang, where EAGLE-1 gives 0.99x.
+
+- id: q4
+  question: >-
+    You compare a DeepSeek-style MTP module trained jointly with the model and an EAGLE-style head trained
+    afterwards with feature regression. Both accept the first draft about equally often, but at the third
+    draft position the MTP module is far worse. What is the most likely reason?
+  options:
+    - >-
+      Later drafts feed the module its own output feature, which it was never trained to read; the
+      head was.
+    - >-
+      Joint training makes the main model's hidden states noisier, which lowers acceptance at every position
+      after the first.
+    - >-
+      The MTP module uses a different tokenizer from the main model, so mismatches accumulate with depth.
+    - >-
+      The MTP module drafts with a higher temperature than the target, which only matters at later positions.
+  correct: 0
+  explanation: >-
+    Depth-1 MTP is trained to predict t_{i+2} from the target's real h_i. Reused recursively, it consumes its
+    own feature. EAGLE's feature loss (or EAGLE-3's training-time test) trains exactly that case.

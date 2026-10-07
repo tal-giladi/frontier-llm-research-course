@@ -441,7 +441,27 @@ for obj in ['grpo', 'cispo']:
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14}
+P15 = [
+    md("""
+## P15 — Module 15: test-time compute and speculative decoding at two sizes (about 1.5 hours on an A100)
+
+Scaled pilot: Qwen3-0.6B and Qwen3-1.7B with vLLM, 100 questions, n = 16, outcome verifier only; the question
+is whether the budget-matched ranking holds at both sizes. Then the course's speculative loop (0.6B drafting
+for 1.7B). Needs `pip install vllm==0.30.0`.
+"""),
+    code("""
+O15 = f'{PILOT_DIR}/p15'; os.makedirs(O15, exist_ok=True)
+!python -m frontierlab.ttc.hf_ttc smoke --out runs/m15/hf-smoke 2>&1 | tail -3
+for m, tag in [('Qwen/Qwen3-0.6B', '06b'), ('Qwen/Qwen3-1.7B', '17b')]:
+    for cmd in ['sample', 'score']:
+        !python -m frontierlab.ttc.hf_ttc {cmd} --model {m} --out runs/m15/pilot-{tag} --n-questions 100 --n 16 --sample-budget 512 2>&1 | tail -8
+    !python -m frontierlab.ttc.hf_ttc report --out runs/m15/pilot-{tag} --budget 8192 --latency 20 2>&1 | tee "$O15/15-1-report-{tag}.txt" | tail -20
+!python -m frontierlab.ttc.hf_spec own --out runs/m15/l152-pilot --gammas 1,2,4 --prompts 32 --max-new 128 2>&1 | tee "$O15/15-2-spec.txt" | tail -15
+!cp -r runs/m15 "$O15/runs-m15"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15}
 
 
 def build():

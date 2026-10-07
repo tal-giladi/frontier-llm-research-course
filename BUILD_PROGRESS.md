@@ -50,7 +50,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 12 — Post-training foundations (integrated)
 - [x] Module 13 — Which post-training pipeline for which target? (integrated)
 - [x] Module 14 — Which RL objective, at what scale? (integrated)
-- [ ] Module 15 — How should compute be spent at inference?
+- [x] Module 15 — How should compute be spent at inference? (integrated)
 - [ ] Module 16 — How do we train agents without fooling ourselves?
 - [ ] Module 17 — What can we claim about a model's internals?
 - [ ] Module 18 — Alignment science, frontier evaluation and governance
@@ -62,6 +62,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 
 ## Who is working on what
 
+- 2026-10-07: Module 15 integrated; Module 16 agent (relaunched with the narrowed scope in curriculum/module-16-prompts.md) (owns module-16 files, frontierlab/agents, tests/test_agents.py) running. On a crash: read their status logs and relaunch with "skip lessons marked done".
 - 2026-10-04: machine restart interrupted two sub-agents: Module 9 (owns lessons/module-09, labs/module-09, frontierlab/dist, tests/test_dist.py) and Module 10 (owns lessons/module-10, labs/module-10, frontierlab/datax, tests/test_datax.py). Their partial files are uncommitted. On resume: read curriculum/status/module-09.log and module-10.log, keep finished lessons, relaunch each agent to finish only what is missing (same prompts as before, plus "resume: skip lessons marked done").
 - Modules 1–8 committed and pushed (db23392).
 

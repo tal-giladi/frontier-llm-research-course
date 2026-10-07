@@ -1,0 +1,83 @@
+- id: q1
+  question: >-
+    A report plots "best-of-64" accuracy rising from 0.66 to 0.93 and recommends sampling 64 answers. The
+    curve was computed as the fraction of problems where at least one of the 64 samples was correct. What is
+    the right objection?
+  options:
+    - >-
+      The curve is too optimistic only because 64 samples overfit the test set; resplitting the problems
+      would fix it.
+    - >-
+      That is oracle pass@64: coverage no procedure reaches without the answer; show what a vote or a
+      verifier actually selects.
+    - >-
+      The curve is fine, but best-of-64 should be compared with a 64-times longer single chain at equal
+      latency rather than equal tokens.
+    - >-
+      The estimator is biased upwards unless more than 64 samples are drawn per problem, so the point at
+      N = 64 cannot be trusted.
+  correct: 1
+  explanation: >-
+    "At least one is correct" is pass@k, an upper bound on every selection rule. The gap between it and a real
+    procedure's success is the verifier's problem, and it is often large (0.93 against 0.79 in the lab).
+
+- id: q2
+  question: >-
+    Your outcome verifier has AUC 0.80. Best-of-N with it gives 0.72 at N = 2 and 0.53 at N = 32, while
+    majority vote rises from 0.67 to 0.79. A colleague proposes N = 128 "to give the verifier more choice".
+    What do you expect, and why?
+  options:
+    - >-
+      Accuracy recovers above majority vote, because a larger pool contains more correct candidates for the
+      verifier to find.
+    - >-
+      Accuracy stays near 0.53, because once the pool is large the verifier's ranking no longer changes.
+    - >-
+      Accuracy falls further, because the argmax over more candidates selects the wrong answers the verifier
+      is most confident about.
+    - >-
+      Accuracy matches majority vote, because with enough samples every selection rule converges to the
+      modal answer.
+  correct: 2
+  explanation: >-
+    More candidates mean more chances for a confident false positive, and the argmax picks it. This is the
+    over-optimisation Cobbe et al. saw beyond about 400 completions, and here it starts early because the
+    verifier is weak.
+
+- id: q3
+  question: >-
+    Policy: 1.7B parameters. Verifier: a 7B PRM that reads about 400 tokens per candidate. Best-of-16 with 60
+    generated tokens per sample and a shared 200-token prompt. Roughly how many policy-token equivalents does
+    one problem cost?
+  options:
+    - About 1,200, since only the 960 generated tokens and the prompt run through the policy.
+    - About 26,000, because each verifier token costs about 4 policy tokens and the verifier reads 6,400.
+    - About 7,600, because the verifier reads 6,400 tokens and the policy generates about 1,200.
+    - About 3,200, because a verifier forward pass is cheaper per token than a generated policy token.
+  correct: 1
+  explanation: >-
+    pte = P + D + (N_v / N_pi) V = 200 + 960 + (7 / 1.7) · 16 · 400, about 200 + 960 + 26,400. A forward
+    token costs about 2N FLOPs in either model, so the larger verifier dominates.
+
+- id: q4
+  question: >-
+    At equal policy-token equivalents, 8 parallel samples with majority vote and one chain 8 times longer have
+    the same accuracy on your benchmark. The product has a 2-second latency target and the GPU is lightly
+    loaded. Which should you pick, and why?
+  options:
+    - >-
+      The parallel samples, because they decode as one batch in one chain's steps, and a small-batch decode
+      step costs about one batch-1 step.
+    - >-
+      The long chain, because one sequence uses less KV memory than eight, so its decode steps are faster at
+      any load.
+    - >-
+      Either one, because equal FLOPs on the same GPU imply equal wall-clock latency.
+    - >-
+      The long chain, because sequential reasoning lets later tokens build on earlier ones and is always
+      better at equal compute.
+  correct: 0
+  explanation: >-
+    Decode at small batch is bound by reading the weights, so eight chains in a batch take nearly the time of
+    one, while a chain eight times longer takes eight times as many steps. At high load the batch is shared
+    anyway and the answer can change.

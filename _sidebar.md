@@ -99,3 +99,9 @@
   - [61 · Rollout systems and staleness](lessons/module-14/lesson-03.md)
   - [62 · RL scaling and the capability debate](lessons/module-14/lesson-04.md)
   - [Module 14 quiz](assessments/module-14-quiz.md)
+- **Module 15 — How should compute be spent at inference?**
+  - [63 · A test-time compute experiment](lessons/module-15/lesson-01.md)
+  - [64 · Speculative decoding](lessons/module-15/lesson-02.md)
+  - [65 · Serving cost of architecture choices](lessons/module-15/lesson-03.md)
+  - [66 · KV and weight quantisation for serving](lessons/module-15/lesson-04.md)
+  - [Module 15 quiz](assessments/module-15-quiz.md)

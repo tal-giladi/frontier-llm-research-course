@@ -1,0 +1,74 @@
+- id: q1
+  question: >-
+    A 1.7B model on an H100 decodes at 1.2 ms per step at batch 1 and 4K context. A colleague expects batch 8
+    to take about 9.6 ms per step "because it does 8 times the FLOPs". Why is that wrong at this size?
+  options:
+    - >-
+      Because FLOPs per token fall with batch size, as the attention scores are shared across sequences.
+    - >-
+      Because the step is bound by reading the weights; eight sequences add some cache reads and few FLOPs,
+      so the step grows far less than 8x.
+    - >-
+      Because the GPU runs the eight sequences on different streaming multiprocessors in parallel, so time
+      stays exactly constant.
+    - >-
+      Because the KV cache is shared between the eight sequences when their prompts are the same length.
+  correct: 1
+  explanation: >-
+    Decode at small batch has an intensity of about 1 FLOP/byte against a ridge near 300. The weight read
+    dominates; batch 8 at 4K adds 8 caches of about 0.5 GB, so the lab's bound goes from 1.2 to about 2.2 ms.
+
+- id: q2
+  question: >-
+    Your team proposes DSA-style top-2048 attention to "fit more long-context users per GPU" on the Stage D
+    model. What does the arithmetic say?
+  options:
+    - >-
+      About 64 times more users at 128K, because each query reads only 2,048 of the 131,072 cached keys.
+    - >-
+      It fits the same number of users only if the indexer keys are stored in FP8 instead of BF16.
+    - >-
+      It halves the cache, because the indexer replaces the key projection of the main attention.
+    - >-
+      Slightly fewer: every key stays cached, plus indexer keys; it saves FLOPs, not memory.
+  correct: 3
+  explanation: >-
+    Top-k selection reduces the keys each query reads, not the keys stored. The lab gives 14.44 GiB per
+    sequence for DSA against 14.00 for GQA at 128K. Memory savings come from MLA, windows or linear layers.
+
+- id: q3
+  question: >-
+    With 8K-token prompts, prefill-first scheduling shows a 90th-percentile time per output token of 15 ms,
+    above the 10 ms objective, though the median is fine. Which change targets the cause most directly?
+  options:
+    - >-
+      Chunked prefill, so no iteration carries more than a bounded slice of a new prompt.
+    - >-
+      A larger maximum batch size, so that more running decodes share each weight read.
+    - >-
+      FP8 weights, so that every ordinary decode step reads half as many bytes.
+    - >-
+      Speculative decoding, so that each decode step can emit more than one token.
+  correct: 0
+  explanation: >-
+    The tail comes from decode stalls while whole 8K prompts are prefilled. Chunking bounds the stall. The
+    other changes speed up ordinary steps but leave the occasional 40 ms stall in place.
+
+- id: q4
+  question: >-
+    Reasoning RL on the Stage D model generates 256 rollouts of 32K tokens per step on one GPU shared with
+    the trainer. Switching from GQA to MLA cuts the KV cache per token by about 3.5x. What happens to
+    rollout time, and why?
+  options:
+    - >-
+      Little changes, because rollout time is set by attention FLOPs, which MLA barely reduces at 32K.
+    - >-
+      It doubles, because MLA's absorbed decode does more FLOPs per token than GQA.
+    - >-
+      It falls by roughly that factor, because about 3.5x more rollouts fit in each wave.
+    - >-
+      It falls only if the trainer moves to a separate GPU, as colocated memory cannot be reused.
+  correct: 2
+  explanation: >-
+    Rollouts run in waves limited by KV capacity. In the lab GQA needs 22 waves of 12 at 32K and MLA 6 waves
+    of 45: about 5,700 s against 1,650 s. Capacity, not FLOPs, sets the step time.

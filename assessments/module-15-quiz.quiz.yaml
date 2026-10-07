@@ -1,0 +1,196 @@
+- id: q1
+  question: >-
+    Two internal reports disagree. One says 32 samples raise accuracy from 0.67 to 0.93; the other says
+    majority vote over 32 samples gives 0.79 on the same problems and samples. Both computed their numbers
+    correctly. How do you reconcile them for the product decision?
+  options:
+    - >-
+      The first is oracle pass@32 (coverage); only the vote is a runnable procedure, so decide on 0.79.
+    - >-
+      The second report must have used a different temperature, because majority vote converges to pass@N as
+      the number of samples grows.
+    - >-
+      Average the two, since the true accuracy of sampling lies between the oracle and the vote.
+    - >-
+      Use the first number, because with enough samples a learned verifier can always recover the oracle's
+      choice.
+  correct: 0
+  explanation: >-
+    pass@N counts a problem as solved if any sample is right, which only someone with the answer knows. A
+    deployed system needs a selection rule; the gap between coverage and selection is what a better verifier
+    could close, and only if its false positives are low.
+
+- id: q2
+  question: >-
+    Best-of-N with your learned verifier falls from 0.72 at N = 2 to 0.53 at N = 32, while weighted vote with
+    the same scores stays near 0.80. The verifier's false-positive rate is 0.5. What explains the difference?
+  options:
+    - >-
+      Weighted vote uses more samples per problem than best-of-N at the same N, so it has more information.
+    - >-
+      The top score among many candidates is usually a confident false positive; weighted vote pools agreeing answers.
+    - >-
+      Best-of-N is computed with a biased estimator at large N, while weighted vote uses the unbiased one.
+    - >-
+      Weighted vote ignores the verifier when scores are close, so it reduces to a single greedy chain of thought.
+  correct: 1
+  explanation: >-
+    The argmax over more candidates finds the verifier's most confident mistakes (Cobbe et al.'s
+    over-optimisation). Summing scores per answer lets many moderately scored correct candidates outvote one
+    high-scoring wrong one.
+
+- id: q3
+  question: >-
+    A 1.7B policy and a 7B PRM. Beam search with 16 candidates per step scores every candidate prefix (about
+    400 tokens) at each of 8 steps and generates about 60 tokens per candidate per step. Majority vote over 32
+    samples of 480 tokens costs about 15,500 policy-token equivalents. Which statement is right?
+  options:
+    - >-
+      Beam search is cheaper, because it generates only about 7,700 tokens against 15,400 for the samples.
+    - >-
+      Both cost about the same, because the PRM only reads tokens the policy has already generated.
+    - >-
+      Beam search costs roughly 15 times more, because the PRM reads about 51,000 tokens at about 4 policy
+      tokens each.
+    - >-
+      Beam search costs about twice as much, because each verifier token costs the same as a policy token.
+  correct: 2
+  explanation: >-
+    Generation: 8 · 16 · 60 = 7,680 tokens. Verifier: 8 · 16 · 400 = 51,200 tokens at 7/1.7 = 4.1 policy-token
+    equivalents each, about 211,000. A larger verifier rereading long prefixes dominates the spend.
+
+- id: q4
+  question: >-
+    The product's latency target is 3 seconds per answer. A long thinking chain of 4,000 tokens and 8 parallel
+    samples of 500 tokens with majority vote have the same accuracy and the same token budget. The GPU is
+    lightly loaded. Which do you recommend?
+  options:
+    - >-
+      The long chain, because a single sequence keeps the KV cache small and so every step is faster.
+    - >-
+      Either, because equal token budgets on the same GPU give equal latency.
+    - >-
+      The long chain, because sequential reasoning always beats parallel sampling at equal compute.
+    - >-
+      The 8 samples: one batch in 500 steps instead of 4,000, at about batch-1 cost per step.
+  correct: 3
+  explanation: >-
+    Decode at small batch is memory-bound, so a batch of 8 costs little more per step than one sequence, and
+    500 steps beat 4,000. Under heavy load the batch is shared anyway and the comparison must be redone.
+
+- id: q5
+  question: >-
+    After a code change, greedy speculative decoding still reproduces plain greedy output exactly, but a
+    Monte Carlo test shows sampled outputs over-represent the tokens the draft likes. Which change most
+    likely caused it?
+  options:
+    - >-
+      The draft length was raised from 2 to 4, which makes later drafts less likely to be accepted.
+    - >-
+      Rejected positions now sample the replacement from the target p instead of the residual max(0, p - q).
+    - >-
+      The cache rollback now keeps one rejected draft token in the target's cache.
+    - >-
+      The bonus token after a fully accepted round is now sampled from the draft instead of the target.
+  correct: 1
+  explanation: >-
+    The accepted drafts already emit min(p, q); a rejection must add only the missing mass max(0, p - q).
+    Sampling from p instead adds p again, over-emitting the draft's tokens. Greedy hides it because both are
+    the same one-hot. Options C and D would also break greedy equivalence.
+
+- id: q6
+  question: >-
+    Measured at batch 1 on an H100: your EAGLE-style head has alpha = 0.8 and costs c = 0.05 target steps.
+    The service runs at batch 64, where a pass over 5 tokens costs about 3 decode steps. What should you
+    expect from gamma = 4 at batch 64?
+  options:
+    - >-
+      About the batch-1 prediction of 2.8x, because acceptance does not depend on the batch.
+    - >-
+      Exactly 1x, because speculative decoding never helps when more than one sequence is decoded.
+    - >-
+      Close to no gain: a round now costs about 3 steps for about 3.4 tokens.
+    - >-
+      A higher speed-up, because the draft's cost is amortised over 64 sequences.
+  correct: 2
+  explanation: >-
+    At batch 1, (1 - 0.8^5)/0.2 = 3.36 tokens per round over 1.2 step-costs gives 2.8x. If the verification
+    pass costs about 3 steps, the round costs about 3.2 for 3.36 tokens. EAGLE-3 reports 1.38x at batch 64
+    in SGLang for this reason.
+
+- id: q7
+  question: >-
+    Your team must choose between a separately trained EAGLE-style head and the jointly trained MTP module
+    that the model already ships. Both accept the first draft about 76–80% of the time; at the fourth position
+    the head keeps 0.40 of rounds and the MTP module 0.34. Serving uses gamma = 1 at large batch. What do you
+    recommend?
+  options:
+    - >-
+      The MTP module: at gamma = 1 only the first draft matters, and it costs no extra training.
+    - >-
+      The head, because its later-position acceptance is higher and that always dominates the speed-up.
+    - >-
+      Neither: with first-draft acceptance below 0.9 speculative decoding cannot pay at any batch size.
+    - >-
+      The head, because a module trained jointly with the model reduces the main model's quality.
+  correct: 0
+  explanation: >-
+    Later-position acceptance matters only when gamma > 1. At gamma = 1 the two drafts are nearly equal and
+    the MTP module is free; measure both at the serving batch before spending on a new head.
+
+- id: q8
+  question: >-
+    The Stage D model (KV 114,688 bytes per token in BF16) serves 32K-context requests on one 80 GB GPU. A
+    teammate proposes adding DSA-style top-2048 sparse attention to raise the number of concurrent requests.
+    What do you answer?
+  options:
+    - >-
+      Yes, because each query then reads only 2,048 keys, so the cache per request falls by about 16 times.
+    - >-
+      It cannot raise capacity: DSA still caches every key, plus indexer keys; MLA, windows or a linear hybrid
+      would.
+    - >-
+      Yes, but only if the indexer runs in FP8, because the indexer keys are what fills the memory.
+    - >-
+      It raises capacity only at 128K, because below that the top-2048 selection covers most of the keys.
+  correct: 1
+  explanation: >-
+    Capacity is free HBM over cache bytes per sequence. DSA reduces the keys each query reads, not the keys
+    stored (14.44 against 14.00 GiB per sequence at 128K in the lab).
+
+- id: q9
+  question: >-
+    Simulated on 4 GPUs with 8K-token prompts at 20 requests/s, prefill-first misses the 10 ms TPOT objective,
+    a 1-prefill + 3-decode split keeps TPOT at 6.6 ms but has a 2.5 s TTFT at the 90th percentile, and chunked
+    prefill on all 4 GPUs has the best goodput. What is the most reasonable next experiment?
+  options:
+    - >-
+      Ship 1P+3D, because TPOT is the metric users notice and its TTFT will improve with a faster link.
+    - >-
+      Drop disaggregation for good, because chunked prefill dominates it at every rate and prompt length.
+    - >-
+      Keep prefill-first and raise the maximum batch size so that decodes share more weight reads.
+    - >-
+      Search other prefill/decode splits and chunk sizes, comparing goodput at the same SLOs.
+  correct: 3
+  explanation: >-
+    1P+3D's TTFT is a prefill-capacity problem (one GPU cannot keep up), not a link problem. Disaggregation's
+    benefit depends on the split, so the decision is a search over splits judged by goodput.
+
+- id: q10
+  question: >-
+    Reasoning RL generates 256 rollouts of 32K tokens per step on one H100 shared with a 1.7B trainer. The
+    step takes much longer than the roofline's estimate for one batch. Where should you look first?
+  options:
+    - >-
+      At the optimizer: AdamW's update over 1.7B parameters is what dominates an RL step at this length.
+    - >-
+      At the attention FLOPs, which grow quadratically and dominate decode time at 32K.
+    - >-
+      At KV capacity: about a dozen rollouts fit next to the trainer, so the step runs in many waves.
+    - >-
+      At the reward function, which runs on the CPU and blocks generation between waves.
+  correct: 2
+  explanation: >-
+    With 25.6 GiB held by the trainer, about 12 GQA rollouts fit at 32K: 22 waves, each paced by its longest
+    response. A smaller cache (MLA, windows, FP8 KV) or separate rollout GPUs changes the number of waves.

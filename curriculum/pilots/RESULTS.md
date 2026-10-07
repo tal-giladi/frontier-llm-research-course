@@ -33,3 +33,5 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P13 — Module 13 main-path pipeline on Qwen3-1.7B-Base (~24–37 GPU-h PROJECTED) | not piloted (budget) | | | |
 | P14 — Module 14 GRPO vs CISPO on Qwen3-0.6B-Base | not run | | | |
 | P14 — Module 14 main path (~73–130 GPU-h PROJECTED) | not piloted (budget) | | | |
+| P15 — Module 15 test-time compute at 0.6B and 1.7B, speculative loop | not run | | | |
+| P15 — Module 15 main path and project (~9–15 H100-h PROJECTED) | not piloted (budget) | | | |

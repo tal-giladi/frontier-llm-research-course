@@ -1,0 +1,71 @@
+- id: q1
+  question: >-
+    You must serve the Stage D model at 128K context and can either quantise the weights from BF16 to INT4
+    or the KV cache from BF16 to FP8. Which buys more concurrent sequences on one 80 GB GPU, and why?
+  options:
+    - >-
+      INT4 weights, because weights are read on every step and the cache only for the current sequence.
+    - >-
+      FP8 KV: one sequence's cache is 14 GiB at 128K against 3.2 GiB of weights.
+    - >-
+      Both the same, because both formats halve or quarter the bytes the GPU has to hold.
+    - >-
+      INT4 weights, because a 4-bit format saves four times more memory than an 8-bit one.
+  correct: 1
+  explanation: >-
+    Capacity is (free HBM - weights) / cache per sequence. Shrinking 3.2 GiB of weights frees little; halving
+    14 GiB per sequence takes the lab's count from 4 to 9 sequences.
+
+- id: q2
+  question: >-
+    A 2-bit KV format shows a relative tensor error of 18% on the keys in an offline test, and your colleague
+    rejects it. What evidence should decide instead?
+  options:
+    - >-
+      The relative error on the values, since values are what attention returns to the residual stream.
+    - >-
+      The relative error at 3 bits, to check that the error halves with every extra bit as theory predicts.
+    - >-
+      The error of the per-token scale, which bounds every key's error in the worst case.
+    - >-
+      Loss and KL while decoding with the quantised cache, paired with full precision on the same windows.
+  correct: 3
+  explanation: >-
+    Tensor error does not map simply onto attention: errors in channels a query ignores do nothing, and the
+    newest tokens can be kept exact. Decode as the server will and compare the model's outputs.
+
+- id: q3
+  question: >-
+    You quantise keys with groups along the channel axis (one scale per token) and see large errors in all the
+    small key channels. What is happening, and what is the fix?
+  options:
+    - >-
+      Outlier channels set each token's scale, so small channels round away; group keys per channel.
+    - >-
+      The rounding is biased; switching from round-to-nearest to stochastic rounding removes the error.
+    - >-
+      The residual window is too short; making it longer fixes the small channels of old tokens.
+    - >-
+      The zero point is wasted on keys, which are centred on zero; a symmetric grid fixes the small channels.
+  correct: 0
+  explanation: >-
+    Per-token grouping shares one range across all channels of a token, and outlier channels make that range
+    wide. KIVI quantises keys per channel, so each channel gets its own range.
+
+- id: q4
+  question: >-
+    Your emulated INT4 KV cache (quantise, then dequantise in float32 before attention) makes decoding 20%
+    slower in the lab. A reviewer concludes KV quantisation does not pay. What is wrong with the conclusion?
+  options:
+    - >-
+      Nothing: if a format slows the emulation, the real kernel is slower by at least the same fraction.
+    - >-
+      Emulation adds work and reads the same bytes; only a kernel reading packed integers is faster.
+    - >-
+      The slowdown comes from the residual window, which should be removed to measure the speed fairly.
+    - >-
+      Quantised caches are only faster at batch 1, so the lab should be rerun with a single sequence.
+  correct: 1
+  explanation: >-
+    Emulation measures quality only. Real KV quantisation pays through fewer bytes per decode step and more
+    sequences per GPU, which needs engine kernels; measure speed there.
