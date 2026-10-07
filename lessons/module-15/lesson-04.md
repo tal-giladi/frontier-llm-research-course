@@ -166,7 +166,7 @@ KQ.quantize_weights_(copy_of_model, bits=4, group=128)                # RTN on e
 - J. Lin et al., *AWQ*, 2023. https://arxiv.org/abs/2306.00978
 - G. Xiao et al., *SmoothQuant*, 2022. https://arxiv.org/abs/2211.10438
 - vLLM v0.30.0, *Quantized KV cache*. https://docs.vllm.ai/en/v0.30.0/features/quantization/quantized_kvcache/
-- Sibling course, *LLM Inference and Deployment*, Module 4 (Quantization): [lesson 4.1](https://github.com/tal-giladi/ai-inference-course/blob/main/lessons/module-04/lesson-01.md), [4.2](https://github.com/tal-giladi/ai-inference-course/blob/main/lessons/module-04/lesson-02.md), [4.3](https://github.com/tal-giladi/ai-inference-course/blob/main/lessons/module-04/lesson-03.md).
+- Sibling course, *LLM Inference and Deployment* (repository `tal-giladi/ai-inference-course`), Module 4 (Quantization), lessons 4.1–4.3.
 - Software versions used in this lab: [references/versions.md](../../references/versions.md).
 
 ## Next
