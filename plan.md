@@ -860,3 +860,4 @@ Open (revision 2):
 7. DECIDED 2026-10-03 — no funding; pilots run as scaled pilots on Tal's paid Colab account (section 12.1); no course-produced long RL runs.
 7b. DECIDED 2026-10-03 — pilot traces and the Baseline-0 checkpoint are hosted on a free Hugging Face account.
 8. DECIDED 2026-10-03 — Module 21 (multimodal elective) is added after the first release.
+9. DECIDED 2026-10-07 — Stage D base model: Qwen/Qwen3-1.7B-Base (revision `ea980cb`, Apache-2.0, dense Qwen3 layout as Baseline-0); documented alternative allenai/OLMo-2-0425-1B (open data) for contamination-sensitive lessons; Stage D RL results carry a random- or format-reward control arm.
