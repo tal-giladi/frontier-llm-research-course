@@ -1,0 +1,91 @@
+- id: q1
+  question: >-
+    You reproduce Kimi K2's QK-Clip on a small dense model with Kimi's tau = 100. The unclipped run's maximum logit
+    peaks at 27, and the clipped and unclipped runs end with identical losses. How should the capstone report this?
+  options:
+    - >-
+      As a successful reproduction, since the clipped run matched the unclipped loss exactly as Appendix D reports.
+    - >-
+      As a failed reproduction, since QK-Clip should have lowered the maximum logit and it did not change at all.
+    - >-
+      As not tested, since the clip never fired; then rerun with a tau set by a stated rule so that it binds.
+    - >-
+      As evidence that QK-Clip is unnecessary below 100M parameters, since logits never reached the threshold.
+  correct: 2
+  explanation: >-
+    A clip that never fires leaves the runs identical by construction, so the claim was not exercised at all. The
+    honest report is "not tested", followed by a run whose tau is chosen in advance so the mechanism engages.
+
+- id: q2
+  question: >-
+    Two arms, three seeds each, scored on the same 256 held-out windows. A teammate computes a paired bootstrap over
+    the 256 windows of seed 0 only and reports a narrow interval. What is the main problem?
+  options:
+    - >-
+      The interval ignores seed-to-seed variation in training, so it can be far too narrow; resample seeds as well.
+    - >-
+      Windows are not independent, so the bootstrap should be replaced by a t-test over the 256 window losses.
+    - >-
+      Seed 0 may be unusually good for one arm, so the teammate should report the best of the three seeds instead.
+    - >-
+      Pairing by window double-counts the shared difficulty, so the arms should be bootstrapped independently.
+  correct: 0
+  explanation: >-
+    An items-only bootstrap measures evaluation noise for one training run. Seeds change initialisation and data
+    order, which is often the larger source of noise; the hierarchical bootstrap resamples seeds, then items.
+
+- id: q3
+  question: >-
+    Your contract's margin is 0.02 nats. The reproduction's 95% interval for clip minus no-clip is
+    [-0.004, +0.012]; the extension's interval for QK-norm minus QK-Clip is [-0.031, +0.017]. What does the rule give?
+  options:
+    - >-
+      Both inconclusive, since both intervals include zero and no difference can be claimed for either comparison.
+    - >-
+      Reproduction equivalent; extension equivalent too, since its mean difference is within the margin.
+    - >-
+      Reproduction a lower, since most of its interval is positive; extension inconclusive since it crosses zero.
+    - >-
+      Reproduction equivalent, since the interval lies inside the margin; extension inconclusive.
+  correct: 3
+  explanation: >-
+    Equivalence needs the whole interval inside the margin, which holds for the first and not the second. The
+    second includes zero and leaves the margin, so it is inconclusive, whatever its mean.
+
+- id: q4
+  question: >-
+    You chose the on-policy distillation claim. Your on-policy arm and your off-policy SFT arm train for the same
+    number of student steps, but the on-policy arm also asks the teacher to score every sampled token. A reviewer
+    asks whether the comparison is fair. What should the contract have fixed?
+  options:
+    - >-
+      Equal student steps, since the claim is about how quickly the student learns per update it receives.
+    - >-
+      Equal training FLOPs counting teacher sampling and scoring, since the published saving is a compute claim.
+    - >-
+      Equal wall-clock, since FLOP counts ignore that teacher scoring can be batched more efficiently than sampling.
+    - >-
+      Equal numbers of teacher samples, since that is the only cost that differs between the two arms.
+  correct: 1
+  explanation: >-
+    The published claim is a cost reduction, so the axis is compute with the teacher's forward passes charged to
+    the arm that uses them. Equal steps hides the teacher's scoring cost on one side.
+
+- id: q5
+  question: >-
+    A classmate's capstone found GSPO and GRPO indistinguishable on every stability metric they stated in advance,
+    with three seeds, equal tuning and a reported MDE. Another found GSPO clearly better with one seed. How do they
+    score on the rubric?
+  options:
+    - >-
+      The second scores higher on conclusion, since it found an effect, but lower on uncertainty for using one seed.
+    - >-
+      Both score the same, since the rubric grades the plan and ignores the evidence produced by the runs.
+    - >-
+      The first can score full marks; the second loses marks on uncertainty and on whether its claim matches its evidence.
+    - >-
+      Neither passes, since a capstone must reproduce the published direction before an extension can be graded.
+  correct: 2
+  explanation: >-
+    Winning is never a criterion and a sound null scores like a positive result. One seed gives no seed noise
+    estimate, so a "clearly better" claim is stronger than the evidence.

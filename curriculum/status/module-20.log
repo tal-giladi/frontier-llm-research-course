@@ -1,0 +1,21 @@
+sources verified (2026-10-07): GSPO 2507.18071, Kimi K2 2507.20534 (sec 2.1, App D Fig 12), DeepSeek-V4 2606.19348 (2.3.3, 2.4), V3.2 2512.02556, mHC 2512.24880, OLMo 2 2501.00656 sec 4.4.2, Olmo 3 2512.13961 sec 3.5.1, Thinking Machines OPD blog; notes in curriculum/inbox/module-20-progress.md
+frontierlab/capstone written (not yet tested): uncertainty.py, package.py, claims.py, scaffold.py, review.py; next: __init__, sample.py, tests, run scaffold, then lessons
+capstone sample+review verified by hand; scaffold full CPU run started -> runs/m20/capstone-qkclip (log runs/m20_scaffold.log)
+test_capstone.py: 26 tests pass (about 80 s); next: labs/module-20/lesson-01 (lab.py TODOs: hierarchical_interval, decide, claim_problems, comparison_problems; capstone_lab.py wraps scaffold)
+lesson-01 lab: solution passes (14 tests), untouched lab fails on TODOs
+lesson-01.md written (MEASURED_PLACEHOLDER in lab details to fill from runs/m20/capstone-qkclip results); next: lesson-01 quiz, then lesson 02
+lesson-01 quiz written, check_quiz ok; lesson-02 lab (lab/solution/test_lab/review_lab.py) passes with solution, untouched fails on TODOs; review_lab end to end 6 s; next: lesson-02.md + quiz
+lesson-02.md written; next: lesson-02 quiz, then module quiz, project, README, inbox, glossary
+lesson-02 quiz ok
+project page + labs/module-20/project (pieces, buggy_capstone, test_pieces, capstone_project.py) written; buggy fails 3 tests, pieces pass; TODO verify buggy story on real package numbers
+module quiz (9 q) ok; README written
+glossary inbox written (13 terms)
+inbox module-20-shared-changes.md drafted (needs measured numbers, section 9)
+scaffold full CPU run done: 1164 s; reproduction +0.0015 [+0.0013,+0.0018] equivalent; extension +0.0205 [+0.0056,+0.0332] a_higher (t [-0.017,+0.058]); tau 8; MDE 0.018
+lesson-01 measured numbers filled; tab-escape bug fixed
+inbox section 9 filled; next: full test runs, link check, final report
+printed GPU commands quoted/posix; capstone_lab paths exercised (6 s with cached runs)
+labs/common full suite passed (11.8 min, exit 0); module-20 solution tests pass; quizzes clean; links ok
+lesson-01 done
+lesson-02 done
+module done

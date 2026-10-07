@@ -1,0 +1,44 @@
+# Capstone proposal: the experiment contract as data (Module 19 project).
+# Copy to runs/m19/project/proposal.yaml, fill every field, then:
+#   python labs/module-19/project/check_proposal.py runs/m19/project/proposal.yaml
+# Field meanings follow templates/experiment-contract.md. Module 20 starts from this file.
+
+claim_id: ""            # one of: gspo-vs-grpo, qkclip-vs-qknorm, dsa-vs-dense, mhc-vs-hc, micro-anneal, onpolicy-distill
+question: ""            # one answerable question ending in "?"
+decision: ""            # what you will do differently depending on the answer
+hypothesis: ""
+status: ""              # established effect | reported effect | may not appear at this scale
+source: ""              # paper, section or figure, URL: the claim you reproduce
+reproduction:           # lesson 19.2: what counts as reproduced, stated now
+  direction: ""         # the sign of the effect the paper claims, in your metric
+  tolerance: null       # the smallest effect that counts, from your noise floor
+  tolerance_rule: ""    # how it follows from the noise
+  magnitude: ""         # comparable to the paper's number? if not, say why
+extension: ""           # the one new ablation you add after the reproduction
+baseline: ""            # run card path or name, and what it is
+baseline_tuning: ""     # what was swept, how many runs, on which split
+changed: ""             # exactly one variable (or the declared cells of a factorial)
+held_fixed: ""          # data and hashes, tokens, tokenizer, seeds, eval version, hardware, software
+axis: ""                # tokens | params | flops | wallclock
+axis_does_not_answer: ""
+budget:
+  hardware: ""          # GPU type x count
+  gpu_hours: null
+  label: ""             # PROJECTED or measured
+  formula: ""           # for PROJECTED: runs x FLOPs per run / (peak x MFU), with the numbers
+  extra_compute: ""     # teacher / judge / verifier / generator compute, or "none"
+  tuning_per_arm: {baseline: null, method: null}
+metrics:
+  primary: ""
+  uncertainty: ""       # seeds, paired bootstrap over items, interval level
+  secondary: ""
+  noise_floor: null     # seed std of the baseline on the primary metric (measured; say where)
+  n_seeds: null         # per arm
+  expected_effect: null # the smallest effect that would change the decision
+decision_rule: ""       # with a number in it
+correctness_checks: []
+fallback: ""            # provided traces or published curves if the effect does not appear
+limits: []              # at least three, one about scale
+proxy: ""               # lesson 19.1: the cheap first experiment and what reading would stop you
+kill: ""
+stated_on: ""           # ISO date, before any result

@@ -1,0 +1,71 @@
+- id: q1
+  question: >-
+    A reviewer finds that your extension arm ran 160 steps while the arm it is compared with ran 120, on an
+    equal-tokens comparison. Which revision does this need?
+  options:
+    - >-
+      A rewrite: state in the report that the extension ran longer, so readers can discount its result.
+    - >-
+      A reanalysis: compare both arms at step 120 using the extension's logged training loss at that step.
+    - >-
+      A declaration: add the step difference to the contract's limits section and keep the comparison as it is.
+    - >-
+      A rerun of the extension at 120 steps with the same seeds, logged with the new run folders.
+  correct: 3
+  explanation: >-
+    The comparison is off its declared axis, so only new runs on that axis fix it. Words do not, and a logged
+    training loss at step 120 is not the held-out metric of a run whose schedule was set for 160 steps.
+
+- id: q2
+  question: >-
+    After the reruns a reviewer asked for, your extension's decision changes from inconclusive to "a lower". The
+    report still says "staleness did not change accuracy". What must happen before the package is resubmitted?
+  options:
+    - >-
+      Rewrite the claim to follow the new decision, record the change under "Changes after results", and check again.
+    - >-
+      Keep the claim, since it was correct for the evidence that existed when the contract was written.
+    - >-
+      Drop the extension entirely, since a result that changed after review cannot be trusted either way.
+    - >-
+      Average the old and new intervals, since both runs were made under the same contract.
+  correct: 0
+  explanation: >-
+    Revision order is rerun, reanalyse, rewrite, declare, then check again. A rerun that changes a decision
+    changes the allowed claims, and the contract must show that the result changed after review.
+
+- id: q3
+  question: >-
+    A reviewer asks why your baseline got one learning-rate trial when the new method got three. Which answer
+    belongs in a good written defence?
+  options:
+    - >-
+      The baseline's learning rate came from an earlier paper, so tuning it again would not have changed anything.
+    - >-
+      We re-tuned the baseline with the same three trials; it chose the same rate (claim.yaml, results.json).
+    - >-
+      Tuning budgets are a secondary concern, since the paired interval already accounts for seed noise.
+    - >-
+      The new method needs more tuning because it is newer, which the rubric allows for the arm being tested.
+  correct: 1
+  explanation: >-
+    Unequal tuning is a rerun problem; the defence reports the rerun and points to the evidence. Assertions that it
+    would not matter, or that the new method deserves more tuning, are exactly the bias the question targets.
+
+- id: q4
+  question: >-
+    Your package passes the soundness checker with no problems. A reviewer still asks whether the equivalence
+    margin of 0.02 nats was chosen before or after you saw the intervals. Why can the checker not answer this?
+  options:
+    - >-
+      Because the checker only reads results.json, and margins are stored in the contract it does not read.
+    - >-
+      Because margins are not part of the decision rule, so the checker has no reason to look at them.
+    - >-
+      Because the checker can only test what the files contain, not when they were written or why.
+    - >-
+      Because the checker accepts any margin below 0.05 nats, which covers every reasonable choice.
+  correct: 2
+  explanation: >-
+    The checker reads the margin and recomputes the decision from it, but a file cannot prove when its contents
+    were decided. That question needs a dated contract, a committed history and an honest written answer.

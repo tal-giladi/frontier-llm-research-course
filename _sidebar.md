@@ -126,3 +126,12 @@
   - [79 · Frontier evaluation](lessons/module-18/lesson-03.md)
   - [80 · Safety frameworks and system cards](lessons/module-18/lesson-04.md)
   - [Module 18 quiz](assessments/module-18-quiz.md)
+- **Module 19 — How is frontier research chosen, reproduced and written?**
+  - [81 · Research taste and problem choice](lessons/module-19/lesson-01.md)
+  - [82 · Reproducing a paper](lessons/module-19/lesson-02.md)
+  - [83 · Writing and defending results](lessons/module-19/lesson-03.md)
+  - [Module 19 quiz](assessments/module-19-quiz.md)
+- **Module 20 — Capstone: reproduce, extend, defend**
+  - [84 · Capstone brief and rubric](lessons/module-20/lesson-01.md)
+  - [85 · Review and defence](lessons/module-20/lesson-02.md)
+  - [Module 20 quiz](assessments/module-20-quiz.md)

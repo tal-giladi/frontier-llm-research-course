@@ -1,0 +1,49 @@
+# A reference capstone proposal (Module 19 project), for comparison AFTER you have written your own.
+# The noise floor (0.008 nats at pilot-30m) is an ASSUMPTION for illustration; replace it with your Module 1
+# project's measurement at the size you run. Costs are PROJECTED with the formula shown.
+claim_id: qkclip-vs-qknorm
+question: "At pilot-30m with Muon at learning rate 1e-2, does QK-Clip (tau 15) keep held-out loss within 0.02 nats of QK-norm while bounding the maximum attention logit?"
+decision: "keep QK-norm in Recipe-R (no change), or allow MLA, which cannot use QK-norm cheaply, with QK-Clip"
+hypothesis: "QK-Clip bounds the logit at about tau and costs less than 0.02 nats against QK-norm"
+status: may not appear at this scale
+source: "Kimi K2 section 2.1 (QK-Clip, tau = 100), https://arxiv.org/abs/2507.20534; DeepSeek-V4 sections 2.3.3 and 2.4 (RMSNorm on queries and KV entries), https://arxiv.org/abs/2606.19348"
+reproduction:
+  direction: "max attention logit of the clipped arm at most 1.1 x tau while the unclipped arm exceeds tau"
+  tolerance: 0.02
+  tolerance_rule: "loss: 0.02 nats, 2.5 x the assumed pilot-30m seed std; logit: one optimizer step of growth (10%), from lesson 07.2"
+  magnitude: "not comparable: Kimi K2 reports logits above 1000 at 9B activated parameters; we test the mechanism at an induced tau"
+extension: "MLA with QK-Clip against GQA with QK-norm at equal tokens (the decision's real alternative)"
+baseline: "runs/m19/capstone/muon-qknorm-s{0,1,2,3}: Muon with QK-norm, pilot-30m, lesson 07.2 arms"
+baseline_tuning: "learning rate {5e-3, 1e-2, 2e-2} x 1 seed for each arm on the validation split, 6 runs in total"
+changed: "QK-norm off and QK-Clip tau 15 on"
+held_fixed: "Data-v0 main-path shards and hashes, 4,000 steps x 64 x 1024 tokens, seeds 0-3, Eval v0 windows, H100, the pinned software"
+axis: tokens
+axis_does_not_answer: "which is cheaper per step (QK-Clip needs the per-head max logit; measure it separately with frontierlab.perf)"
+budget:
+  hardware: "1x H100 80 GB"
+  gpu_hours: 2.9
+  label: PROJECTED
+  formula: "14 runs (2 arms x 4 seeds + 6 tuning runs) x 8.4e16 FLOPs per pilot-30m run (5.9e17 / 7 arms, lesson 07.2) / (989e12 x 0.2 MFU) = 1.65 h, plus 3% logit probe, plus the MLA extension (8 runs, 0.95 h), plus Eval v0 (about 0.2 h): about 2.9 h"
+  extra_compute: none
+  tuning_per_arm: {baseline: 3, method: 3}
+metrics:
+  primary: "held-out loss on 256 Eval v0 windows"
+  uncertainty: "per-seed paired differences, 95% t-interval over 4 seeds"
+  secondary: "run maximum and end-of-run maximum attention logit; clipped head-updates"
+  noise_floor: 0.008
+  n_seeds: 4
+  expected_effect: 0.02
+decision_rule: "allow MLA with QK-Clip if the 95% interval of (QK-Clip minus QK-norm) loss lies below +0.02 and the clipped arm's end-of-run max logit is at most 1.1 x tau; otherwise keep QK-norm"
+correctness_checks:
+  - "pytest labs/module-07/lesson-02 (clip equals the shared implementation for GQA and MLA)"
+  - "run-card diff: only config.qk_norm and optim.qk_clip differ (frontierlab.record)"
+  - "the unclipped arm passes tau, otherwise the clip test is not testable"
+fallback: "the Module 7 pilot traces of lesson 07.2 (analysis, labelled as such) and Kimi K2 Figure 2"
+limits:
+  - "pilot-30m only: 30M parameters, far below Kimi K2's 9B activated parameters, so the scale of logit growth is not tested"
+  - "tau 15 is induced to bind at this scale; Kimi's tau 100 may never be reached"
+  - "one data set and 0.26B tokens per run"
+  - "four seeds detect about 0.016 nats at 80% power only if the assumed 0.008 noise floor holds; measure it first"
+proxy: "the 07.2 arms at toy size, widths 64 and 128 (lesson 19.1 ladder); stop if the unclipped arm never passes tau at either width and the trend is flat"
+kill: "on seed 0 at pilot-30m the unclipped arm's max logit stays below tau: the clip never binds and the question cannot be asked at this scale"
+stated_on: "2026-10-07"

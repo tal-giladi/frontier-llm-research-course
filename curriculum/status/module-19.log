@@ -1,0 +1,20 @@
+research subpackage written: labs/common/frontierlab/research/{__init__,proposals,reproduce,writeup,contract}.py; labs/common/tests/test_research.py passes (21 tests)
+sources verified 2026-10-07 (see curriculum/inbox/module-19-progress.md)
+lesson-01 lab: lab.py, solution.py, test_lab.py written; LAB_TARGET=solution passes, lab.py fails on TODOs; choose_lab.py, lesson-01.md, quiz next
+lesson-02 lab: solution.py, repro_lab.py written; CPU sweep running in background (runs/m19/l192/cpu, log runs/m19_l192_cpu.log)
+lesson-01 md and quiz written (proxy results placeholder to fill after CPU run)
+lesson-03 lab files (lab, solution, test, make_cards, flawed/, fixed/) written; solution passes
+project files (template, example, buggy, check_proposal, test_proposal) written and passing; contract.validate_proposal added
+lesson-03 md written (figure results placeholder to fill after sweep)
+lesson-03 quiz written; projects/module-19-capstone-proposal.md written
+module quiz md + yaml written, check clean
+lesson-02 md written (results placeholder)
+lesson-02 quiz written; labs/module-19/README.md written (MEASURED_191/192 placeholders); glossary inbox written. Remaining: wait sweep -> fill REPRO/FIGURE placeholders, run 19.1 proxy -> fill PROXY placeholder and README, shared-changes inbox, link check, final tests
+lesson-02 CPU sweep done: 18 runs 37.7 min (126 s/run, another agent's jobs sharing CPU); effects +0.2558 +0.2700 +0.4009, mean +0.3089 CI [+0.1102,+0.5076], tol 0.0572 -> reproduced, magnitude not comparable; record validates
+lesson-02 and lesson-03 measured results filled; figure generated (runs/m19/l193/figure.png); 19.1 proxy ladder running
+19.1 proxy measured (7.8 min, grows, borderline); placeholders filled; tab-escape bug in lesson-01 fixed
+lesson-01 done
+lesson-02 done
+lesson-03 done
+labs/common tests all pass (5.5 min); all module-19 checks clean; module done
+module done

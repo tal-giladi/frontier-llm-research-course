@@ -1,0 +1,183 @@
+- id: q1
+  question: >-
+    Your team can fund one of two capstone-sized experiments. A asks whether micro-anneals rank data sources like full
+    anneals (score 0.49 per GPU-hour by your estimates). B asks whether QK-Clip matches QK-norm (score 0.34). Under 2×
+    perturbations of every estimate, A stays on top in 65% of draws. Both proxies cost about 1 GPU-hour. What do you do?
+  options:
+    - >-
+      Fund A immediately, because it has the higher expected value and a majority of the perturbations agree.
+    - >-
+      Run both proxies first, since the ranking depends on guesses that a couple of GPU-hours can replace with data.
+    - >-
+      Fund B, because architecture questions transfer to larger scales more reliably than data questions.
+    - >-
+      Fund both at half scale, so each question gets an answer and neither decision depends on the estimates.
+  correct: 1
+  explanation: >-
+    A ranking that survives only two thirds of plausible errors is close to a toss-up, and proxies are cheap next to
+    the main runs. Half-scale versions of both may leave both underpowered, which wastes the budget twice.
+
+- id: q2
+  question: >-
+    You plan 3 seeds per arm. The seed std of the metric is 0.02 and the smallest difference that would change the
+    decision is 0.02. Your proposal lists $p_{decisive} = 0.8$. What does the power calculation say?
+  options:
+    - >-
+      0.8 is right, because the minimum detectable effect is defined at 80% power by convention.
+    - >-
+      0.8 is too low, since three seeds per arm already give an interval narrower than the effect.
+    - >-
+      Power is about 0.2 at that effect with 3 seeds, so the design will usually end inconclusive.
+    - >-
+      Power cannot be computed until the runs finish, so the value is a free choice of the author.
+  correct: 2
+  explanation: >-
+    The standard error of the difference is $0.02\sqrt{2/3} = 0.0163$, $z = 1.22$, power $\approx \Phi(1.22 - 1.96)
+    \approx 0.23$. The minimum detectable effect at 80% power is 0.046, more than twice the effect that matters.
+
+- id: q3
+  question: >-
+    A proxy ladder for "removing a stabiliser hurts" gives +0.04, +0.05 and +0.05 nats at three sizes, with a seed noise
+    of 0.01 per difference. What should go into the proposal?
+  options:
+    - >-
+      The effect is flat over this range and above the noise; extrapolate cautiously and state the range as a limit.
+    - >-
+      The effect is growing, so the large run will show a bigger cost than the proxy and needs no further check.
+    - >-
+      The ladder is below the noise, because the change from the smallest to the largest size is only 0.01 nats.
+    - >-
+      The sign flips between sizes, so the proxy cannot be used and the proposal should be dropped.
+  correct: 0
+  explanation: >-
+    All three effects exceed 2 × 0.01, have the same sign, and the change from smallest to largest (0.01) is within
+    2 × noise: flat. A flat ladder supports transfer only over the sizes measured.
+
+- id: q4
+  question: >-
+    Before running a reproduction you write: "reproduced if the 95% seed interval of the effect is above 0 and the mean
+    is at least 0.057 nats" (2 × the seed std). Three seeds give effects 0.040, 0.041 and 0.042. What is the outcome?
+  options:
+    - >-
+      Reproduced, because the interval is far above zero and all three seeds agree on the direction.
+    - >-
+      Inconclusive, because three seeds are too few for any interval to support a decision.
+    - >-
+      Contradicted, because the mean is below the tolerance stated before the runs.
+    - >-
+      Not reproduced: the interval excludes an effect as large as the tolerance, so no effect that counts.
+  correct: 3
+  explanation: >-
+    The interval is about [0.0385, 0.0435]: above zero but entirely below 0.057. The rule declared in advance says an
+    effect this small does not count. Contradicted would need the interval below zero; moving the tolerance now would
+    make the rule meaningless.
+
+- id: q5
+  question: >-
+    Your reproduction of a paper's claim at 1.8M parameters shows the claimed direction clearly. The paper's figure
+    reports the effect at sizes up to billions of parameters, with a different learning-rate grid and data set. How
+    should the record state the magnitude?
+  options:
+    - >-
+      As matching, since the direction agrees and magnitudes at different scales are expected to differ anyway.
+    - >-
+      As not comparable, with the reasons, and the direction as reproduced at this scale only.
+    - >-
+      As differing, because any difference in setup means the magnitude was not reproduced.
+    - >-
+      Leave magnitude out of the record, since only the direction was part of the paper's claim.
+  correct: 1
+  explanation: >-
+    Direction and magnitude are separate decisions. When metric, scale and grid differ, the published number is not on
+    the same footing, so the honest entry is "not comparable" with the deviations that make it so.
+
+- id: q6
+  question: >-
+    Halfway through a reproduction you notice your learning-rate schedule decays to 10% of the peak while the paper's
+    decays to 1e-5. Results are already in. What do you do with the deviation log?
+  options:
+    - >-
+      Add the entry marked "recorded after", with what prompted it and the expected effect on the claim.
+    - >-
+      Add it as if it had been recorded before, since the difference existed from the start of the runs.
+    - >-
+      Leave it out, because a schedule tail is a minor detail that does not belong in a reproduction record.
+    - >-
+      Discard all runs and restart with the paper's schedule before recording anything.
+  correct: 0
+  explanation: >-
+    Deviations found later are normal; hiding when they were found is not. Marking it "after" with a note keeps the
+    record honest, and the expected effect tells the reader whether the conclusion could depend on it.
+
+- id: q7
+  question: >-
+    You review a note whose claims register lists QK-Clip runs with 400 steps and QK-norm runs with 300, on an
+    equal-tokens comparison, and whose summary credits QK-Clip with a 0.03-nat gain. Which request is most useful?
+  options:
+    - >-
+      Ask the author to report the gain per step instead of per run, which corrects for the different lengths.
+    - >-
+      Ask for the comparison on the equal-FLOPs axis instead, where unequal lengths are allowed by design.
+    - >-
+      Ask for both arms at the same token budget, since the extra 100 steps alone could explain the gain.
+    - >-
+      Accept the result, because a longer run for the new method is a conservative choice for the baseline.
+  correct: 2
+  explanation: >-
+    The budget the axis holds equal differs by a third. Per-step normalisation does not remove the extra training, and
+    switching axis after the fact changes the question; the fix is equal tokens.
+
+- id: q8
+  question: >-
+    A figure compares two optimizers. It shows one seed per arm, x-axis in optimizer steps (the arms use different
+    batch sizes), and its caption says "Muon converges faster and is more stable". How many of the figure rules does it
+    break?
+  options:
+    - >-
+      One: the caption should name the batch sizes, and otherwise the figure answers its question.
+    - >-
+      Two: one seed and the step axis, while two claims in one caption are acceptable for a summary figure.
+    - >-
+      Two: the step axis and the caption, since one seed is enough when the curves do not cross.
+    - >-
+      Three: two claims in one figure, no uncertainty from a single seed, and steps instead of the comparison axis.
+  correct: 3
+  explanation: >-
+    One claim per figure, uncertainty over at least two seeds stated in the caption, and the contract's axis with
+    matched budgets. "Faster and more stable" are two claims needing two figures, and steps hide the batch difference.
+
+- id: q9
+  question: >-
+    The claims linter reports no problems on a teammate's note. Which statement about the note is justified?
+  options:
+    - >-
+      Its experiment answers the question it set out to answer, since every claim is backed by run cards.
+    - >-
+      Its registered claims agree with the cards they cite; claims and runs outside the register are unchecked.
+    - >-
+      Its result will transfer to larger models, since scope words that generalise would have been flagged.
+    - >-
+      Its baseline was tuned as hard as the method, since unequal budgets would have been flagged.
+  correct: 1
+  explanation: >-
+    A clean lint is necessary, not sufficient. It checks the register against the named cards; tuning runs without
+    cards, sentences missing from the register and whether the design answers the question are for the reviewer.
+
+- id: q10
+  question: >-
+    In your written defence a reviewer asks why your reproduction's tolerance is 0.057 nats. Which answer is best?
+  options:
+    - >-
+      "It is twice the seed std, 0.0286, measured in lesson 01.4 before these runs and written into the record with
+      its date."
+    - >-
+      "It was chosen to be generous, so that a real effect would not be missed because of a strict threshold."
+    - >-
+      "It is the value that separates the two arms most clearly in our results, which makes the decision robust."
+    - >-
+      "It matches the effect size reported in the paper, so a reproduction should reach at least that value."
+  correct: 0
+  explanation: >-
+    A defence answers with the record: where the number comes from, that it existed before the results, and how it
+    relates to the noise. A threshold picked from the results decides nothing, and the paper's effect at another scale
+    is not a tolerance.

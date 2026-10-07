@@ -38,3 +38,9 @@ On Windows use `.venv\Scripts\` instead of `.venv/bin/`. On a GPU machine instal
 ## Course map
 
 The sidebar lists every lesson. Stages: A research foundations (Modules 1–2) → B architecture questions (3–6) → C training-recipe questions (7–11) → D post-training questions (12–16) → E understanding, evaluating and communicating (17–20). Lessons marked **Extension** are optional. The required course covers text, reasoning and agents; a multimodal elective follows later.
+
+## When you have finished
+
+You will have one traceable chain of run cards, from Data-v0 and Baseline-0 through isolated architecture branches, an integrated architecture, an optimizer, precision and data recipe, a pre-registered run, post-training, evaluation, an interpretability claim and an audit, ending in a capstone: one claim from a 2025–26 report reproduced at a scale you could afford, extended with one ablation nobody had published, reviewed, defended in writing and revised. Every comparison in it has an experiment contract, paired intervals and stated limits, and a null result in it counts as much as a positive one. That record, not the quizzes, is what shows you can do the job: keep it, and add the measured costs to your run cards so the course's PROJECTED figures can be corrected.
+
+The Module 21 elective on native multimodality follows when it is published.

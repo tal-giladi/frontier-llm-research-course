@@ -1,0 +1,96 @@
+- id: q1
+  question: >-
+    A note reports QK-Clip at 6.268 and QK-norm at 6.302 held-out loss, one seed per arm, and calls the 0.034-nat gap
+    "larger than the 0.02 we consider meaningful, so the improvement is real". The recipe's seed std is 0.0286. What
+    is the most useful review comment?
+  options:
+    - >-
+      The 0.02 threshold is too low for this model size; the team should agree on a higher one before accepting.
+    - >-
+      The difference should be reported in percent of the loss, since absolute nats depend on the tokenizer.
+    - >-
+      A threshold is not an interval: single runs differ by noise of std 0.04, so ask for seeds and an interval.
+    - >-
+      The result should be rerun on the test split, because the validation split may have been overfitted.
+  correct: 2
+  explanation: >-
+    The difference of two single runs has std $0.0286\sqrt{2} \approx 0.040$, so 0.034 is within one standard
+    deviation of pure noise. Whether the gap matters practically comes after showing it is real, which needs seeds
+    and an interval.
+
+- id: q2
+  question: >-
+    Your contract compares two optimizers at equal tokens. Arm A uses batch 32, arm B batch 64, and you plot held-out
+    loss against optimizer step, both up to step 2,000. A reader concludes that B learns faster. What is wrong with
+    the figure?
+  options:
+    - >-
+      Nothing, as long as the caption states both batch sizes so the reader can correct for them mentally.
+    - >-
+      It should use a log scale on the x-axis, since loss curves are roughly power laws in the step count.
+    - >-
+      It should show training loss rather than held-out loss, because held-out loss lags the optimizer state.
+    - >-
+      Steps are not the contract's axis: B has seen twice the tokens at every step and ends at twice the budget.
+  correct: 3
+  explanation: >-
+    Plot against the comparison axis, tokens, and stop both arms at the same budget. Against steps, the arm with more
+    tokens per step looks better everywhere for a reason the claim is not about.
+
+- id: q3
+  question: >-
+    A colleague evaluates both arms every 50 steps on the test split and reports the best evaluation of the new
+    method and the final evaluation of the baseline. With 8 evaluations and an evaluation noise of 0.017 nats, roughly
+    how large is the bias this alone can create?
+  options:
+    - >-
+      About 0.024 nats in the new method's favour, the expected maximum of 8 noisy draws, about 1.4 standard errors.
+    - >-
+      None, because the evaluation noise averages out over 8 evaluations instead of adding to the bias.
+    - >-
+      About 0.136 nats, because each of the 8 evaluations contributes its full noise of 0.017 to the bias.
+    - >-
+      About 0.002 nats, the noise divided by the square root of 8 evaluations, which is negligible here.
+  correct: 0
+  explanation: >-
+    Picking the best of 8 noisy numbers selects a favourable draw: for normal noise the expected best is about 1.4
+    standard deviations from the mean, 1.4 × 0.017 ≈ 0.024. Applied to one arm only, it is a bias, not noise, and the
+    test split stops being a test.
+
+- id: q4
+  question: >-
+    The claims linter reports nothing for a note: every claim has 3 seeds per arm, equal budgets, final checkpoints,
+    an interval and a stated scope. A reviewer still finds that the baseline's learning rate was never re-tuned while
+    the method got a 6-point sweep. Why did the linter not catch it?
+  options:
+    - >-
+      The linter does check tuning, but only on the equal-FLOPs axis, and this note used equal tokens.
+    - >-
+      The tuning runs are not in the register, so no card shows the mismatch; that is the reviewer's job.
+    - >-
+      Tuning differences are not a problem when both arms end with three seeds at the same budget.
+    - >-
+      The linter ignores learning rates because they are bookkeeping fields in the run-card schema.
+  correct: 1
+  explanation: >-
+    A clean lint means the register is consistent with the cards it names. Tuning effort lives in runs that are not
+    named, so only a reviewer asking for them finds it, and Dodge et al. show tuning budget can change which method
+    looks best.
+
+- id: q5
+  question: >-
+    A reviewer asks: "How do you know your baseline was tuned as hard as the method?" Which answer belongs in a
+    written defence?
+  options:
+    - >-
+      "The baseline is the course default, which has been carefully tuned over many earlier modules."
+    - >-
+      "Both arms were tuned thoroughly and fairly, following the course's standard practice for baselines."
+    - >-
+      "Same 3-point rate sweep on validation for both; the baseline's best, 1e-2, was interior (limit 3)."
+    - >-
+      "Tuning the baseline more would only have made the method look better, so the comparison is conservative."
+  correct: 2
+  explanation: >-
+    A defence answers with the record: what was swept, on which split, where the optimum fell, and what could still
+    change it. The other answers use adjectives or an unsupported argument about the direction of the bias.

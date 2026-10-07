@@ -1,0 +1,15 @@
+# Module 20 glossary terms (for the main session to merge into glossary.md)
+
+- **Capstone package** — the folder a capstone is handed in as: claim.yaml (arms, roles, seeds, comparisons, axis, margin, tuning), the filled contract, one run card per arm and seed, results.json, claims.yaml and the report; `python -m frontierlab.capstone` checks it. [20.1]
+- **Reproduction (at small scale)** — testing the part of a published claim that a smaller run can test, with "reproduced", "not tested" and "not reproduced" defined before the runs. [20.1]
+- **Not tested** — the outcome when the mechanism a claim is about never engaged (a clip that never fired, an instability that never appeared); distinct from "not reproduced". [20.1]
+- **Extension ablation** — the one new comparison a capstone adds to the reproduction: a comparison the source did not run, a variable it held fixed, or a regime it did not reach. [20.1]
+- **Hierarchical (two-level) bootstrap** — resampling seeds with replacement, then evaluation items within each drawn seed, so an interval reflects both training noise and evaluation noise. [20.1]
+- **Equivalence margin** — the difference below which a result does not matter for the decision, fixed before the runs; "equivalent" requires the whole interval inside ±margin. [20.1]
+- **Sound null result** — a well-run experiment that finds no difference larger than its minimum detectable effect, reported with its intervals and limits; it scores the same as a positive result. [20.1]
+- **Claims within evidence** — every claim carries an evidence label, a measured claim says no more than its pre-stated decision allows, and it stays at the scale that was measured. [20.1]
+- **Reviewer question** — a question a capstone must answer in writing, from the rubric (generic), from the claim (specific) or from a problem the soundness checker found. [20.2]
+- **Revision kind** — what a weakness needs: rerun (the evidence is not comparable or too thin), reanalyse (the numbers drawn from it are wrong), rewrite (the words overclaim) or declare (the record omits something). [20.2]
+- **Blocking problem** — a weakness that makes a result not count until fixed (unequal budgets or tuning, too few seeds, a wrong decision, an overclaiming direction or scope); it cannot be declined in a revision. [20.2]
+- **Written defence** — the 1–2 page answer to every reviewer question, each answer direct, backed by a package file or an interval, conceding what the evidence does not support and adding no new claims. [20.2]
+- **Revision log** — one entry per problem found in review (kind, change, new runs, whether a result changed), checkable against the package by a second reviewer. [20.2]

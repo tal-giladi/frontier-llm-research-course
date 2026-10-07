@@ -1,0 +1,12 @@
+# Figure specification of the fictional note's Figure 1 (lab 19.3). Lint it with frontierlab.research.writeup.lint_figure.
+claim:
+  - "QK-Clip has lower held-out loss than QK-norm"
+  - "QK-Clip keeps the maximum attention logit bounded"
+x: steps
+contract_axis: tokens
+y: test_loss
+uncertainty: none
+arms:
+  qk-clip: {n_seeds: 1, tokens_per_step: 2048, x_end: 400}
+  qk-norm: {n_seeds: 1, tokens_per_step: 2048, x_end: 300}
+caption: "Held-out loss of the two runs against optimizer step. QK-Clip is lower from step 150 on."

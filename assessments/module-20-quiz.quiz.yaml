@@ -1,0 +1,164 @@
+- id: q1
+  question: >-
+    You choose the mHC claim. On a 30M-parameter model at a raised learning rate, HC's composite residual gain grows
+    from 1.5 to 6.6 while mHC's stays at 1.0, and no arm has a single loss spike. How should the capstone state the
+    reproduction?
+  options:
+    - >-
+      Not reproduced, since the paper's evidence is a loss surge and none appeared in any arm at this scale.
+    - >-
+      Reproduced in full, since the gain growth is the cause of the loss surge the paper reports at 27B.
+    - >-
+      The mechanism is reproduced, the loss instability is not tested at this scale, each stated separately.
+    - >-
+      Inconclusive, since the stability claim can only be judged with an interval on the final loss.
+  correct: 2
+  explanation: >-
+    The gain growth is the mechanism and it engaged; the loss surge did not appear, so that half of the claim was
+    not exercised. Saying both, separately, is the honest scope.
+
+- id: q2
+  question: >-
+    Your contract for the micro-anneal claim says "adopt the candidate if its own-domain loss falls". The control
+    anneal on the base mixture also lowers loss by 0.10 nats. A reviewer asks what your decision rule compares. What
+    should it have compared?
+  options:
+    - >-
+      Each candidate's anneal against the stable checkpoint before annealing, since that is the starting point.
+    - >-
+      Each candidate's anneal against the control anneal of the same length from the same checkpoint.
+    - >-
+      Each candidate against the best other candidate, since only the ranking of sources matters.
+    - >-
+      Each candidate's final loss against the paper's reported gains, since the claim is about their sources.
+  correct: 1
+  explanation: >-
+    Annealing alone lowers loss, so the stable checkpoint is the wrong baseline. The control anneal holds the anneal
+    fixed and isolates the candidate data, which is what OLMo 2 and Olmo 3 compare against.
+
+- id: q3
+  question: >-
+    Three seeds per arm. The hierarchical bootstrap gives [-0.004, +0.012] and the paired t-interval over seed means
+    gives [-0.031, +0.039]. Your margin is 0.02 nats and the contract decides on the bootstrap. What do you report?
+  options:
+    - >-
+      Equivalent by the stated rule, with the t-interval shown and the disagreement between them stated.
+    - >-
+      Inconclusive, since the wider interval should always override the rule when the two disagree.
+    - >-
+      Equivalent, without the t-interval, since the contract names the bootstrap as the method.
+    - >-
+      Nothing yet, since with three seeds neither interval can support any decision at all.
+  correct: 0
+  explanation: >-
+    The decision follows the rule stated in advance, but with three seeds the bootstrap's seed level is coarse and
+    can be too narrow, so the honest report shows both and says they disagree.
+
+- id: q4
+  question: >-
+    A classmate's distillation capstone gives the on-policy arm and the off-policy arm the same number of student
+    gradient steps. The on-policy arm wins by a clear interval. What is the main reviewer question?
+  options:
+    - >-
+      Whether the student was large enough for on-policy sampling to differ from the teacher's samples at all.
+    - >-
+      Whether the held-out set overlapped with the teacher's training data, inflating both arms equally.
+    - >-
+      Whether the off-policy arm should have used reverse KL as well, so the loss is held fixed.
+    - >-
+      Whether the teacher's scoring of every sampled token was counted, since the claim is about compute.
+  correct: 3
+  explanation: >-
+    The published result is a cost reduction, so the comparison must be at equal compute with teacher sampling and
+    scoring charged to the arm that uses them. Equal student steps hides that cost on one side.
+
+- id: q5
+  question: >-
+    Your package passes the checker. In review you realise you widened the equivalence margin from 0.01 to 0.02
+    nats after seeing the reproduction interval [-0.004, +0.016]. What is the right revision?
+  options:
+    - >-
+      None, since 0.02 nats is a reasonable margin and the checker accepts the package as it stands.
+    - >-
+      Decide with the pre-stated 0.01 and record the later change under "Changes after results".
+    - >-
+      Rerun every arm with more seeds until the interval fits inside 0.01, then keep the original contract.
+    - >-
+      Keep 0.02 and add a limit saying that other margins could give a different decision.
+  correct: 1
+  explanation: >-
+    A margin chosen after the results makes the decision rule decorative. The pre-stated rule gives "inconclusive";
+    report that, and declare the change so readers can see both.
+
+- id: q6
+  question: >-
+    A reviewer lists twelve problems, including an extension run on more tokens than its comparison, a wrong
+    decision in results.json, an overclaiming sentence and a missing hypothesis status. In which order do you revise?
+  options:
+    - >-
+      The sentence first, since wording is cheapest to fix, then the decision, then the reruns last.
+    - >-
+      The hypothesis status first, since the contract must be complete before anything else can change.
+    - >-
+      Reruns first, then recompute decisions, then rewrite claims, then declare changes, then check again.
+    - >-
+      All at once in one commit, since the order does not matter if the checker passes at the end.
+  correct: 2
+  explanation: >-
+    A rerun can change a result, which changes the decision and therefore the allowed claims; rewriting first
+    polishes sentences about numbers that are about to change.
+
+- id: q7
+  question: >-
+    Your QK-Clip extension compares QK-norm against QK-Clip. The run-card diff shows the parameter count, the
+    config's qk_norm flag and the optimizer's qk_clip setting all differ. A reviewer says this is three changed
+    variables. How do you answer?
+  options:
+    - >-
+      Agree and split the extension into three comparisons, one for each field that differs in the run cards.
+    - >-
+      Remove QK-norm's gains from the parameter count so the two models match on the equal-parameters axis.
+    - >-
+      Argue that run-card differences in config fields never count as changed variables on an equal-tokens axis.
+    - >-
+      The declared variable is the logit fix; both settings and the parameter count follow from it.
+  correct: 3
+  explanation: >-
+    One conceptual change can touch several fields. Declaring them as one variable, with the parameter count
+    following from the config change, keeps the comparison honest; the diff tool classifies them that way.
+
+- id: q8
+  question: >-
+    You reproduce DSA on CPU: quality stays within the margin of dense attention, but the sparse path is slower than
+    dense at every context length you can run. What should the report say about cost?
+  options:
+    - >-
+      Measured component costs, a crossover projected from them, and no end-to-end speed-up claim.
+    - >-
+      That DSA is slower than dense attention, which contradicts the cost figure DeepSeek reports.
+    - >-
+      That DSA is faster at long context, since DeepSeek-V3.2 measured this on its serving cluster.
+    - >-
+      Nothing about cost, since a CPU measurement says nothing at all about attention cost on GPUs.
+  correct: 0
+  explanation: >-
+    Measured component costs are real evidence about your implementation; the crossover is a projection and must
+    be labelled as one. Neither your slowdown nor the paper's speed-up transfers to the other's setting.
+
+- id: q9
+  question: >-
+    Your GSPO capstone used one learning-rate trial for GRPO and three for GSPO. Re-tuning GRPO would cost four hours
+    you do not have. Can the revision log decline this problem with a reason?
+  options:
+    - >-
+      Yes, if the reason explains that GRPO's rate came from lesson 14.2's tuned value for the same setup.
+    - >-
+      Yes, as long as the report's limits section says the baseline was tuned less than the new method.
+    - >-
+      No, because unequal tuning makes the comparison not count, so it must be rerun or the comparison dropped.
+    - >-
+      No, because the revision log cannot decline any problem the checker finds, whatever its kind.
+  correct: 2
+  explanation: >-
+    Unequal tuning biases the comparison in favour of the better-tuned arm; it is a blocking problem. Non-blocking
+    problems, such as a missing parent for a run that truly started from scratch, can be declined with a reason.

@@ -514,7 +514,40 @@ O18 = f'{PILOT_DIR}/p18'; os.makedirs(O18, exist_ok=True)
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16 + P17 + P18}
+P19 = [
+    md("""
+## P19 — Module 19: proxy ladder and QK-norm reproduction (about 4–8 GPU-hours on an A100)
+
+19.1 proxy ladder (8 runs, PROJECTED 0.13 H100-h) and the 19.2 Wortsman et al. LR-sensitivity reproduction at
+pilot-30m (42 runs, PROJECTED 4.0 H100-h); pilot-70m (`--variant main70`, 7.6 H100-h) only if allowance remains.
+Record: final loss and max logit per run, divergences, sensitivities, the decision, measured MFU.
+"""),
+    code("""
+O19 = f'{PILOT_DIR}/p19'; os.makedirs(O19, exist_ok=True)
+os.environ['LAB_TARGET'] = 'solution'
+!python labs/module-19/lesson-01/choose_lab.py --variant main --part proxy 2>&1 | tee "$O19/19-1-proxy.txt" | tail -20
+!python labs/module-19/lesson-02/repro_lab.py --variant main --part all 2>&1 | tee "$O19/19-2-repro.txt" | tail -30
+!cp -r runs/m19 "$O19/runs-m19"
+"""),
+]
+
+P20 = [
+    md("""
+## P20 — Module 20: QK-Clip capstone scaffold (about 1–2 GPU-hours on an A100)
+
+Rung 1 of the capstone claim (pilot-30m, 9 runs, PROJECTED 1.1 H100-h); rung 2 (`--preset pilot-70m`, 2.1 H100-h)
+if allowance remains. Record: tau, first clip step and count, both intervals and decisions, noise floor, s/step, MFU.
+"""),
+    code("""
+O20 = f'{PILOT_DIR}/p20'; os.makedirs(O20, exist_ok=True)
+os.environ['LAB_TARGET'] = 'solution'
+!python labs/module-20/lesson-01/capstone_lab.py --variant main --print 2>&1 | tee "$O20/20-1-commands.txt"
+!python -m frontierlab.capstone.scaffold --variant main --out runs/m20/l201/capstone-qkclip-main --device cuda 2>&1 | tee "$O20/20-1-scaffold.txt" | tail -30
+!cp -r runs/m20 "$O20/runs-m20"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16 + P17 + P18 + P19 + P20}
 
 
 def build():

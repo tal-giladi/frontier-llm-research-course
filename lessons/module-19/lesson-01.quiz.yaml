@@ -1,0 +1,96 @@
+- id: q1
+  question: >-
+    Two proposals for your capstone. A: "Is GSPO better than GRPO?" B: "Our 1.7B reasoning-RL runs collapse in about
+    one seed in four; should the recipe switch from GRPO to GSPO?" What makes B the stronger proposal before any
+    numbers are attached?
+  options:
+    - >-
+      B uses a newer objective, and newer methods have a higher prior probability of winning a comparison.
+    - >-
+      B names the decision its answer changes and the observation that makes the question worth asking.
+    - >-
+      B is more specific about the model size, which by itself guarantees that the result will transfer.
+    - >-
+      B can be run without a baseline, because the collapse rate already measures the current recipe.
+  correct: 1
+  explanation: >-
+    A goal-driven question ties the answer to a choice in the chain you are building. A is idea-driven: it has no
+    decision attached, so a clean result may change nothing. Specificity does not guarantee transfer, and B still
+    needs GRPO as its tuned baseline.
+
+- id: q2
+  question: >-
+    Your proposal compares two arms with 2 seeds each. The seed std of the metric is 0.03 nats, and the smallest
+    difference that would change your decision is 0.03 nats. A colleague sets $p_{decisive} = 0.9$ because "the method
+    clearly works in the paper". What should the proposal say?
+  options:
+    - >-
+      Keep 0.9, since the paper's result is evidence that the effect exists and will appear in your runs too.
+    - >-
+      Use 0.5, the neutral prior, because power calculations need the true effect, which is unknown.
+    - >-
+      Power at 0.03 is about 0.17 with these seeds: underpowered, so add seeds or use a far lower value.
+    - >-
+      Use 0.05, because with two seeds per arm the test can only reach its false-positive rate.
+  correct: 2
+  explanation: >-
+    The standard error of the difference is $0.03\sqrt{2/2} = 0.03$, so $z = 1$ and power is about
+    $\Phi(1 - 1.96) = 0.17$. Even if the effect is real, the design will usually end inconclusive. Power is computed at
+    the smallest effect that matters, not at the paper's effect.
+
+- id: q3
+  question: >-
+    You run a cheap proxy for "removing a stabiliser hurts" at three sizes and get effects of +0.05, +0.01 and −0.06
+    nats (small to large), with a seed noise of 0.01 per difference. How should you read this ladder?
+  options:
+    - >-
+      As a sign flip: the effects above noise point in opposite directions, so the small sizes are not a proxy for the
+      large one.
+    - >-
+      As a shrinking effect that will reach zero at the target size, so the stabiliser can be safely removed.
+    - >-
+      As flat, because the mean of the three effects is close to zero and within the noise.
+    - >-
+      As below noise, because the middle point is inside twice the noise and the ladder is therefore uninformative.
+  correct: 0
+  explanation: >-
+    +0.05 and −0.06 are both beyond 2 × 0.01 with opposite signs. Averaging across sizes hides that, and "shrinks" would
+    assume the sign is stable. A sign flip says this proxy cannot predict the target scale.
+
+- id: q4
+  question: >-
+    Two proposals score 0.49 and 0.34. When every estimate is perturbed by up to 2×, the first stays on top in 65% of
+    draws. You have a week. What is the best next step?
+  options:
+    - >-
+      Run the first proposal at full scale, since it has the higher score and 65% is a clear majority.
+    - >-
+      Refine the value estimates in a meeting until the ranking stops changing, then run the winner.
+    - >-
+      Drop both, because a ranking that is not robust in more than 95% of draws is not evidence.
+    - >-
+      Run both cheap proxies first, because the ranking hinges on guesses that a few GPU-hours of data can replace.
+  correct: 3
+  explanation: >-
+    With the top choice surviving only about two thirds of plausible errors, the decision depends on the guesses.
+    Proxies buy information about $p_{transfer}$ and effect size cheaply; more discussion does not, and dropping both
+    discards two reasonable questions.
+
+- id: q5
+  question: >-
+    A teammate's proxy shows that removing QK-norm lowers held-out loss at a 1M-parameter model, so they propose
+    removing it from the 1B run. In lesson 03.3 the same change lowered loss at learning rate 3e-3 and raised it by
+    0.30 nats at 1e-2. What is the main flaw in the teammate's proxy?
+  options:
+    - >-
+      The proxy used too few parameters, and any result below 100M parameters is uninformative about a 1B run.
+    - >-
+      It fixed the learning rate, a nuisance hyperparameter whose value flips the comparison's sign.
+    - >-
+      QK-norm only matters with Muon, so an AdamW proxy says nothing about it at any model size.
+    - >-
+      The proxy measured loss instead of the maximum attention logit, which is the only valid metric for QK-norm.
+  correct: 1
+  explanation: >-
+    The tuning playbook's distinction applies: QK-norm is the scientific variable and the learning rate a nuisance one.
+    A proxy run at one rate can rank the arms by which one tolerates that rate, which is what lesson 03.3 shows.

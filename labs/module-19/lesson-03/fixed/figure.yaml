@@ -1,0 +1,10 @@
+# Figure specification of the revised note's Figure 1 (lab 19.3).
+claim: "At 1.8M parameters QK-Clip and QK-norm reach the same held-out loss within 0.02 nats"
+x: arm
+contract_axis: tokens
+y: val_loss
+uncertainty: "one point per seed and the 95% paired interval over seeds"
+arms:
+  qk-clip: {n_seeds: 3, tokens_per_step: 2048, x_end: 614400}
+  qk-norm: {n_seeds: 3, tokens_per_step: 2048, x_end: 614400}
+caption: "Final held-out loss (256 validation windows) after 614,400 tokens, one point per seed (n = 3 seeds per arm); the bar is the 95% paired interval of the difference."

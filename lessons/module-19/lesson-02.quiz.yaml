@@ -1,0 +1,91 @@
+- id: q1
+  question: >-
+    You re-implement a paper's method in the course code base, train it on Data-v0 at 1.8M parameters, and get the
+    paper's direction. In the National Academies' terms, what have you done, and what follows for the record?
+  options:
+    - >-
+      A computational reproduction, so the record can state that the paper's results were confirmed as published.
+    - >-
+      A replication of the claim with new code and data; the record says which parts matched the paper.
+    - >-
+      Neither, because only the original authors can reproduce or replicate their own results.
+    - >-
+      A reproduction, because the course data and the paper's data are both web text of similar quality.
+  correct: 1
+  explanation: >-
+    Reproducibility in the report's sense means the same data, code and conditions. New code, new data and a smaller
+    scale make this closer to replicating the claim, and it can fail for reasons unrelated to the paper being right.
+
+- id: q2
+  question: >-
+    A figure caption says "Qk-layernorm reduces LR sensitivity, but LR sensitivity still increases with model scale."
+    You can afford one model size on CPU. How do you scope the reproduction?
+  options:
+    - >-
+      Test both halves at one size, since a single size shows the sensitivity value that the scale trend predicts.
+    - >-
+      Drop the paper, because a claim that cannot be tested in full should not be reproduced in part.
+    - >-
+      Test the first half only and say in the scope that the scale trend is not tested; it needs a ladder.
+    - >-
+      Test the second half, because scale trends are the more important part of the claim for a frontier lab.
+  correct: 2
+  explanation: >-
+    A trend with scale needs at least two sizes. Testing the part one size can show, and naming the part it cannot,
+    gives a usable result; the main-path ladder can test the rest.
+
+- id: q3
+  question: >-
+    Before the runs you state: reproduced if the seed interval's lower bound exceeds 0 and the mean is at least
+    0.057. Three seeds give effects 0.20, −0.05 and 0.10 (mean 0.083, 95% t-interval about [−0.23, 0.40]). What is the
+    outcome, and what is the right next step?
+  options:
+    - >-
+      Reproduced, because the mean exceeds the tolerance; the negative seed is an outlier to drop.
+    - >-
+      Not reproduced, because one seed points the wrong way, which falsifies a directional claim.
+    - >-
+      Contradicted, because the interval's lower bound is below zero by more than the tolerance.
+    - >-
+      Inconclusive: the interval straddles both 0 and the tolerance, so add seeds instead of deciding.
+  correct: 3
+  explanation: >-
+    The lower bound is not above zero and the upper bound is not below the tolerance, so the rule gives no verdict.
+    Dropping a seed after seeing it, or reading one seed as decisive, would replace the rule with a preference.
+
+- id: q4
+  question: >-
+    The paper uses "independent" weight decay of 1e-4, not multiplied by the learning rate. Your framework's AdamW
+    multiplies decay by the scheduled learning rate. You sweep learning rates 3e-3, 1e-2 and 3e-2. What do you pass?
+  options:
+    - >-
+      weight_decay = 1e-4 / lr for each run, so that lr × weight_decay equals the paper's 1e-4 times the schedule.
+    - >-
+      weight_decay = 1e-4 for every run, since that is the value printed in the paper's setup section.
+    - >-
+      weight_decay = 0 for every run, and record the difference, since decay barely matters at small scale.
+    - >-
+      weight_decay = 0.1 for every run, the framework default, and record it as "same as the paper".
+  correct: 0
+  explanation: >-
+    Matching what is cheap to match removes a deviation instead of explaining it. Passing 1e-4 would scale the decay
+    with the learning rate, a different setting at every point of the sweep, and the paper reports that weight decay
+    affects one of the instabilities it studies.
+
+- id: q5
+  question: >-
+    Your reproduction's outcome depends on how many seeds stood behind each point of the paper's figure, which the
+    paper does not state. What is the best way to handle it?
+  options:
+    - >-
+      Wait for the authors' answer before running anything, since the outcome cannot be decided without it.
+    - >-
+      Run what you can, send a short specific question, and record the question, date and answer in the record.
+    - >-
+      Assume a single seed per point, since unstated details in papers usually default to the cheapest option.
+    - >-
+      Leave it out of the record, since an unanswered question would make the reproduction look incomplete.
+  correct: 1
+  explanation: >-
+    Contacting authors is for gaps you cannot close yourself; the question and any answer belong in the record. Waiting
+    blocks progress, and guessing silently is a hidden deviation.

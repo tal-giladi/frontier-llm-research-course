@@ -54,13 +54,15 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 16 — How do we train agents without fooling ourselves? (integrated, narrowed scope)
 - [x] Module 17 — What can we claim about a model's internals? (integrated)
 - [x] Module 18 — Alignment science, frontier evaluation and governance (integrated)
-- [ ] Module 19 — How is frontier research chosen, reproduced and written?
-- [ ] Module 20 — Capstone
+- [x] Module 19 — How is frontier research chosen, reproduced and written? (integrated; review template copied to templates/review.md)
+- [x] Module 20 — Capstone (integrated; dry-run import 85 lessons, 0 problems)
 - [ ] Course-provided artefacts on Hugging Face (needs Tal's account)
 - [ ] Final QA: dry-run import 0 problems, links, git clean
 - [ ] (after first release) Module 21 — multimodal elective
 
 ## Who is working on what
+
+- 2026-10-07: Modules 19 and 20 done and integrated. Plan 14.1/14.2 claim-check records for them are in curriculum/inbox/module-19-shared-changes.md section 5 and module-20-shared-changes.md section 7 (plan not edited). Next: HF artefacts (Tal), final QA.
 
 - 2026-10-04: machine restart interrupted two sub-agents: Module 9 (owns lessons/module-09, labs/module-09, frontierlab/dist, tests/test_dist.py) and Module 10 (owns lessons/module-10, labs/module-10, frontierlab/datax, tests/test_datax.py). Their partial files are uncommitted. On resume: read curriculum/status/module-09.log and module-10.log, keep finished lessons, relaunch each agent to finish only what is missing (same prompts as before, plus "resume: skip lessons marked done").
 - Modules 1–8 committed and pushed (db23392).

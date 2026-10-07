@@ -229,3 +229,5 @@ Released emergent-misalignment adapters (main path only, probed read-only): `Mod
 Qwen/Qwen3-1.7B-Base @ `ea980cb0a6c2ae4b936e82123acc929f1cec04c1`; T4 Qwen/Qwen3-0.6B-Base @
 `da87bfb608c14b7cf20ba1ce41287e8de496c0cd`. Frameworks as read 2026-10-07: Anthropic RSP v3.4 (effective 2026-07-08),
 OpenAI Preparedness Framework v2 (2025-04-15), Google DeepMind FSF v3.1 (2026-04-17).
+- Module 19: no new packages (matplotlib 3.11.2, already pinned, draws the lesson 19.3 figure with the Agg backend). Checked 2026-10-07.
+- Module 20: no new packages. `frontierlab.capstone` uses NumPy, SciPy (`scipy.stats.t` for the seed t-interval, already a dependency through `posttrain.arms`), PyYAML and the course loop. Checked 2026-10-07.
