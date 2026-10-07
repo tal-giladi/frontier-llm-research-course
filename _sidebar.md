@@ -87,3 +87,15 @@
   - [53 · Details that change results](lessons/module-12/lesson-03.md)
   - [54 · Eval Suite v2](lessons/module-12/lesson-04.md)
   - [Module 12 quiz](assessments/module-12-quiz.md)
+- **Module 13 — Which post-training pipeline for which target?**
+  - [55 · Open recipes as case studies](lessons/module-13/lesson-01.md)
+  - [56 · Distillation](lessons/module-13/lesson-02.md)
+  - [57 · Specification-driven alignment](lessons/module-13/lesson-03.md)
+  - [58 · Thinking modes and budgets](lessons/module-13/lesson-04.md)
+  - [Module 13 quiz](assessments/module-13-quiz.md)
+- **Module 14 — Which RL objective, at what scale?**
+  - [59 · Objectives derived, not switched](lessons/module-14/lesson-01.md)
+  - [60 · A controlled objective comparison](lessons/module-14/lesson-02.md)
+  - [61 · Rollout systems and staleness](lessons/module-14/lesson-03.md)
+  - [62 · RL scaling and the capability debate](lessons/module-14/lesson-04.md)
+  - [Module 14 quiz](assessments/module-14-quiz.md)

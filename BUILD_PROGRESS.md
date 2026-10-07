@@ -48,8 +48,8 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 10 — Which data, in which mix? (integrated)
 - [x] Module 11 — What will the big run do? (integrated)
 - [x] Module 12 — Post-training foundations (integrated)
-- [ ] Module 13 — Which post-training pipeline for which target?
-- [ ] Module 14 — Which RL objective, at what scale?
+- [x] Module 13 — Which post-training pipeline for which target? (integrated)
+- [x] Module 14 — Which RL objective, at what scale? (integrated)
 - [ ] Module 15 — How should compute be spent at inference?
 - [ ] Module 16 — How do we train agents without fooling ourselves?
 - [ ] Module 17 — What can we claim about a model's internals?
@@ -75,6 +75,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 | 2026-10-04 | Continued training from a checkpoint goes through `frontierlab.longctx.extend` (wraps the loop); the native `--init-from` loop change proposed in `curriculum/inbox/module-04-loop-changes.md` is deferred until a later module needs it |
 | 2026-10-04 | RMSNorm keeps float64 as float64 (Module 3 finding); float32/bf16 behaviour unchanged |
 | 2026-10-04 | Optimizer runs go through `frontierlab.optim.train` (wraps the loop); native loop flags in `curriculum/inbox/module-07-loop-changes.md` deferred. Sidebar running numbers reserve 21–27 for Module 6 (7 lessons). |
+| 2026-10-07 | `frontierlab.posttrain` hook changes proposed by Modules 13 (`reward_fn`, `eos_id` in `policy.sample`) and 14 (`eval_verifier`, sampler/reward hooks) deferred; Modules 13–14 wrap or patch at run time (`rlscale.runner.patched_loop`, `pipeline/recipe_r.py` own sampler). Revisit if Module 15–16 need them. |
 | 2026-10-07 | Stage D base model proposed: Qwen3-1.7B-Base (`ea980cb`, Apache-2.0), alternative OLMo-2-0425-1B; Stage D RL results carry a random/format-reward control arm (spurious-reward results). Confirmed by Tal 2026-10-07. Module 11 CPU labs use Data-v0 at vocabulary 1,024 (no iso-FLOP minimum at 8,192). Main-path Recipe-R needs the native loop changes from inbox modules 07 and 10 (wrappers cannot be stacked). |
 | 2026-10-05 | Data runs use `frontierlab.datax.train` (wraps the loop); native `--mixture/--doc-mask/--anneal` flags in `curriculum/inbox/module-10-shared-changes.md` deferred. `gqa-docmask` registered in `attention/__init__`. |
 | 2026-10-04 | Loop forks the RNG around the accounting calls (Module 8 found that accounting broke exact resume once training uses randomness). `gqa-bidir` is not registered in `attention/__init__` (circular import); 06.7 imports `frontierlab.blocks.diffusion` itself. Block runs use `frontierlab.blocks.train`. |

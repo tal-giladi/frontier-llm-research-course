@@ -1,0 +1,77 @@
+- id: q1
+  question: >-
+    Your DPO run shows reward accuracy rising from 0.5 to 0.8 and the loss falling, but held-out accuracy
+    on the task drops. The logs show the chosen responses' log-probability fell by 1.6 nats and the
+    rejected ones' by 4 nats. What is the most direct fix to try first?
+  options:
+    - >-
+      Raise beta, because a larger beta keeps the policy closer to the reference.
+    - >-
+      Remove the reference model, because the log-ratio is what pushes both probabilities down.
+    - >-
+      Add an NLL term on the chosen responses, so the loss also asks for them to become more likely.
+    - >-
+      Train for more steps, because the margin has not saturated and the task will recover.
+  correct: 2
+  explanation: >-
+    The DPO loss only constrains the difference of the two log-ratios, so it can be satisfied by making
+    both responses less likely. Llama 3 adds an NLL term on the chosen response (coefficient 0.2) for
+    exactly this reason; in the lab it turned a regressing run into an improving one.
+
+- id: q2
+  question: >-
+    A report's RLVR stage raises IFEval prompt-level accuracy from 81.1 to 82.4 on its 541 prompts and
+    publishes no per-item results or seeds. A colleague wants to adopt the stage because of this gain.
+    What is the sound reading?
+  options:
+    - >-
+      The gain cannot be told apart from item noise: the 95% minimum detectable difference is about 4.7 points.
+    - >-
+      The gain is significant, because any improvement on a held-out benchmark is real by definition.
+    - >-
+      The gain is significant, because 541 prompts give a standard error of about 0.2 points.
+    - >-
+      The gain is meaningless, because IFEval cannot be used to evaluate a model trained on IFEval-style data.
+  correct: 0
+  explanation: >-
+    With p near 0.81 and n = 541, 1.96 * sqrt(2 p (1 - p) / n) is about 0.047. A 1.3-point change is
+    within that; per-item results (for a paired test), seeds or a larger evaluation would be needed to
+    settle it.
+
+- id: q3
+  question: >-
+    You derive DPO from the KL-regularised reward objective. Why does the training loss not need the
+    partition function Z(x) that appears in the optimal policy?
+  options:
+    - >-
+      Z(x) equals 1 for language models, because every response distribution is already normalised.
+    - >-
+      Z(x) is absorbed into beta, which is why beta has to be tuned for every dataset.
+    - >-
+      Z(x) depends only on the policy, so it disappears when the reference model is frozen.
+    - >-
+      Z(x) depends only on the prompt, so it cancels in the reward difference the Bradley-Terry model uses.
+  correct: 3
+  explanation: >-
+    Solving for the reward gives r = beta log(pi/pi_ref) + beta log Z(x). Bradley-Terry uses r(y_c) - r(y_r)
+    for the same prompt, so the beta log Z(x) term cancels and the loss depends only on log-ratios.
+
+- id: q4
+  question: >-
+    You are choosing which recipe's evidence to rely on for a 1.5B model's preference stage. Which
+    statement about the four reports is accurate?
+  options:
+    - >-
+      Llama 3 publishes one-run ablations of every DPO modification, which makes it the strongest evidence for the NLL term.
+    - >-
+      Tülu 3 reports a per-stage table, stage ablations and an SFT seed study, and selected its final RLVR checkpoint on its development suite.
+    - >-
+      Qwen3 trains its small models with the same four-stage pipeline as its flagship and reports the stage table for each size.
+    - >-
+      OLMo 3 found that more SFT on strong-model traces always helps, so it uses delta learning only to save compute.
+  correct: 1
+  explanation: >-
+    Tülu 3 publishes Table 6 per stage, ablations per stage, a five-seed SFT study (Table 14) and says it
+    picked the final checkpoint on MATH and IFEval from the development suite. Qwen3 distils its small
+    models; OLMo 3 reports that more SFT on Qwen3 32B traces hurt; Llama 3 justifies its DPO changes by
+    stated observations.

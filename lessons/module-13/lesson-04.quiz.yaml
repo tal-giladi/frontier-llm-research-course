@@ -1,0 +1,74 @@
+- id: q1
+  question: >-
+    A router sends 40% of prompts to the thinking model and reaches 94.5% accuracy at 9.1 tokens per
+    answer. Never thinking gives 92% at 5.5 tokens, always thinking 98% at 14.5. Is the router useful?
+  options:
+    - >-
+      Yes, because 94.5% is above the 92% of never thinking at a modest extra cost.
+    - >-
+      Yes, because it saves a third of the tokens of always thinking.
+    - >-
+      Not shown: random routing of 40% already gives 94.4% at 9.1 tokens, so it barely beats chance.
+    - >-
+      No, because any router below the always-thinking accuracy is worse than not routing at all.
+  correct: 2
+  explanation: >-
+    The baseline at equal cost is random routing at the same thinking fraction: 0.4 x 0.98 + 0.6 x 0.92
+    = 0.944 at 0.4 x 14.5 + 0.6 x 5.5 = 9.1 tokens. A router has to beat that, not "never think".
+
+- id: q2
+  question: >-
+    You cut a hybrid model's thinking at a budget and append the end-of-thinking marker, as Qwen3 does.
+    Accuracy is near zero at every budget short of the full trace, although the same model answers well
+    in non-thinking mode. What is the most likely explanation?
+  options:
+    - >-
+      The model never saw answers written after partial thinking, so a truncated trace is out of distribution.
+    - >-
+      The budget is counted in characters instead of tokens, so the model is cut off too early.
+    - >-
+      Budget forcing can only work with sampling, and greedy decoding always fails after forcing.
+    - >-
+      The non-thinking mode is answering from memorised prompts and will also fail on held-out data.
+  correct: 0
+  explanation: >-
+    In the lab the fusion-only model failed after forcing in both seeds; adding 30% truncated traces to
+    training made forced answers work. Qwen3 reports that budget control emerges from fusion for its
+    models, but that is not automatic.
+
+- id: q3
+  question: >-
+    Which statement about how labs expose fast and slow modes is accurate as disclosed?
+  options:
+    - >-
+      GPT-5 is one model whose router is a learned layer inside the network, published with its accuracy.
+    - >-
+      The Qwen team kept the hybrid mode for every Qwen3 release because its ablations showed no quality cost.
+    - >-
+      DeepSeek-V3.1 needs two separate checkpoints, one for thinking and one for non-thinking.
+    - >-
+      GPT-5 routes between a fast and a thinking model with a router trained on signals such as measured correctness.
+  correct: 3
+  explanation: >-
+    The GPT-5 system card describes a real-time router trained on user switching, preference rates and
+    measured correctness, without published router accuracy. The Qwen team later released separate
+    instruct and thinking models; DeepSeek-V3.1 switches modes through the chat template.
+
+- id: q4
+  question: >-
+    Your learned router beats random routing by 1.5 points but needs 9 tokens per answer where the oracle
+    needs 6 for higher accuracy. What do you investigate to close the gap?
+  options:
+    - >-
+      Whether a larger router network trained longer on the same prompt-only input closes the gap.
+    - >-
+      Whether the fast mode's failures are predictable from the signals the router sees.
+    - >-
+      Whether the oracle is miscalculated, because no real router can come within 3 tokens of it.
+    - >-
+      Whether the thinking mode can be shortened, because the gap comes from its 14.5-token answers.
+  correct: 1
+  explanation: >-
+    The oracle knows which prompts fail without thinking; a router only does as well as its signal predicts
+    those failures. In the toy, no-think accuracy barely depended on the prompt's carries, so the prompt
+    alone could not separate easy from hard. Richer signals (as GPT-5's router uses) are the lever.

@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    Your AI judge scores 84% accuracy against the spec on held-out responses. After DPO against it, the
+    policy refuses most requests just below the restricted range, which the spec says to answer. What do
+    you check first?
+  options:
+    - >-
+      The DPO beta, because a small beta lets the policy drift into refusing anything near the boundary.
+    - >-
+      The judge's accuracy by prompt group, and the labeller's labels in that region.
+    - >-
+      The policy's sampling temperature, because greedy decoding exaggerates refusals of any kind.
+    - >-
+      The Eval v2 retention components, because over-refusal is a symptom of forgetting the SFT data.
+  correct: 1
+  explanation: >-
+    A judge that is right on average can be wrong exactly where the spec draws its line. In the lab the
+    judge was 51% accurate on borderline prompts because the labeller misread the boundary there, and
+    the policy learned that error from it.
+
+- id: q2
+  question: >-
+    You measure a spec-trained policy's adherence by scoring its responses with the same judge that
+    produced its training pairs. Why is this weak evidence?
+  options:
+    - >-
+      Because AI judges cannot be used for evaluation at all, only for producing training data.
+    - >-
+      Because the judge's scores are probabilities, and adherence must be measured on hard labels.
+    - >-
+      Because the policy was optimised against that judge, so its errors look like successes.
+    - >-
+      Because evaluation needs more prompts than training, and the judge has seen too few of them.
+  correct: 2
+  explanation: >-
+    Optimisation moves the policy towards whatever the judge rewards, including its mistakes. Use the
+    spec itself where it is executable, a different judge, or human review, as deliberative alignment and
+    the main path's separate evaluation judge do.
+
+- id: q3
+  question: >-
+    A judge checks behaviour (refuse or answer, format) but not correctness. Trained against it alone, the
+    policy's task accuracy falls. Which change addresses the cause most directly?
+  options:
+    - >-
+      Add a verifier for correctness to the ranking, so a right answer beats a wrong one in the same format.
+    - >-
+      Train the judge longer on the same labels, so it becomes more confident about the format clauses.
+    - >-
+      Replace DPO with SFT on the judge's best candidate, so the policy imitates instead of contrasting.
+    - >-
+      Lower the learning rate until the task components of Eval v2 stop moving at all.
+  correct: 0
+  explanation: >-
+    The judge rewards confidently wrong answers in the right format, because correctness is outside what
+    it judges. In the lab, judge plus verifier was the only judge arm whose task score did not fall, and
+    it also reduced the inherited over-refusal.
+
+- id: q4
+  question: >-
+    Which description of how these documents are used in training is accurate as published?
+  options:
+    - >-
+      OpenAI publishes the full RL recipe that trains production models on every Model Spec clause.
+    - >-
+      Claude's constitution is a list of standalone principles sampled at random during critique and revision.
+    - >-
+      Constitutional AI uses human labels for harmlessness and AI labels only for the helpfulness comparisons.
+    - >-
+      Deliberative alignment trains on spec-citing CoTs judged by a spec-aware model, with the spec removed from the prompt.
+  correct: 3
+  explanation: >-
+    Guan et al. describe SFT on (prompt, CoT, output) data filtered by a spec-aware judge, with the spec
+    removed from the prompt, then RL with that judge. Constitutional AI uses AI labels for harmlessness;
+    Claude's 2026 constitution replaced the earlier list of standalone principles; OpenAI states only that
+    it trains models to align with the Model Spec.

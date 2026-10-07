@@ -1,0 +1,72 @@
+- id: q1
+  question: >-
+    A teammate tunes CISPO's learning rate over five values on the held-out evaluation set and runs GRPO
+    at the learning rate from an earlier project. CISPO wins by 0.04. What is the main problem with the claim?
+  options:
+    - >-
+      The arms had unequal tuning budgets and CISPO's was selected on the data used to judge it.
+    - >-
+      CISPO should have been run without a learning-rate sweep, since its weights are already capped.
+    - >-
+      Five learning rates is too few for a sweep; at least ten values are needed for any comparison.
+    - >-
+      GRPO's learning rate from another project is fine, but the gap should be reported in nats.
+  correct: 0
+  explanation: >-
+    The comparison confounds the objective with tuning effort, and selecting on the evaluation set
+    inflates CISPO's score. Give each arm the same budget and select on training data only.
+
+- id: q2
+  question: >-
+    Three seeds give paired differences of 0.03, 0.02 and 0.00 for an objective against GRPO. All three
+    are at least as good. Under the lesson's rule, what do you report?
+  options:
+    - >-
+      Better than GRPO, because no seed was worse and the mean difference is positive.
+    - >-
+      Worse than GRPO, because one seed showed no gain, which counts against the objective.
+    - >-
+      Inconclusive, because the 95% t-interval with 2 degrees of freedom includes 0.
+    - >-
+      Better than GRPO, provided the objective also beat the random-reward control arm.
+  correct: 2
+  explanation: >-
+    Mean 0.017, sd 0.015, half-width $4.30 \times 0.015/\sqrt{3} = 0.038$: the interval
+    $[-0.021, 0.055]$ contains 0. Consistent direction across three seeds is not enough at $t_{0.975,2} = 4.30$.
+
+- id: q3
+  question: >-
+    Your Qwen-based RL arm improves held-out accuracy by 0.12 over the start. The random-reward control
+    arm, scored the same way, improves it by 0.10, with overlapping intervals. What follows?
+  options:
+    - >-
+      The verifier's signal is responsible for the gain, because the real-reward arm is still ahead.
+    - >-
+      The gain cannot be attributed to the verifier; most of it appears with a reward that carries no information.
+    - >-
+      The control arm must have a bug, because a random reward cannot change a policy's accuracy.
+    - >-
+      The objective is unstable, since a stable objective would not learn anything from random rewards.
+  correct: 1
+  explanation: >-
+    Random rewards still produce updates (clipping and normalisation shape them) and can elicit behaviour
+    the base model has, as Shao et al. report for Qwen2.5-Math. Only the part of the gain beyond the
+    control, with its interval, is evidence for the reward.
+
+- id: q4
+  question: >-
+    You want to claim GSPO is "more stable" than GRPO. Which procedure supports that claim?
+  options:
+    - >-
+      Compare clip fractions, since GSPO's much higher clip fraction shows it constrains updates more.
+    - >-
+      Look at the training curves after the runs and describe the smoother one as more stable.
+    - >-
+      Report the final accuracy only, because instability would always show up as lower accuracy.
+    - >-
+      State stability metrics and thresholds before the runs and compare how often each arm breaks them, per seed.
+  correct: 3
+  explanation: >-
+    Stability must be defined in advance (entropy drop, gradient spikes, ratio maxima, drawdown) to be a
+    test. Clip fractions mean different things for token- and sequence-level objectives, and a
+    post-hoc reading of curves is a story, not evidence.

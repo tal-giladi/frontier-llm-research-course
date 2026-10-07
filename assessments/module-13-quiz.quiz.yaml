@@ -1,0 +1,197 @@
+- id: q1
+  question: >-
+    You are adapting Tülu 3's recipe to a 1.5B model. Its RLVR stage adds 0.4 points to the
+    development-suite average, while its five SFT seeds averaged between 59.8 and 60.1. Your budget allows
+    either the RLVR stage or a better preference dataset. What does the published evidence support?
+  options:
+    - >-
+      RLVR, because any stage that raises the suite average is worth running at every model size and budget.
+    - >-
+      Neither, because a 0.4-point gain on the average proves that RLVR does nothing at all at 8B.
+    - >-
+      Check per-benchmark gains: the average is near seed noise, but GSM8K +3.3 (1,319 items) beats item noise.
+    - >-
+      The preference data, because DPO gave +4.1 and any later stage always brings a smaller gain.
+  correct: 2
+  explanation: >-
+    An average gain the size of the seed spread is weak evidence on its own. The per-benchmark table shows
+    where the stage helps (math, beyond item noise) and where it does not (IFEval, within it), which is what
+    the decision for your target should rest on.
+
+- id: q2
+  question: >-
+    You run DPO from your SFT model on pairs rated by a judge. Reward accuracy climbs to 0.8 and the loss
+    falls, but every Eval v2 component gets worse, and the logs show the chosen responses' log-probability
+    falling by 1.6 nats. Which change does the evidence from the module point to?
+  options:
+    - >-
+      Add an NLL term on the chosen responses (Llama 3) and log both log-probability changes.
+    - >-
+      Switch to a larger beta, because the implicit reward is too weak to move the chosen responses up.
+    - >-
+      Remove the reference model, because its frozen log-probabilities push both responses down together.
+    - >-
+      Train longer, because DPO first lowers both responses and then recovers the chosen one.
+  correct: 0
+  explanation: >-
+    The DPO loss only needs the margin between the two log-ratios to grow, which both responses falling
+    can satisfy. In lesson 13.1 plain and length-normalised DPO regressed while the NLL arm raised the
+    chosen probability and improved the task in both seeds.
+
+- id: q3
+  question: >-
+    A team builds preference pairs from 4 sampled responses per prompt, rated on helpfulness and format.
+    About 40% of prompts have all four responses rated equally. What does Tülu 3's binarisation rule do
+    with those prompts, and why does it matter for the dataset size you plan?
+  options:
+    - >-
+      It pairs the first two responses anyway, so every prompt yields one pair and the size is fixed.
+    - >-
+      It averages their ratings with a neighbouring prompt, so the number of pairs is unchanged.
+    - >-
+      It keeps them as ties with label 0.5, which doubles the number of pairs that carry signal.
+    - >-
+      No pair: the rejected response must be rated lower, so a target pair count needs more prompts.
+  correct: 3
+  explanation: >-
+    The chosen response is the highest-rated and the rejected one is drawn from those rated strictly lower;
+    with no lower-rated response there is no pair. In lesson 13.1, 8,000 prompts gave about 4,600-4,700 pairs.
+
+- id: q4
+  question: >-
+    Your student answers in 3 tokens and your teacher is 98% correct. SFT on teacher samples beats
+    on-policy distillation by a wide margin at equal steps and fewer FLOPs. A colleague concludes that
+    on-policy distillation is overrated and should be dropped from the 1.7B reasoning pipeline. What do
+    you answer?
+  options:
+    - >-
+      Agree: a controlled comparison with two seeds is stronger evidence than any company blog post.
+    - >-
+      Disagree: it fixes drift on long prefixes, which 3-token answers lack; test at the deployed length.
+    - >-
+      Agree, but only because the exact reverse KL was not used; the sampled form is known to fail.
+    - >-
+      Disagree: the SFT arm must have leaked evaluation prompts, since it cannot win by that margin.
+  correct: 1
+  explanation: >-
+    The published advantage comes from long reasoning traces where the student's own mistakes lead it
+    into prefixes the teacher's data never shows. The toy result is sound for its setting and does not
+    transfer to a setting with a different mechanism at stake.
+
+- id: q5
+  question: >-
+    You compare on-policy distillation (1.97e12 FLOPs per run) with RL (1.16e12) and SFT on teacher outputs
+    (1.23e12). The teacher's own training cost 1.37e13 FLOPs. When should that cost be charged to the
+    distillation arms?
+  options:
+    - >-
+      Always, because a comparison that leaves out any compute is biased toward distillation.
+    - >-
+      Never, because the teacher's training is a sunk cost in every lab.
+    - >-
+      When it is trained only for this; if it exists anyway, amortise it and say so.
+    - >-
+      Only for the off-policy arm, because only that arm uses the teacher's generations.
+  correct: 2
+  explanation: >-
+    Whether the teacher is a one-off cost depends on whether it exists anyway. Charged in full, it makes
+    each distillation arm about 8-12 times more expensive here and below RL per FLOP; amortised, the
+    ranking reverses. State the accounting, as the Thinking Machines 9x / 18x / 30x figures do.
+
+- id: q6
+  question: >-
+    You need a 1B assistant quickly and have access to a strong 8B model with the same tokenizer that
+    already solves your math tasks. Which plan matches the published evidence best?
+  options:
+    - >-
+      Run the full SFT, DPO and RL pipeline on the 1B model, because distillation cannot transfer reasoning.
+    - >-
+      Run RL only, because RL raises pass@k while distillation only sharpens pass@1.
+    - >-
+      Distil across to a model with a different tokenizer, because per-token KL works across vocabularies.
+    - >-
+      Off-policy distillation from the 8B model, then on-policy distillation, with the teacher's cost counted.
+  correct: 3
+  explanation: >-
+    Qwen3 distils its small models off-policy then on-policy, and reports on-policy distillation beating
+    RL from the same 8B checkpoint at about a tenth of the GPU-hours, with pass@64 rising. It needs a
+    teacher that solves the task and shares the tokenizer, which this setting has.
+
+- id: q7
+  question: >-
+    Your AI judge for a written spec is 84% accurate on held-out responses: 100% on clearly restricted
+    requests, 99.8% on ordinary ones, 51% on requests just below the restricted range. Before training
+    against it, what is the right decision?
+  options:
+    - >-
+      Audit or relabel the boundary first: the policy will learn the judge's errors exactly there.
+    - >-
+      Train now, because 84% overall is above the accuracy at which RLAIF is known to work.
+    - >-
+      Train now with soft labels, because soft labels remove a judge's systematic errors.
+    - >-
+      Replace the judge with hard rules everywhere, because AI judges cannot be used near boundaries.
+  correct: 0
+  explanation: >-
+    Errors that are random average out, but a region where the judge is systematically wrong becomes a
+    behaviour: in lesson 13.3 the policy refused 81-92% of the boundary requests the spec says to answer.
+    Soft labels help with over-confidence, not with a biased majority label.
+
+- id: q8
+  question: >-
+    A spec judge checks refusal and format but not whether the answer is right. Trained against it, the
+    policy follows the spec better and loses 4 points of task accuracy, while a random-ranking control loses
+    1 point. What explains the difference, and what fixes it?
+  options:
+    - >-
+      DPO itself costs accuracy; lower the learning rate until the judge arm matches the control.
+    - >-
+      The judge rewards wrong answers in the right format; rank by the judge plus a correctness verifier.
+    - >-
+      The judge has too few parameters; a larger judge will learn correctness from the same labels.
+    - >-
+      The spec is too long; drop the format clause so that the judge focuses on refusals.
+  correct: 1
+  explanation: >-
+    The control isolates the generic cost of the training run; the extra loss comes from the signal. A
+    judge that ignores correctness makes confidently wrong answers as good as right ones. Adding a
+    verifier was the only judge arm in the lab whose task score did not fall.
+
+- id: q9
+  question: >-
+    You evaluate a spec-trained model's refusal behaviour. Which evaluation design gives the most trustworthy
+    adherence number?
+  options:
+    - >-
+      The training judge on the training prompts, because it is the judge the spec was written for.
+    - >-
+      The training judge on new prompts, because new prompts remove the optimisation bias.
+    - >-
+      A different judge on held-out prompts that should and should not be refused, plus a human audit sample.
+    - >-
+      The policy's own self-assessment, because a spec-trained model can recall the spec.
+  correct: 2
+  explanation: >-
+    The policy was optimised against the training judge, so that judge's verdicts flatter it even on new
+    prompts. A separate judge, a contrast set for over-refusal (CoCoNot's contrast split) and a human
+    audit are what the main path uses.
+
+- id: q10
+  question: >-
+    Your pipeline is SFT, DPO, RLVR, then distillation, with Eval v2 after each stage. RLVR raises pass@1
+    by 0.17 and fails the retention guard; the random-reward control from the same DPO checkpoint
+    changes pass@1 by +0.01. What can you conclude, and what should the next stage aim at?
+  options:
+    - >-
+      The RLVR gain is a Qwen spurious-reward effect, so drop the stage and report the control.
+    - >-
+      Nothing, because one control run cannot rule out spurious rewards and the whole stage must be repeated.
+    - >-
+      Retention guards always fail after RL, so accept the loss and stop the pipeline after RLVR.
+    - >-
+      The gain comes from the reward; the next stage should recover retention, e.g. distillation on all tasks.
+  correct: 3
+  explanation: >-
+    The random-reward arm runs the same loop without the signal, so its near-zero change attributes the
+    gain to the reward. A failed retention guard is a cost to manage, and a final distillation stage on
+    every task (as Thinking Machines used to recover instruction following) is one way to manage it.

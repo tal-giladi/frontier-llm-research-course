@@ -1,0 +1,73 @@
+- id: q1
+  question: >-
+    After 3,000 GPU-hours of a new RL recipe you fit ScaleRL's sigmoid and get A = 0.82, well above the
+    current recipe's 0.65. The profile interval for A runs from 0.55 to 1.0. What should you report?
+  options:
+    - >-
+      That the new recipe's asymptote is 0.82, about 0.17 above the current recipe's.
+    - >-
+      That the asymptote is not identified yet; the run has not reached the curve's middle.
+    - >-
+      That the new recipe is worse, because a wide interval means the recipe is unstable.
+    - >-
+      That B should be fixed to the old recipe's value so the asymptote can be estimated.
+  correct: 1
+  explanation: >-
+    An interval that reaches A = 1 means the data cannot bound the asymptote: early points constrain a
+    combination of A and C_mid. ScaleRL fits only after ~1.5k GPU-hours on runs that go much further.
+    Fixing B would just assume the answer.
+
+- id: q2
+  question: >-
+    An RL policy has pass@1 0.62 against its base model's 0.41, while at k = 256 the base model scores
+    0.93 and the RL policy 0.88. What is the most defensible reading?
+  options:
+    - >-
+      RL removed capability, so the base model should be deployed with best-of-256 instead.
+    - >-
+      RL added capability, because pass@1 is the metric users experience and it rose by 0.21.
+    - >-
+      RL mostly sharpened sampling toward solutions the base model could already reach.
+    - >-
+      The two curves cannot be compared, because pass@k is only defined for code benchmarks.
+  correct: 2
+  explanation: >-
+    This is the Yue et al. pattern: gains at small k, a lower ceiling at large k. It is evidence about
+    this model, budget and benchmark, not a general law (ProRL reports otherwise after prolonged RL),
+    and deployment depends on cost.
+
+- id: q3
+  question: >-
+    You estimate pass@16 from exactly 16 samples per problem by checking whether any is correct. A
+    reviewer objects. Why?
+  options:
+    - >-
+      The estimate is unbiased but has high variance; draw n > k samples and use 1 - C(n-c, k)/C(n, k).
+    - >-
+      The estimate is biased upward; the correct formula is 1 - (1 - c/n)^k with c/n from fewer samples.
+    - >-
+      pass@16 must be computed from greedy decoding, so sampled responses cannot be used at all.
+    - >-
+      The reviewer is wrong: with n = k the any-correct check is both unbiased and low-variance.
+  correct: 0
+  explanation: >-
+    With n = k the any-correct indicator is unbiased but noisy. Drawing more samples and using the
+    combinatorial estimator averages over all k-subsets. $1 - (1 - c/n)^k$ is the biased shortcut.
+
+- id: q4
+  question: >-
+    On a Qwen base model, GRPO with the real verifier gains 0.15 pass@1 and 0.02 pass@256 over the start.
+    The random-reward control gains 0.09 pass@1 and 0.01 pass@256. What can you claim about the verifier?
+  options:
+    - >-
+      It explains the full 0.15 pass@1 gain, because the control arm used the same objective.
+    - >-
+      It adds about 0.06 pass@1 beyond what any reward elicits, if that difference's interval excludes 0.
+    - >-
+      It explains nothing, because the control also improved, so all RL gains are spurious here.
+    - >-
+      It raised coverage, because pass@256 moved more under the real reward than under the control.
+  correct: 1
+  explanation: >-
+    Only the part beyond the control can be attributed to the verifier's signal, and only with an
+    interval. A 0.01 difference at k = 256 is not evidence of coverage gains without its interval either.

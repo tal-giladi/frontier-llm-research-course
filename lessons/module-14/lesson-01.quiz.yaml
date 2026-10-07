@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    A colleague compares GRPO and GSPO with one gradient step per rollout batch, fully on-policy, and
+    finds identical learning curves across seeds. What is the best reading of this result?
+  options:
+    - >-
+      GSPO's sequence ratio gives no benefit on dense models, so GRPO should be kept as the default.
+    - >-
+      The experiment had a bug, because a sequence-level ratio must change the gradient on every batch.
+    - >-
+      At ratio 1 both give the same per-sequence-mean gradient, so this setup could not separate them.
+    - >-
+      The clip ranges were too wide for GSPO, so its sequence clipping never activated during the run.
+  correct: 2
+  explanation: >-
+    On-policy every token ratio and every sequence ratio is 1, and both objectives reduce to
+    $\frac{1}{G}\frac{1}{|y_i|}A_i$ per token. They can only differ on reused or stale batches, so the
+    design, not the objectives, explains the identical curves.
+
+- id: q2
+  question: >-
+    In a reasoning run, rare high-ratio tokens such as "Wait" that start a self-check get a positive
+    advantage but stop receiving gradient after the first minibatch. Which change targets exactly
+    this, according to the paper that raised it?
+  options:
+    - >-
+      Switch to CISPO, which caps the importance weight under a stop-gradient but keeps every token's gradient.
+    - >-
+      Switch to Dr. GRPO, which removes the per-response length normaliser that discounts these tokens.
+    - >-
+      Switch to GSPO, which clips whole sequences and so cannot silence a single token in isolation.
+    - >-
+      Lower the learning rate, so that no token's ratio ever leaves the PPO trust region at all.
+  correct: 0
+  explanation: >-
+    MiniMax-M1 motivates CISPO with these fork tokens: PPO-style clipping zeroes their gradient once
+    the ratio exceeds $1+\epsilon$. CISPO's weight $\mathrm{sg}(\mathrm{clip}(r))$ is capped, but the
+    token keeps the gradient $\hat r A \nabla \log \pi$.
+
+- id: q3
+  question: >-
+    You port GSPO into a codebase and reuse the existing clip setting of 0.2 on both sides. Training
+    runs, but the logged clip fraction is almost exactly 0. What happened?
+  options:
+    - >-
+      The sequence ratio was computed as a product of token ratios, which makes it collapse to 1.
+    - >-
+      The length-normalised sequence ratio stays very close to 1, so a range of 0.2 almost never binds.
+    - >-
+      GSPO never clips by design; the clip fraction is only defined for token-level objectives.
+    - >-
+      The advantages were normalised per batch, which keeps every sequence inside the trust region.
+  correct: 1
+  explanation: >-
+    $s_i$ is a geometric mean of token ratios, so it moves far less than individual tokens; GSPO's own
+    ranges are $3\times10^{-4}$ and $4\times10^{-4}$. With 0.2 the objective behaves like an
+    unclipped sequence-level policy gradient.
+
+- id: q4
+  question: >-
+    Your CISPO implementation computes the weight as torch.clamp(torch.exp(logp - old_logp), max=1.28)
+    and multiplies it by the advantage, with no stop-gradient. Which test from the lesson fails first?
+  options:
+    - >-
+      The padding test, because masked positions now receive gradient through the clamp.
+    - >-
+      The on-policy test, because at ratio 1 the clamped weight no longer equals 1 exactly.
+    - >-
+      The old-log-prob test, because gradient now flows into the behaviour policy's tensor.
+    - >-
+      The capped-token test, because tokens past the bound now get zero gradient.
+  correct: 3
+  explanation: >-
+    Without the stop-gradient the expression is a surrogate whose gradient is $r A \nabla\log\pi$
+    where unclamped and 0 where the clamp is active, so tokens above $1+\epsilon_{high}$ lose their
+    gradient, the exact behaviour CISPO was designed to avoid.

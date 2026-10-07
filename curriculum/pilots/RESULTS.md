@@ -29,3 +29,7 @@ Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's C
 | P11 — Module 11 main-path ladder and Recipe-R target (~67 H100-h PROJECTED) | not piloted (budget) | | | |
 | P12 — Module 12 RL loop on Qwen3-0.6B-Base, 2 arms x 2 seeds | not run | | | |
 | P12 — Module 12 main path on Qwen3-1.7B-Base (~36–54 GPU-h PROJECTED) | not piloted (budget) | | | |
+| P13 — Module 13 smoke tests and 13.4 budgets on Qwen3-0.6B | not run | | | |
+| P13 — Module 13 main-path pipeline on Qwen3-1.7B-Base (~24–37 GPU-h PROJECTED) | not piloted (budget) | | | |
+| P14 — Module 14 GRPO vs CISPO on Qwen3-0.6B-Base | not run | | | |
+| P14 — Module 14 main path (~73–130 GPU-h PROJECTED) | not piloted (budget) | | | |

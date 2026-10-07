@@ -99,6 +99,22 @@ re-checked when its module is written and pilot-tested.
 
 Stage D alternative for contamination-sensitive studies: allenai/OLMo-2-0425-1B (`a1847dff35000b4271fa70afc5db10fd29fedbdf`, Apache-2.0, open data).
 
+## Module 13 models and data (checked 2026-10-07)
+
+| Item | Revision | Licence | Used in |
+|---|---|---|---|
+| Qwen/Qwen3-8B (distillation teacher, training judge; 8,190,735,360 parameters, BF16) | `b968826d9c46dd6066d109eabc6255188de91218` | Apache-2.0 | 13.2, 13.3, project main path |
+| Qwen/Qwen3-4B (evaluation judge) | `1cfa9a7208912126459214e8b04321603b3df60c` | Apache-2.0 | 13.3 main path |
+| Qwen/Qwen3-1.7B (hybrid thinking; 2,031,739,904 parameters in the safetensors, output matrix stored separately) | `70d244cc86ccca08cf5af4e1e306ecf908b1ad5e` | Apache-2.0 | 13.4 main path; 13.2 T4 teacher |
+| allenai/OLMo-2-0425-1B-SFT | `0d85a3d037876ce6ac7d4311d994400fc66ac27f` | Apache-2.0 | 13.1 main path |
+| allenai/OLMo-2-0425-1B-DPO | `c4b0485961ab24c2433b090f3b922f0913a9290f` | Apache-2.0 | 13.1 main path |
+| allenai/OLMo-2-0425-1B-Instruct (RLVR stage) | `48d788eca847d4d7548f375ad03d3c9312f6139e` | Apache-2.0 | 13.1 main path |
+| allenai/tulu-3-sft-olmo-2-mixture-0225, `data/train-00004-of-00006.parquet` (108,173,855 B) | `d91a0785ade02942520280fb484866fce41e448f` | ODC-BY (subsets vary) | project main path (SFT) |
+| allenai/olmo-2-0425-1b-preference-mix, `data/train-00004-of-00005.parquet` (199,266,481 B) | `c6454f3d364622718a8ecd3d307e524febbba569` | ODC-BY 1.0, some subsets non-commercial | project main path (DPO) |
+| allenai/coconot `original/train` (11,477), `original/test` (1,001), `contrast/test` (379) | `2cbe16aabf9069f17e48c8daad8aeabc29469eb7` | ODC-By | 13.3 main path |
+
+Full SHA-256 values: `labs/common/frontierlab/pipeline/hf_stages.py`, `DATA`.
+
 ## Notes on reference implementations
 
 - Module 3: Hugging Face Transformers `modeling_deepseek_v3.py`, main branch, checked 2026-10-03: the cache stores the compressed latent (`kv_nope`, `k_rot`) and expands per step.
@@ -118,3 +134,21 @@ Stage D alternative for contamination-sensitive studies: allenai/OLMo-2-0425-1B 
 `kl_loss_type` `kl|abs|mse|low_var_kl|full` (+ suffix = k2 gradient), `loss_agg_mode`
 `token-mean|token-sum|seq-mean-token-sum|seq-mean-token-mean|seq-mean-token-sum-norm`,
 `algorithm.rollout_correction.rollout_is` / `rollout_is_threshold` (2.0).
+- Module 13: TRL v1.14.1 `DPOConfig`: `loss_type` is a list, default `["sigmoid"]`; `"sigmoid_norm"` divides each
+log-ratio by its response length (Tülu 3's length-normalised DPO); an NLL term on the chosen responses is
+`loss_type=["sigmoid", "sft"]` with `loss_weights` (TRL's `sft` term is a token mean over the batch's chosen tokens);
+`precompute_ref_log_probs=True` caches the reference (`trl/trainer/dpo_config.py`, `dpo_trainer.py` around lines
+1570–1590). GKD is `trl.experimental.gkd` (`GKDConfig(lmbda=0.5, beta=0.5)`; per its docstring `beta=0.0` = KL,
+`beta=1.0` = inverse KL). No `rpo_alpha` field exists at this tag.
+- Module 14: vLLM v0.30.0 (released 2026-09-22; checked at the tag 2026-10-07): RL weight sync via
+`vllm.distributed.weight_transfer` (`WeightTransferTrainerFactory.trainer_init(init_info=IPCTrainerInitInfo(rank=0,
+packed=False), client=HTTPVLLMWeightSyncClient(url), source=ModuleSource(model))`, `send_weights()`), server flag
+`--weight-transfer-config '{"backend": "ipc"|"nccl"|...}'`, `VLLM_SERVER_DEV_MODE=1` for `POST /pause`, `/resume`;
+`VLLM_ALLOW_INSECURE_SERIALIZATION=1` for IPC handles (`examples/rl/rlhf_http_ipc.py`); batch-invariant mode
+`VLLM_BATCH_INVARIANT=1` (beta; `docs/features/batch_invariance.md`; docs say compute capability >= 8.0, the
+`envs.py` comment says >= 9.0 — check on the pilot GPU); sleep mode `LLM(enable_sleep_mode=True)`, `sleep(level)`,
+`wake_up(tags)`. vLLM v0.31.0 was released 2026-10-05; the course stays on 0.30.0 until re-verified.
+verl v0.9.1: `actor_rollout_ref.actor.policy_loss.loss_mode` in {vanilla, dppo_tv, dppo_kl, gspo, sapo, gpg, clip_cov,
+kl_cov, geo_mean, dro, cispo, bypass_mode} (`verl/trainer/ppo/core_algos.py`), `clip_ratio_low/high` 0.2,
+`clip_ratio_c` 3.0; verl's `cispo` clamps with `clip_ratio_low/high`; async recipes `verl/experimental/one_step_off_policy`,
+`verl/experimental/fully_async_policy`.

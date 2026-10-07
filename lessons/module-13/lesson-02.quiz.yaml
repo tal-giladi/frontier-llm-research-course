@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    A colleague reports that on-policy distillation "costs only the student's training", so it is cheaper
+    than SFT on 2M teacher-written examples. Which accounting is sound?
+  options:
+    - >-
+      Count only student FLOPs for both arms, because the teacher exists anyway and is never part of the bill.
+    - >-
+      Charge on-policy a teacher forward per student token, and SFT the teacher's generation unless the data exists.
+    - >-
+      Charge both arms the teacher's full training cost, because both depend on the teacher equally.
+    - >-
+      Charge the SFT arm nothing for the teacher, because generating text costs less than scoring the same text.
+  correct: 1
+  explanation: >-
+    On-policy distillation needs the teacher's log-probabilities of the student's tokens on every step;
+    the off-policy arm pays for teacher sampling unless the data is given or amortised. Thinking Machines'
+    9x, 18x and 30x figures differ exactly in which of these they count.
+
+- id: q2
+  question: >-
+    You implement on-policy distillation with only the sampled tokens: advantage A_t = -(log pi_s(y_t) -
+    log pi_T(y_t)), detached, and loss -A_t log pi_s(y_t). Why is this a sound estimator of the reverse-KL
+    gradient at each position?
+  options:
+    - >-
+      Because detaching the advantage turns the loss into the exact KL over the whole vocabulary.
+    - >-
+      Because the teacher's log-probability has zero gradient, so only the student's entropy term remains.
+    - >-
+      Its expectation over y_t from the student is grad KL(pi_s || pi_T), since E[grad log pi_s] = 0.
+    - >-
+      Because sampling from the student makes the forward and reverse KL equal in expectation.
+  correct: 2
+  explanation: >-
+    E over y ~ pi_s of (log pi_s - log pi_T)(y) grad log pi_s(y) is the gradient of the reverse KL, the
+    extra term vanishing because the score function has mean zero. It is unbiased per position; with a
+    discount of zero it ignores the effect of a token on later positions.
+
+- id: q3
+  question: >-
+    On a task with 3-token answers and a teacher that is 98% correct, SFT on teacher samples beats
+    on-policy distillation by a wide margin at equal steps. What is the best reading?
+  options:
+    - >-
+      Short answers from a near-perfect teacher leave little prefix drift to correct, so the gain need not appear.
+    - >-
+      The on-policy implementation must be wrong, since on-policy distillation is known to beat SFT on teacher samples on every task.
+    - >-
+      Reverse KL cannot be used with short sequences, so the result says nothing at all about distillation.
+    - >-
+      SFT on teacher samples is always better, and the published reasoning results come from untuned baselines.
+  correct: 0
+  explanation: >-
+    The advantage of on-policy distillation comes from training on the student's own, drifting prefixes.
+    With 3-token answers the student barely drifts and the teacher's sequences are almost all correct,
+    so full-sequence supervision wins; long reasoning traces are where the reports find the opposite.
+
+- id: q4
+  question: >-
+    You want to distil a Qwen3-8B teacher into a student with a different tokenizer using the per-token
+    reverse KL. What is the problem?
+  options:
+    - >-
+      None: log-probabilities are probabilities, so they can be compared whatever the tokenization.
+    - >-
+      The teacher cannot score the student's text at all, because models only score their own samples.
+    - >-
+      Only the memory cost changes, because the two vocabularies have different sizes and embeddings.
+    - >-
+      The models score different token sequences, so per-token KL needs a shared tokenizer or an alignment.
+  correct: 3
+  explanation: >-
+    Per-token divergences compare the two distributions over the same next token given the same
+    context. With different tokenizers the positions and vocabularies do not line up; sequence-level
+    distillation (SFT on decoded teacher text) still works.

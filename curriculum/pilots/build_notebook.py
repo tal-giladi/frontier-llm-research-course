@@ -408,7 +408,40 @@ for scale in ['group', 'none']:
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12}
+P13 = [
+    md("""
+## P13 — Module 13: pipeline smoke tests and thinking budgets (about 1 hour)
+
+CPU-sized smoke tests of every main-path stage, then the 13.4 budget sweep on Qwen3-0.6B (hybrid thinking).
+The full SFT -> DPO -> RLVR -> distillation pipeline on Qwen3-1.7B-Base stays PROJECTED (14–22 GPU-h).
+"""),
+    code("""
+O13 = f'{PILOT_DIR}/p13'; os.makedirs(O13, exist_ok=True)
+!python labs/module-13/lesson-04/think_main.py --smoke --out runs/m13/l134-smoke 2>&1 | tail -3
+!python -m frontierlab.pipeline.hf_eval score --smoke --out runs/m13/hf-eval-smoke/a.json 2>&1 | tail -3
+!python labs/module-13/lesson-04/think_main.py --model Qwen/Qwen3-0.6B --n 200 --budgets 0,256,512,1024,none --out runs/m13/l134-pilot 2>&1 | tee "$O13/13-4-budgets.txt" | tail -20
+!cp -r runs/m13 "$O13/runs-m13"
+"""),
+]
+
+P14 = [
+    md("""
+## P14 — Module 14: GRPO vs CISPO on Qwen3-0.6B-Base (scaled pilot, about 3 hours on an A100)
+
+2 objectives x 1 seed x 100 steps at 256 new tokens and 16 prompts per step. The 1.7B cost is projected
+from the measured s/step (inbox module-14 section 6).
+"""),
+    code("""
+O14 = f'{PILOT_DIR}/p14'; os.makedirs(O14, exist_ok=True)
+!python -m frontierlab.rlscale.hf_rl --smoke --run runs/m14/hf-smoke --steps 2 --objective cispo 2>&1 | tail -3
+for obj in ['grpo', 'cispo']:
+    !python -m frontierlab.rlscale.hf_rl --run runs/m14/pilot/{obj}-s0 --model Qwen/Qwen3-0.6B-Base --revision da87bfb608c14b7cf20ba1ce41287e8de496c0cd --objective {obj} --max-new 256 --prompts 16 --steps 100 --seed 0 2>&1 | tail -5
+!nvidia-smi --query-gpu=name,memory.used --format=csv | tee "$O14/gpu.txt"
+!cp -r runs/m14 "$O14/runs-m14"
+"""),
+]
+
+NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14}
 
 
 def build():

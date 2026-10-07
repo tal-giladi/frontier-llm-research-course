@@ -1,0 +1,189 @@
+- id: q1
+  question: >-
+    Your team's GRPO run on long math traces keeps reasoning tokens like "Wait" at low probability: they
+    get positive advantages, but their ratios pass 1.2 after the first minibatch and their gradient
+    stops. You can change the objective but must keep four minibatches per batch. Which change targets this?
+  options:
+    - >-
+      GSPO with ranges 3e-4 and 4e-4, because sequence clipping can never silence a single token.
+    - >-
+      CISPO, because a token past the cap keeps its gradient at the capped weight.
+    - >-
+      Dr. GRPO, because removing the length normaliser gives rare tokens a larger share of the loss.
+    - >-
+      One minibatch per batch with GRPO, because then every ratio is 1 and nothing is clipped.
+  correct: 1
+  explanation: >-
+    CISPO's gradient is $\mathrm{sg}(\hat r) A \nabla\log\pi$ for every token, so a capped token still
+    learns. GSPO silences whole sequences instead, Dr. GRPO keeps the token clip, and one minibatch
+    is ruled out by the constraint.
+
+- id: q2
+  question: >-
+    A paper reports that its objective beats GRPO by 6 points. Its GRPO baseline uses the original
+    per-response mean and a KL term with beta 0.04; the new objective uses token-mean aggregation, no KL,
+    clip-higher and filtered zero-variance groups. What do you need before attributing the gain to the objective?
+  options:
+    - >-
+      A larger model, since objective effects only appear above 30B parameters.
+    - >-
+      Nothing more, because a 6-point gain is larger than any plausible seed noise on a math benchmark.
+    - >-
+      An arm that changes the ratio and clipping rule while holding KL, aggregation and batch rules fixed.
+    - >-
+      The same comparison at a lower learning rate, so that clipping is active less often in both arms.
+  correct: 2
+  explanation: >-
+    Four things changed at once. A controlled comparison holds the KL setting, normaliser and batch rule
+    fixed (or varies them one at a time, as ScaleRL's leave-one-out runs do), with equal tuning budgets.
+
+- id: q3
+  question: >-
+    In a 3-seed objective comparison on Qwen3-1.7B-Base, CISPO beats GRPO by 0.03 with interval
+    [0.01, 0.05]. The random-reward control is 0.02 below CISPO with interval [-0.02, 0.06]. What is the verdict?
+  options:
+    - >-
+      Below control: CISPO is not shown to beat a reward that carries no information.
+    - >-
+      Better than GRPO, because the comparison with GRPO is the question and its interval excludes 0.
+    - >-
+      Inconclusive, because both intervals have the same width and therefore cancel out.
+    - >-
+      Worse than GRPO, because the control arm nearly matched CISPO, which means CISPO is unstable.
+  correct: 0
+  explanation: >-
+    The control check comes first. If an arm does not clearly beat a random reward, its difference from
+    GRPO may come from effects any reward elicits (Shao et al. on Qwen), so no objective conclusion follows.
+
+- id: q4
+  question: >-
+    You plan to claim "GSPO is more stable than GRPO" from a comparison that is already finished. GSPO's
+    clip fraction was 0.45 and GRPO's 0.05. What is the problem?
+  options:
+    - >-
+      None: a higher clip fraction means more updates were constrained, which is what stability means.
+    - >-
+      Stability must be shown with final accuracy, and clip fraction is irrelevant to any stability claim.
+    - >-
+      The clip fractions should be compared per sequence for both objectives before drawing conclusions.
+    - >-
+      Clip fraction means something different per objective, and stability metrics were not fixed beforehand.
+  correct: 3
+  explanation: >-
+    GSPO counts tokens of clipped sequences under a range of 4e-4, while GRPO counts zero-gradient tokens
+    under 0.2. A stability claim needs metrics and thresholds stated before the runs (entropy drop,
+    spikes, ratio maxima, drawdown), compared per seed.
+
+- id: q5
+  question: >-
+    An asynchronous trainer with staleness bound 8 recomputes pi_old with the current weights to avoid
+    storing log-probabilities. Training reward rises more slowly than synchronous training, and the logs
+    show ratios between 0.99 and 1.01. Which fix addresses the cause?
+  options:
+    - >-
+      Lower the staleness bound to 1, because ratios near 1 show the batches are not really stale.
+    - >-
+      Use the behaviour policy's log-probabilities, stored with the batch or returned by the engine.
+    - >-
+      Raise the clip range, because ratios that close to 1 mean clipping is too tight to let learning happen.
+    - >-
+      Switch to GSPO, because a sequence-level ratio corrects for staleness without needing pi_old.
+  correct: 1
+  explanation: >-
+    Recomputing with the current weights forces every ratio to 1, so the correction for the policy that
+    generated the data disappears and so does the trust region. GSPO's ratio also needs the behaviour
+    policy's log-probabilities.
+
+- id: q6
+  question: >-
+    One H100 runs a colocated vLLM 0.30.0 engine and the trainer for Qwen3-1.7B-Base. Rollouts take 55 s
+    per step and updates 20 s. You switch from synchronous to one-step off-policy. Roughly what step
+    time and lag should you expect?
+  options:
+    - >-
+      About 20 s per step with lag up to 8, since the engine keeps generating while the trainer works.
+    - >-
+      About 75 s per step with lag 1, since generation and training still run one after the other.
+    - >-
+      About 55 s per step with lag exactly 1, since generation and update now overlap.
+    - >-
+      About 38 s per step with lag 0, since overlap halves the cost and keeps data on-policy.
+  correct: 2
+  explanation: >-
+    With k = 1 the next batch is generated during the current update, so a step costs about
+    $\max(55, 20)$ s and every batch is one update old. Generation stays the bottleneck.
+
+- id: q7
+  question: >-
+    You compute the same prompt's log-probabilities in the trainer, alone and inside a batch of 64, and
+    get results that differ in the fifth decimal place. Training precision and weights are identical.
+    What explains this, and what removes it?
+  options:
+    - >-
+      The kernel's reduction order depends on the batch shape; a batch-invariant kernel removes it.
+    - >-
+      bf16 rounding in the trainer; computing the LM head in FP32 removes the difference completely.
+    - >-
+      A bug in the attention mask for padded rows; masking the padding correctly removes it.
+    - >-
+      Random dropout left on in the trainer; switching the model to eval mode removes the difference.
+  correct: 0
+  explanation: >-
+    Libraries pick different matmul strategies by shape, so a row's result depends on its batch. Fixing
+    the reduction strategy (for example always running one tile shape) makes rows bitwise identical
+    whatever the batch.
+
+- id: q8
+  question: >-
+    After 2,000 GPU-hours your recipe's held-out pass rate rose from 0.30 to 0.36. A manager asks for the
+    asymptote to compare with a published A = 0.61. The profile interval of your fit is [0.40, 1.00]. What do you say?
+  options:
+    - >-
+      Our asymptote is the fitted value, which is a fair comparison with the published one.
+    - >-
+      Our A is above 0.61 with high probability, because most of the interval lies above it.
+    - >-
+      Our recipe is worse, because its pass rate after 2,000 GPU-hours is well below 0.61.
+    - >-
+      The run does not identify its asymptote yet; we can report pass rate at matched compute only.
+  correct: 3
+  explanation: >-
+    An interval that runs to 1 means the data cannot bound A: early curves constrain a combination of
+    A and C_mid. The honest comparison is at matched compute, or the run continues past the midpoint.
+
+- id: q9
+  question: >-
+    After RL, pass@1 on GSM8K rose from 0.42 to 0.61, while pass@64 fell from 0.95 to 0.93 with a
+    bootstrap interval of [-0.04, 0.00]. Three test problems the base model solved sometimes are never
+    solved after RL. How should you describe the result?
+  options:
+    - >-
+      RL added reasoning capability, because the 0.19 pass@1 gain far exceeds the pass@64 change.
+    - >-
+      RL raised reliability on problems already within reach and did not widen coverage here.
+    - >-
+      RL destroyed capability, so the run should be discarded and the base model used with sampling.
+    - >-
+      The result is uninterpretable, because pass@64 cannot be compared with pass@1 on the same problems.
+  correct: 1
+  explanation: >-
+    Gains concentrated at small k with no gain (and a few lost problems) at large k is the sharpening
+    pattern Yue et al. describe. It is evidence about this run and budget, not a verdict on RL in general.
+
+- id: q10
+  question: >-
+    A random-reward control on a Qwen base model gains 0.08 pass@1; your real-reward run gains 0.14 with
+    the same objective and seeds. The paired difference between them has interval [0.02, 0.10]. Which statement is supported?
+  options:
+    - >-
+      The verifier's signal accounts for part of the gain, between about 0.02 and 0.10 of pass@1.
+    - >-
+      The verifier's signal accounts for the whole 0.14 gain, since the control used no information.
+    - >-
+      None of the gain can be attributed to RL, since a random reward also produced a gain.
+    - >-
+      The control arm is invalid, because a random reward should leave pass@1 unchanged on any model.
+  correct: 0
+  explanation: >-
+    Random rewards can elicit behaviour the base model already has (Shao et al.), so only the part
+    beyond the control, with its interval, is evidence that the verifier's signal did the work.

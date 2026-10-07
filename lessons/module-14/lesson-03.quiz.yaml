@@ -1,0 +1,76 @@
+- id: q1
+  question: >-
+    Your RL step spends 60 s generating and 25 s training, with one rollout engine always busy once you
+    switch to one-step off-policy. A colleague proposes raising the staleness bound from 1 to 8 to go
+    faster. What do you expect?
+  options:
+    - >-
+      A large speed-up, because eight batches can then be generated in parallel on the same engine.
+    - >-
+      A speed-up only if training is also made eight times faster, so both sides scale together.
+    - >-
+      A slow-down, because each extra step of lag forces the trainer to recompute old log-probabilities.
+    - >-
+      Little or no speed-up, because generation is the bottleneck; only the lag grows.
+  correct: 3
+  explanation: >-
+    With the engine already busy all the time, throughput is set by generation; more permitted lag
+    cannot make it produce batches faster. More inference capacity, shorter tails or partial rollouts can.
+
+- id: q2
+  question: >-
+    In an asynchronous run, batches are 6-8 updates old. To save memory, the trainer computes pi_old by
+    running the current weights on each batch. Clip fraction drops to nearly zero and ratios look ideal.
+    What is happening?
+  options:
+    - >-
+      Every ratio is 1 by construction, so the stale data are treated as on-policy and the trust region is gone.
+    - >-
+      The policy has converged, so the current and behaviour policies agree and no clipping is needed.
+    - >-
+      The memory saving reduced numerical noise, which is why the ratios moved closer to 1.
+    - >-
+      Asynchrony averages out the staleness, so recomputation is an unbiased estimate of pi_old.
+  correct: 0
+  explanation: >-
+    Recomputing with the current weights makes old and new log-probabilities identical, so the
+    correction for the policy that actually generated the data disappears. Use the behaviour policy's
+    numbers (stored with the batch, or the engine's own).
+
+- id: q3
+  question: >-
+    With the same weights, your bf16 rollout engine and fp32 trainer disagree on some tokens by up to
+    0.2 nats, while the length-normalised sequence log-ratio never exceeds 0.07. Which statement is right?
+  options:
+    - >-
+      Token-level objectives are unaffected, because clipping only acts on the sequence ratio.
+    - >-
+      A token-level ratio can hit GRPO's 0.2 range from mismatch alone; per-sequence averaging shrinks it.
+    - >-
+      The gap proves the engine has a bug, because identical weights must give identical probabilities.
+    - >-
+      Batch-invariant kernels in the engine would remove the whole gap, including the precision difference.
+  correct: 1
+  explanation: >-
+    $e^{0.2} = 1.22$ is outside $[0.8, 1.2]$, so mismatch alone clips tokens. Averaging errors of both
+    signs over a response shrinks the sequence ratio (GSPO's point). Batch invariance fixes
+    batch-dependence, not bf16 vs fp32.
+
+- id: q4
+  question: >-
+    Running the same prompt 1,000 times at temperature 0 on a serving engine gives 80 distinct outputs.
+    What is the main cause, according to Thinking Machines' analysis?
+  options:
+    - >-
+      Random seeds are not fixed per request, so sampling differs even at temperature 0.
+    - >-
+      GPU hardware faults introduce bit flips that change a few tokens on every run.
+    - >-
+      Kernels are not batch-invariant, so a request's result depends on the batch it lands in.
+    - >-
+      Floating-point addition is non-associative across concurrent threads in each kernel call.
+  correct: 2
+  explanation: >-
+    Server load changes batch size, and the batch decides the kernels' reduction order. With
+    batch-invariant RMSNorm, matmul and attention all 1,000 outputs were identical. Concurrency
+    alone was not the explanation.
