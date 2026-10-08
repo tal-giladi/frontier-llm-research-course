@@ -57,7 +57,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Module 19 — How is frontier research chosen, reproduced and written? (integrated; review template copied to templates/review.md)
 - [x] Module 20 — Capstone (integrated; dry-run import 85 lessons, 0 problems)
 - [ ] Course-provided artefacts on Hugging Face (needs Tal's account)
-- [ ] Final QA: dry-run import 0 problems, links, git clean
+- [x] Final QA (2026-10-08): dry-run import 85 lessons 0 problems; 0 broken links; 105 quiz files clean; all lab solutions and labs/common tests pass (CPU)
 - [ ] (after first release) Module 21 — multimodal elective
 
 ## Who is working on what
