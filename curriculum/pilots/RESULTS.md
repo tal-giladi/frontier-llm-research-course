@@ -6,7 +6,7 @@ Planning file, not imported. Filled in from the `notebooks/*.ipynb` runs on Tal'
 
 | Pilot | Status | GPU | Date | Decision |
 |---|---|---|---|---|
-| P1 — Module 1 noise floor ladder | not run | | | |
+| P1 — Module 1 noise floor ladder | partial: 6 of 9 runs (70m s0 stopped at 16,600/21,606 steps; 70m s1–s2 not started) | A100-SXM4-40GB | 2026-10-07 | pending 70m |
 | P2 — Module 2 performance (02.1, 02.2, 02.4) | not run | | | |
 | P2 — 02.3 multi-GPU | not piloted (single-GPU Colab); optional Kaggle 2× T4 | | | |
 | P1b — Module 1 lesson labs on GPU | not run | | | |
@@ -41,3 +41,19 @@ Planning file, not imported. Filled in from the `notebooks/*.ipynb` runs on Tal'
 | P17 — Module 17 17.3 circuit-tracer (separate env) and 17.5 introspection | not piloted yet | | | |
 | P18 — Module 18 main-path smoke tests, 18.3 eval lab | not run | | | |
 | P18 — Module 18 main path and project (~9–14 GPU-h PROJECTED) | not piloted (budget) | | | |
+
+## P1 — partial (received 2026-10-08)
+
+Colab A100-SXM4-40GB, torch 2.14.1+cu130, Python 3.13.15, commit `edddf3e`, bf16, no compile, batch 32 × 1,024,
+lr 3e-3 cosine, tokens ≈ 10 × non-embedding parameters. Final held-out loss (128 eval windows):
+
+| Size | Steps | Seeds 0 / 1 / 2 | Mean | Seed std | tok/s | MFU | Peak memory | Wall per run |
+|---|---|---|---|---|---|---|---|---|
+| pilot-10m | 2,868 | 4.2570 / 4.1885 / 4.1989 | 4.2148 | 0.0369 | 247.5k | 11.6% | 16.7 GB | 0.13 h |
+| pilot-30m | 9,613 | 3.6306 / 3.6215 / 3.6166 | 3.6229 | 0.0071 | 142.9k | 14.7% | 23.0 GB | 0.80–0.86 h |
+| pilot-70m | 21,606 | s0 at step 12,963: 3.6045 (stopped at 16,600) | — | — | 88.7k | 17.4% | 32.4 GB | ~2.8 h (PROJECTED from tok/s) |
+
+Reading so far: seed std falls from 0.037 at 10m to 0.007 at 30m (three seeds each, so each std is itself uncertain
+by roughly ±50%). MFU is low (no `torch.compile`, small models on an A100), which matters for every projection that
+assumed 20–30%. Remaining: 70m s0 (~0.65 h) and s1–s2 (~2.8 h each), about 6.3 A100-hours; `01_P1.ipynb` resumes
+them. No lesson figure changed yet: wait for the 70m seeds before replacing the Module 1 PROJECTED noise floor.
