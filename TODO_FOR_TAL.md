@@ -18,8 +18,9 @@ Plan revision 2 (2026-10-03, after the external review) — new decisions needed
 ## To run the pilots (2026-10-04)
 
 1. DONE (2026-10-04): public repo https://github.com/tal-giladi/frontier-llm-research-course created and pushed.
-2. Open `curriculum/pilots/pilot_phase0.ipynb` in Colab (A100 runtime), run it top to bottom. P1 first; the rest in order while compute units last. Outputs land in Google Drive `frontier-llm-pilots/`.
-3. Share the `frontier-llm-pilots/summary/` folder and the `p*/` text outputs (or paste them) so I can fill `curriculum/pilots/RESULTS.md` and replace PROJECTED figures.
+2. (Changed 2026-10-08, after the single notebook ran out of compute units.) The pilots are now 21 short notebooks in `curriculum/pilots/notebooks/`, numbered in priority order, one per Colab session. Open the next unfinished one (runtime type in its first heading: A100, except 12 and 13 on T4 and 18 on L4) and run all cells. Rerunning a notebook, or running it again after a disconnect or in a new month, skips every command that already finished, including what your first run left in Drive (the `p1/` runs resume where they stopped). Start with `01_P1.ipynb` (about 4.5 A100-hours in total; it can be spread over several sessions).
+   `00_status.ipynb` runs on a free CPU runtime: it shows which pilots are complete and writes `frontier-llm-pilots-results.zip` to Drive.
+3. After each session (or once a month), run `00_status.ipynb`, download `frontier-llm-pilots-results.zip` and put it in `curriculum/pilots/incoming/`, so I can fill `curriculum/pilots/RESULTS.md` and replace PROJECTED figures.
 
 ## Decision (2026-10-07)
 

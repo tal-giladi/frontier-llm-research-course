@@ -1,6 +1,6 @@
 """Build the Colab pilot notebook(s) from the cell lists below.
 
-    python curriculum/pilots/build_notebook.py        # writes curriculum/pilots/pilot_phase0.ipynb
+    python curriculum/pilots/build_notebook.py        # writes curriculum/pilots/notebooks/*.ipynb
 
 Plan section 12.1: scaled pilots on one paid Colab account, single GPU, sessions that can disconnect.
 Each pilot cell writes its outputs under PILOT_DIR (on Google Drive, so a disconnect loses nothing)
@@ -14,9 +14,11 @@ Planning file — not imported into the Academy.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+OUT = HERE / "notebooks"
 
 
 def md(text: str) -> dict:
@@ -43,7 +45,7 @@ Order matters when compute units run out: **P1 (noise floor) first**, then the o
 from google.colab import drive
 drive.mount('/content/drive')
 PILOT_DIR = '/content/drive/MyDrive/frontier-llm-pilots'
-import os; os.makedirs(PILOT_DIR, exist_ok=True)
+import os; os.makedirs(PILOT_DIR, exist_ok=True); os.environ['PILOT_DIR'] = PILOT_DIR
 !nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
 """),
     code("""
@@ -67,7 +69,7 @@ else:
 !pip -q install numpy==2.5.3 scipy transformers==5.18.0 safetensors tokenizers==0.23.2 datasets==5.0.1 matplotlib==3.11.2 pytest==9.1.1 pyyaml==6.0.3 torchao==0.18.0
 !pip -q install -e labs/common
 import torch; print(torch.__version__, torch.cuda.get_device_name(0))
-!python -m pytest labs/common -x -q 2>&1 | tail -3
+!python -m pytest labs/common/tests/test_model.py -x -q 2>&1 | tail -3   # quick check; the full suite runs on CPU in the build
 """),
     code("""
 # 4. Data-v0 at pilot size (vocab 32768). ~800k documents is ~0.8B train tokens: enough for the P1 ladder.
@@ -76,8 +78,10 @@ DATA = f'{PILOT_DIR}/data-v0-32k'
 import os
 if not os.path.exists(f'{DATA}/meta.json'):
     !python -m frontierlab.data.prepare --docs 800000 --vocab 32768 --out "$DATA"
-# Lab scripts look for labs/common/data/v0 by default: point it at the Drive copy.
-!mkdir -p labs/common/data && rm -rf labs/common/data/v0 && ln -sfn "$DATA" labs/common/data/v0
+# Lab data and every runs/ folder live on Drive, so a disconnect or a new session loses nothing.
+!mkdir -p "$PILOT_DIR/labdata" "$PILOT_DIR/runs" && rm -rf labs/common/data runs
+!ln -sfn "$PILOT_DIR/labdata" labs/common/data && ln -sfn "$PILOT_DIR/runs" runs
+!rm -rf labs/common/data/v0 && ln -sfn "$DATA" labs/common/data/v0
 !cat "$DATA/meta.json" | head -40
 """),
 ]
@@ -290,7 +294,6 @@ O7 = f'{PILOT_DIR}/p7'; os.makedirs(O7, exist_ok=True)
 !python labs/module-07/lesson-05/induce.py --variant main 2>&1 | tail -10
 !python labs/module-07/lesson-05/diagnose.py runs/m07/l75/main 2>&1 | tee "$O7/07-5-diagnose.txt"
 !python labs/module-07/lesson-05/make_traces.py runs/m07/l75/main 2>&1 | tail -5
-!cp -r runs/m07 "$O7/runs-m07"
 """),
 ]
 
@@ -313,7 +316,6 @@ O6 = f'{PILOT_DIR}/p6'; os.makedirs(O6, exist_ok=True)
 !python labs/module-06/lesson-02/train_arms.py --variant main 2>&1 | tail -10
 !python labs/module-06/lesson-02/step_time.py --device cuda --preset pilot-30m --batch 16 --seq 1024 --vocab 32768 --bf16 2>&1 | tee "$O6/06-2-step-time.txt"
 !python labs/module-06/lesson-03/factorial.py --variant main 2>&1 | tail -20
-!cp -r runs/m06 "$O6/runs-m06"
 """),
 ]
 
@@ -336,7 +338,6 @@ O8 = f'{PILOT_DIR}/p8'; os.makedirs(O8, exist_ok=True)
 !python labs/module-08/lesson-02/compare_fp8.py --variant l4 --device cuda 2>&1 | tee "$O8/08-2-compare.txt"
 !python labs/module-08/lesson-01/error_tour.py --device cuda --preset pilot-30m --steps 300 2>&1 | tee "$O8/08-1-error-tour.txt"
 !python labs/module-08/lesson-04/sweep.py --variant gpu --device cuda 2>&1 | tail -20
-!cp -r runs/m08 "$O8/runs-m08"
 """),
 ]
 
@@ -369,7 +370,6 @@ for src, n in [('web', 20000), ('wiki', 4000), ('math', 8000)]:
 !python labs/module-10/lesson-04/mixture_lab.py regmix --variant t4 2>&1 | tee "$O10/10-4-regmix.txt" | tail -20
 !python labs/module-10/lesson-04/mixture_lab.py anneal --variant t4 2>&1 | tee "$O10/10-4-anneal.txt" | tail -20
 !python labs/module-10/lesson-05/continued_training.py --variant t4 2>&1 | tee "$O10/10-5-continued.txt" | tail -20
-!cp -r runs/m10 "$O10/runs-m10"
 """),
 ]
 
@@ -386,7 +386,6 @@ O11 = f'{PILOT_DIR}/p11'; os.makedirs(O11, exist_ok=True)
 !python labs/module-11/lesson-01/ladder_lab.py isoflop --variant t4 2>&1 | tee "$O11/11-1-isoflop.txt" | tail -25
 for step in ['transfer', 'predict', 'run', 'check']:
     !python labs/module-11/lesson-03/derisk_lab.py {step} --variant t4 2>&1 | tee "$O11/11-3-{step}.txt" | tail -15
-!cp -r runs/m11 "$O11/runs-m11"
 """),
 ]
 
@@ -404,7 +403,6 @@ for scale in ['group', 'none']:
     for seed in [0, 1]:
         !python -m frontierlab.posttrain.hf --run runs/m12/pilot/{scale}-s{seed} --model Qwen/Qwen3-0.6B-Base --revision da87bfb608c14b7cf20ba1ce41287e8de496c0cd --max-new 256 --scale {scale} --seed {seed} --steps 100 2>&1 | tail -5
 !nvidia-smi --query-gpu=name,memory.used --format=csv | tee "$O12/gpu.txt"
-!cp -r runs/m12 "$O12/runs-m12"
 """),
 ]
 
@@ -420,7 +418,6 @@ O13 = f'{PILOT_DIR}/p13'; os.makedirs(O13, exist_ok=True)
 !python labs/module-13/lesson-04/think_main.py --smoke --out runs/m13/l134-smoke 2>&1 | tail -3
 !python -m frontierlab.pipeline.hf_eval score --smoke --out runs/m13/hf-eval-smoke/a.json 2>&1 | tail -3
 !python labs/module-13/lesson-04/think_main.py --model Qwen/Qwen3-0.6B --n 200 --budgets 0,256,512,1024,none --out runs/m13/l134-pilot 2>&1 | tee "$O13/13-4-budgets.txt" | tail -20
-!cp -r runs/m13 "$O13/runs-m13"
 """),
 ]
 
@@ -437,7 +434,6 @@ O14 = f'{PILOT_DIR}/p14'; os.makedirs(O14, exist_ok=True)
 for obj in ['grpo', 'cispo']:
     !python -m frontierlab.rlscale.hf_rl --run runs/m14/pilot/{obj}-s0 --model Qwen/Qwen3-0.6B-Base --revision da87bfb608c14b7cf20ba1ce41287e8de496c0cd --objective {obj} --max-new 256 --prompts 16 --steps 100 --seed 0 2>&1 | tail -5
 !nvidia-smi --query-gpu=name,memory.used --format=csv | tee "$O14/gpu.txt"
-!cp -r runs/m14 "$O14/runs-m14"
 """),
 ]
 
@@ -457,7 +453,6 @@ for m, tag in [('Qwen/Qwen3-0.6B', '06b'), ('Qwen/Qwen3-1.7B', '17b')]:
         !python -m frontierlab.ttc.hf_ttc {cmd} --model {m} --out runs/m15/pilot-{tag} --n-questions 100 --n 16 --sample-budget 512 2>&1 | tail -8
     !python -m frontierlab.ttc.hf_ttc report --out runs/m15/pilot-{tag} --budget 8192 --latency 20 2>&1 | tee "$O15/15-1-report-{tag}.txt" | tail -20
 !python -m frontierlab.ttc.hf_spec own --out runs/m15/l152-pilot --gammas 1,2,4 --prompts 32 --max-new 128 2>&1 | tee "$O15/15-2-spec.txt" | tail -15
-!cp -r runs/m15 "$O15/runs-m15"
 """),
 ]
 
@@ -475,7 +470,6 @@ cmds = !python labs/module-16/lesson-04/hacking_lab.py --variant t4
 for c in [c for c in cmds if '--seed 0' in c]:
     !{c} 2>&1 | tail -4
 !python labs/module-16/lesson-04/hacking_lab.py --part traces 2>&1 | tee "$O16/16-4-traces.txt" | tail -10
-!cp -r runs/m16 "$O16/runs-m16"
 """),
 ]
 
@@ -493,7 +487,6 @@ O17 = f'{PILOT_DIR}/p17'; os.makedirs(O17, exist_ok=True)
 !python -m frontierlab.interp.hf sae-eval --layer 14 --out runs/m17/qwen-scope-l14.json 2>&1 | tee "$O17/17-1-sae-eval.txt" | tail -15
 !python -m frontierlab.interp.hf ioi --model qwen3-1.7b-base --n 96 --top 10 --random 49 --out runs/m17/ioi-1.7b-base.json 2>&1 | tee "$O17/17-2-ioi.txt" | tail -20
 !python labs/module-17/lesson-04/steer_lab.py --model qwen3-1.7b --layers 8 12 16 20 --device cuda --out runs/m17/steer-1.7b.json 2>&1 | tee "$O17/17-4-steer.txt" | tail -20
-!cp -r runs/m17 "$O17/runs-m17"
 """),
 ]
 
@@ -510,7 +503,6 @@ O18 = f'{PILOT_DIR}/p18'; os.makedirs(O18, exist_ok=True)
 !python -m frontierlab.alignment.hf_cot --smoke --steps 2 --run runs/m18/hf-smoke/cot 2>&1 | tail -3
 !python -m frontierlab.evals.suite_v3.hf score --smoke --out runs/m18/hf-smoke/v3.json 2>&1 | tail -3
 !python labs/module-18/lesson-03/eval_lab.py 2>&1 | tee "$O18/18-3-eval.txt" | tail -20
-!cp -r runs/m18 "$O18/runs-m18"
 """),
 ]
 
@@ -527,7 +519,6 @@ O19 = f'{PILOT_DIR}/p19'; os.makedirs(O19, exist_ok=True)
 os.environ['LAB_TARGET'] = 'solution'
 !python labs/module-19/lesson-01/choose_lab.py --variant main --part proxy 2>&1 | tee "$O19/19-1-proxy.txt" | tail -20
 !python labs/module-19/lesson-02/repro_lab.py --variant main --part all 2>&1 | tee "$O19/19-2-repro.txt" | tail -30
-!cp -r runs/m19 "$O19/runs-m19"
 """),
 ]
 
@@ -543,20 +534,113 @@ O20 = f'{PILOT_DIR}/p20'; os.makedirs(O20, exist_ok=True)
 os.environ['LAB_TARGET'] = 'solution'
 !python labs/module-20/lesson-01/capstone_lab.py --variant main --print 2>&1 | tee "$O20/20-1-commands.txt"
 !python -m frontierlab.capstone.scaffold --variant main --out runs/m20/l201/capstone-qkclip-main --device cuda 2>&1 | tee "$O20/20-1-scaffold.txt" | tail -30
-!cp -r runs/m20 "$O20/runs-m20"
 """),
 ]
 
-NOTEBOOKS = {"pilot_phase0.ipynb": SETUP + P1 + P1B + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9 + P10 + P11 + P12 + P13 + P14 + P15 + P16 + P17 + P18 + P19 + P20}
+# One short notebook per pilot, in priority order (plan 12.1): one Colab session each, resumable.
+# (name, cells, runtime, hours on that runtime as stated in the pilot's own heading)
+PILOTS = [
+    ("P1", P1, "A100", "about 4.5 h (10m 0.3 h, 30m 1.3 h, 70m 3 h)"),
+    ("P1B", P1B, "A100", "about 0.5 h"),
+    ("P2", P2, "A100", "about 0.5 h"),
+    ("P9", P9, "A100", "about 0.25 h"),
+    ("P18", P18, "A100", "minutes"),
+    ("P3", P3, "A100", "about 1.5 h"),
+    ("P4", P4, "A100", "about 1-2 h (needs P1 pilot-70m seed 0)"),
+    ("P17", P17, "A100", "about 1 h"),
+    ("P13", P13, "A100", "about 1 h"),
+    ("P15", P15, "A100", "about 1.5 h"),
+    ("P20", P20, "A100", "about 1-2 h"),
+    ("P11", P11, "T4", "about 2 h"),
+    ("P16", P16, "T4", "T4 variants"),
+    ("P10", P10, "A100", "about 2.5 h"),
+    ("P5", P5, "A100", "about 3 h"),
+    ("P12", P12, "A100", "about 3 h"),
+    ("P14", P14, "A100", "about 3 h"),
+    ("P8", P8, "L4", "about 3-4 h"),
+    ("P7", P7, "A100", "about 4 h"),
+    ("P19", P19, "A100", "about 4-8 h"),
+    ("P6", P6, "A100", "about 5 h"),
+]
+
+
+def guard(pid: str, cells: list) -> list:
+    """Route every `!python` line of a pilot through once.py, so a rerun skips finished commands."""
+    out, n = [], 0
+    for c in cells:
+        if c["cell_type"] == "code":
+            src = []
+            for line in c["source"]:
+                m = re.match(r"^(\s*)!python (.*?)(\n?)$", line)
+                if m and "once.py" not in m.group(2):
+                    assert "'" not in m.group(2), line
+                    src.append(f"{m.group(1)}!python curriculum/pilots/once.py {pid} {n} 'python {m.group(2)}'{m.group(3)}")
+                    n += 1
+                else:
+                    src.append(line)
+            c = {**c, "source": src}
+        out.append(c)
+    out.append(code(f"""
+# Last cell: marks {pid} complete when no command of it has failed; the status notebook reads this.
+import glob, os
+failed = glob.glob(f'{{PILOT_DIR}}/.failed/{pid}-*')
+if failed:
+    print('{pid} NOT complete; failed commands (rerun this notebook to retry):', failed)
+else:
+    open(f'{{PILOT_DIR}}/.done/{pid}-COMPLETE', 'w').write('ok')
+    print('{pid} complete')
+"""))
+    return out
+
+
+STATUS = [
+    md("""
+# Pilot status (CPU runtime is enough; no GPU units used)
+
+Lists which pilots are complete and packs the results (text, JSON, metrics, summaries; no checkpoints)
+into `frontier-llm-pilots-results.zip` on Drive. Download that zip and put it in the course repo under
+`curriculum/pilots/incoming/`.
+"""),
+    code("""
+from google.colab import drive
+drive.mount('/content/drive')
+PILOT_DIR = '/content/drive/MyDrive/frontier-llm-pilots'
+import os, glob, zipfile
+ORDER = %s
+done = {os.path.basename(p)[:-9] for p in glob.glob(f'{PILOT_DIR}/.done/*-COMPLETE')}
+for pid, gpu, hours in ORDER:
+    n = len([p for p in glob.glob(f'{PILOT_DIR}/.done/{pid}-*') if not p.endswith('COMPLETE')])
+    print(f"{pid:5} {'COMPLETE' if pid in done else ('partial, %%d commands done' %% n if n else 'not started'):28} {gpu:5} {hours}")
+p1 = sorted(os.path.basename(os.path.dirname(f)) for f in glob.glob(f'{PILOT_DIR}/p1/*/metrics.jsonl'))
+print('P1 runs with metrics:', p1)
+z = f'{PILOT_DIR}/frontier-llm-pilots-results.zip'
+with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
+    for root, dirs, files in os.walk(PILOT_DIR):
+        dirs[:] = [d for d in dirs if d not in ('data-v0-32k', 'data-v0-long', 'labdata')]
+        for f in files:
+            full = os.path.join(root, f)
+            if f.endswith(('.txt', '.json', '.jsonl', '.yaml', '.md', '.csv')) and os.path.getsize(full) < 50e6:
+                zf.write(full, os.path.relpath(full, PILOT_DIR))
+print('wrote', z, round(os.path.getsize(z) / 1e6, 1), 'MB')
+""" % repr([(pid, gpu, hours) for pid, _, gpu, hours in PILOTS])),
+]
+
+NOTEBOOKS = {f"{i:02d}_{pid}.ipynb": SETUP + guard(pid, cells) for i, (pid, cells, gpu, hours) in enumerate(PILOTS, 1)}
+NOTEBOOKS["00_status.ipynb"] = STATUS
 
 
 def build():
+    OUT.mkdir(exist_ok=True)
+    for old in OUT.glob("*.ipynb"):
+        old.unlink()
     for name, cells in NOTEBOOKS.items():
         nb = {"cells": cells, "metadata": {"accelerator": "GPU", "colab": {"provenance": []},
                                            "kernelspec": {"display_name": "Python 3", "name": "python3"}},
               "nbformat": 4, "nbformat_minor": 5}
-        (HERE / name).write_text(json.dumps(nb, indent=1), encoding="utf-8")
-        print("wrote", HERE / name, f"({len(cells)} cells)")
+        if name == "00_status.ipynb":
+            nb["metadata"].pop("accelerator")
+        (OUT / name).write_text(json.dumps(nb, indent=1), encoding="utf-8")
+        print("wrote", OUT / name, f"({len(cells)} cells)")
 
 
 if __name__ == "__main__":

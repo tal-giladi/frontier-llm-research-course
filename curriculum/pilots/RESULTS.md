@@ -1,6 +1,6 @@
 # Scaled pilot results
 
-Planning file, not imported. Filled in from `pilot_phase0.ipynb` runs on Tal's Colab account
+Planning file, not imported. Filled in from the `notebooks/*.ipynb` runs on Tal's Colab account
 (plan section 12.1). Each entry: date, GPU, pilot, raw summary (from `PILOT_DIR/summary/`), decision
 (go / redesign / downgrade to extension), and which lesson figures change from PROJECTED to measured.
 

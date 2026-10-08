@@ -34,7 +34,7 @@ PROJECTED (pending pilot) and the free variants are written after the pilot, per
 - [x] Phase 0: repo spine (git, .gitignore, .gitattributes, .venv) — commit 6c54917
 - [x] Phase 0: `labs/common/frontierlab` foundation (Baseline-0 model, data prep, training loop with exact resume, run cards, correctness suite, stats helpers) with tests — 13 tests pass; Data-v0 CPU slice prepared (20k docs, vocab 8192, 24.1M train tokens)
 - [x] Phase 0: shared docs (README, _sidebar, glossary, templates, references, course-details, AGENT-BRIEF)
-- [x] Phase 0: Colab pilot notebook for Tal (`curriculum/pilots/pilot_phase0.ipynb`, built by `build_notebook.py`; P1 noise floor, P2 Module 2). Add later modules' pilots there.
+- [x] Phase 0: Colab pilot notebooks for Tal (`curriculum/pilots/notebooks/NN_Px.ipynb`, one per pilot in priority order, plus `00_status.ipynb`; built by `build_notebook.py`). 2026-10-08: split from the single `pilot_phase0.ipynb` after Tal's compute units ran out mid-run; every `!python` command goes through `once.py` (skips finished commands, Drive markers in `.done/`/`.failed/`), and `runs/` and `labs/common/data` are symlinked to Drive. Tal has a partial `p1/` folder.
 - [ ] Phase 0: pilot results received (`curriculum/pilots/RESULTS.md`) and projections updated
 - [x] Module 1 — How do we know a change helped? — commit f83216e; dry-run import 0 problems
 - [x] Module 2 — Where does the time go? — commit f83216e; dry-run import 0 problems
