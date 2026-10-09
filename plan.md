@@ -158,6 +158,7 @@ MODEL-SPECIFIC). Running lesson numbers are assigned in `_sidebar.md`.
 - 02.2 R · Profiling a training step — kernel timeline, launch overhead, fusion opportunities, torch.compile, activation memory and memory snapshots, activation checkpointing trade-offs.
 - 02.3 R · Communication and overlap — measuring exposed communication with DDP and FSDP2 on 2–8 GPUs; overlap, bucket sizes, what the profiler shows.
 - 02.4 R · Validating a performance claim — benchmark methodology (warm-up, synchronisation, repeats, variance, representative shapes), then one improvement to Baseline-0 measured end to end.
+- 02.5 R · FlashAttention-2, 3 and 4 — **TODO (added 2026-10-09, not written yet; placeholder page in the sidebar).** What FA-2 (work partitioning, fewer non-matmul FLOPs), FA-3 (Hopper: warp specialisation, async TMA/WGMMA, FP8) and FA-4 (Blackwell) change over FA-1; which one production training uses on which GPU; benchmark on Baseline-0.
 - Project: performance report on Baseline-0 — predicted vs measured step time, explanation of the gap, one validated improvement. Required for all later systems comparisons.
 
 ### Stage B — Architecture questions
